@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "Represents a recruitment candidate or field manpower employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "positionApplied": { "type": "string" },
+        "fullName": { "type": "string" },
+        "nik": { "type": "string" },
+        "kkNumber": { "type": "string" },
+        "npwp": { "type": "string" },
+        "placeOfBirth": { "type": "string" },
+        "dateOfBirth": { "type": "string" },
+        "gender": { "type": "string" },
+        "religion": { "type": "string" },
+        "maritalStatus": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "email": { "type": "string" },
+        "domicileAddress": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "telegramId": { "type": "string" },
+        "lastEducation": { "type": "string" },
+        "institutionName": { "type": "string" },
+        "major": { "type": "string" },
+        "graduationYear": { "type": "number" },
+        "skills": { "type": "string" },
+        "workExperience": { "type": "string" },
+        "bankName": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "emergencyName": { "type": "string" },
+        "emergencyRelation": { "type": "string" },
+        "emergencyPhone": { "type": "string" },
+        "status": { "type": "string" },
+        "interviewDate": { "type": "string" },
+        "interviewLocation": { "type": "string" },
+        "hrNotes": { "type": "string" },
+        "isInTalentPool": { "type": "boolean" },
+        "jobId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "fullName", "nik", "email", "status", "createdAt"]
+    },
+    "JobVacancy": {
+      "title": "JobVacancy",
+      "description": "Represents an active job posting for recruitment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "location": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "clientId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "type": { "type": "string" },
+        "department": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "array" },
+        "salaryRange": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "location", "isActive", "createdAt"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Represents a corporate partner/enterprise client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "industry": { "type": "string" },
+        "address": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "industry", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Represents an active enterprise project contract outsourced from a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "clientId": { "type": "string" },
+        "description": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "clientId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "employees": {
+      "schema": "Employee",
+      "description": "Collection of job seekers and contracted on-field staff records"
+    },
+    "jobs": {
+      "schema": "JobVacancy",
+      "description": "Collection of all recruitment posts"
+    },
+    "clients": {
+      "schema": "Client",
+      "description": "Collection of active corporate client records"
+    },
+    "projects": {
+      "schema": "Project",
+      "description": "Collection of client-commissioned projects"
+    }
+  }
+}

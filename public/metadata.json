@@ -1,0 +1,6 @@
+{
+  "name": "Remix: PT Perdana Adi Yuda - Recruitment Portal",
+  "description": "A comprehensive employee recruitment and data collection application for PT Perdana Adi Yuda.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
