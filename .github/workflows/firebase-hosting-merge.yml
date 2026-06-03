@@ -9,13 +9,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # CATATAN: Hapus baris di bawah ini jika proyek Anda hanya HTML biasa (bukan React/Vite)
-      - run: npm ci && npm run build 
-      
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          
+      - name: Install Dependencies & Build
+        # Perintah ini akan menginstal modul framework dan membuat folder build otomatis
+        run: |
+          npm install
+          npm run build --if-present
+          
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          # Bagian service account dikosongkan karena kita menggunakan token
           firebaseServiceAccount: ''
           projectId: 'gen-lang-client-0730573685'
         env:
