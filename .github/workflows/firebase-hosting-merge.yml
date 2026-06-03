@@ -9,7 +9,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Deploy directly to Firebase Hosting
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install Dependencies & Build
+        run: |
+          npm install
+          npm run build
+          
+      - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
