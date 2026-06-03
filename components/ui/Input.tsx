@@ -3,7 +3,7 @@ import React, { useId, useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: string;
 }
 
@@ -18,10 +18,12 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', id, 
 
   return (
     <div className="mb-4">
-      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-        {props.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
-      </label>
+      {label && (
+        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+          {props.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+        </label>
+      )}
       <div className="relative">
         <input
           id={inputId}
@@ -54,7 +56,7 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', id, 
 };
 
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label: string;
+  label?: string;
   error?: string;
 }
 
@@ -65,10 +67,12 @@ export const TextArea: React.FC<TextAreaProps> = ({ label, error, className = ''
 
   return (
     <div className="mb-4">
-      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-        {props.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
-      </label>
+      {label && (
+        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+          {props.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+        </label>
+      )}
       <textarea
         id={inputId}
         aria-invalid={!!error}

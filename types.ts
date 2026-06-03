@@ -1,5 +1,5 @@
 
-export type ApplicationStatus = 'APPLIED' | 'SCREENING' | 'INTERVIEW' | 'OFFERING' | 'CONTRACT' | 'HIRED' | 'REJECTED';
+export type ApplicationStatus = 'APPLIED' | 'SCREENING' | 'INTERVIEW' | 'OFFERING' | 'CONTRACT' | 'HIRED' | 'REJECTED' | 'TERMINATED' | 'RESIGNED';
 
 export interface OfferingDetails {
   salary: string;
@@ -63,7 +63,7 @@ export interface Employee {
   institutionName: string;
   major: string;
   graduationYear: number;
-  skills: string;
+  skills: string | string[];
 
   // Experience Section
   workExperience: string;

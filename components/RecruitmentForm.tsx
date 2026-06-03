@@ -217,8 +217,10 @@ export const RecruitmentForm: React.FC = () => {
       }
       const finalEP = cleanEP.startsWith(cleanEC) ? `+${cleanEP}` : `+${cleanEC}${cleanEP}`;
 
+      const domicileAddress = `${formData.addressLine}, Desa ${formData.desa}, Kec. ${formData.kecamatan}, ${formData.kabupaten}, ${formData.provinsi}, RT ${formData.rt} RW ${formData.rw}`;
       const payload: NewEmployee = {
         ...formData,
+        domicileAddress,
         whatsappNumber: finalWA,
         emergencyPhone: finalEP,
         graduationYear: parseInt(formData.graduationYear) || 0,

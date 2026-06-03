@@ -8,8 +8,7 @@ import {
   getOvertimeRequests, createOvertimeRequest, ERPOvertimeRequest,
   getLetterRequests, createLetterRequest, ERPLetterRequest,
   getAnnouncements, ERPAnnouncement,
-  getPayroll, paySalary, ERPPayroll,
-  SITE_OPTIONS
+  getPayroll, paySalary, ERPPayroll
 } from '../services/erp';
 import { Employee, ApplicationStatus } from '../types';
 import { 

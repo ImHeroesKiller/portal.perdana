@@ -1768,7 +1768,7 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ activeEmployees }) => 
               <div className="p-3 bg-gray-50/70 border-t flex justify-end gap-1.5 text-[10px]">
                 {a.status === 'Tersedia' && (
                   <button 
-                    onClick={() => { setTargetAsset(a); if (activeEmployees.length > 0) setSelectedEmpId(activeEmployees[0].id); setShowAssignModal(true); }}
+                    onClick={() => { setTargetAsset(a); if (activeEmployees.length > 0) setAssigneeEmpId(activeEmployees[0].id); setShowAssignModal(true); }}
                     className="w-full bg-blue-600 text-white font-bold py-1.5 rounded-lg text-center hover:bg-blue-700 transition"
                   >
                     Serahkan Aset
@@ -2496,7 +2496,7 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
                       {projects
                         .filter(p => (!formClientId || p.clientId === formClientId) && (p.isActive !== false || p.id === formProjectId))
                         .map(p => (
-                          <option key={p.id} value={p.id}>{p.name} ({p.location})</option>
+                          <option key={p.id} value={p.id}>{p.name} ({p.description})</option>
                         ))}
                     </select>
                     <p className="text-[10px] text-gray-400 mt-1.5 leading-snug">

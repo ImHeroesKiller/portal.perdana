@@ -462,6 +462,8 @@ export const createAsset = (name: string, sku: string, category: ERPAsset['categ
     id: `tr-ast-${id}`,
     tanggal: new Date().toISOString().split('T')[0],
     tipe: 'Pengeluaran',
+    glCode: '6100-05',
+    glAccountName: 'Beban Depresiasi & Penyusutan Inventaris Aset (OPEX)',
     kategori: 'Pembelian Aset',
     deskripsi: `Pembelian aset inventaris baru: ${name}`,
     jumlah: assetCost
