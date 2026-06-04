@@ -35,14 +35,17 @@ export const SettingsManager: React.FC = () => {
                 body: JSON.stringify({ message: simulatedMessage })
             });
 
+            const data = await response.json().catch(() => ({}));
+
             if (response.ok) {
                 alert(`Test message sent successfully:\n\n${simulatedMessage}`);
             } else {
-                alert("Failed to send test message: Telegram configuration may be missing or invalid.");
+                const errorMsg = data.error || data.message || "Telegram configuration may be missing or invalid.";
+                alert(`Failed to send test message: ${errorMsg}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Error sending test message.");
+            alert(`Error sending test message: ${error.message || error}`);
         }
     };
 
