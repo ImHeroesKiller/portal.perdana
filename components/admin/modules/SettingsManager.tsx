@@ -4,6 +4,10 @@ import { Cog6ToothIcon, DevicePhoneMobileIcon, TableCellsIcon, ChartBarIcon, Bel
 export const SettingsManager: React.FC = () => {
     const [activeCategory, setActiveCategory] = useState('konfigurasi');
     const [searchTerm, setSearchTerm] = useState('');
+    const [telegramTemplate, setTelegramTemplate] = useState('Status Laporan: Operasional harian berjalan normal');
+    const [telegramLink, setTelegramLink] = useState('');
+    const [telegramImageUrl, setTelegramImageUrl] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
 
     const categories = [
         { id: 'konfigurasi', label: 'Konfigurasi', icon: Cog6ToothIcon },
@@ -20,6 +24,26 @@ export const SettingsManager: React.FC = () => {
 
     const handleSave = () => {
         alert(`${activeCategory.toUpperCase()} settings saved successfully!`);
+    };
+
+    const handleTestTelegram = async () => {
+        try {
+            const simulatedMessage = `[SIMULASI] ${telegramTemplate}\nLink: ${telegramLink || 'N/A'}\nImage: ${telegramImageUrl || 'N/A'}\nTimestamp: ${new Date().toLocaleString()}`;
+            const response = await fetch('/api/send-telegram', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: simulatedMessage })
+            });
+
+            if (response.ok) {
+                alert(`Test message sent successfully:\n\n${simulatedMessage}`);
+            } else {
+                alert("Failed to send test message: Telegram configuration may be missing or invalid.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error sending test message.");
+        }
     };
 
     const renderContent = () => {
@@ -76,14 +100,47 @@ export const SettingsManager: React.FC = () => {
             case 'telegram':
                 return (
                     <div className="space-y-4">
-                        <label className="block text-xs font-semibold text-slate-700">Bot Token <input type="password" className="w-full mt-1 p-2 border rounded text-xs" defaultValue="8145648117:AAFEa53g..." /></label>
-                        <label className="block text-xs font-semibold text-slate-700">Chat ID <input className="w-full mt-1 p-2 border rounded text-xs" /></label>
+                        <div className="p-3 bg-slate-50 rounded border border-slate-200">
+                             <h4 className="text-xs font-bold text-slate-800 mb-2">Telegram System Monitor</h4>
+                             <div className="flex justify-between items-center text-xs text-slate-600">
+                                 <span>Status:</span>
+                                 <span className="text-green-600 font-semibold">Active</span>
+                             </div>
+                             <div className="flex justify-between items-center text-xs text-slate-600 mt-1">
+                                 <span>Last Sync:</span>
+                                 <span>Just now</span>
+                             </div>
+                        </div>
+                        <label className="block text-xs font-semibold text-slate-700">Bot Token <input type="password" className="w-full mt-1 p-2 border rounded text-xs" defaultValue="8145648117:..." /></label>
+                        <label className="block text-xs font-semibold text-slate-700">Chat ID <input className="w-full mt-1 p-2 border rounded text-xs" defaultValue="123456789" /></label>
+                        <label className="block text-xs font-semibold text-slate-700">Template Pesan Default <select className="w-full mt-1 p-2 border rounded text-xs" value={telegramTemplate} onChange={(e) => setTelegramTemplate(e.target.value)}>
+                            <option value="Status Laporan: Operasional harian berjalan normal">Status Laporan: Operasional harian berjalan normal</option>
+                            <option value="Pelamar Baru: Telah masuk aplikasi baru ke sistem">Pelamar Baru: Telah masuk aplikasi baru ke sistem</option>
+                            <option value="Status Interview: Kandidat berpindah ke tahap Interview">Status Interview: Kandidat berpindah ke tahap Interview</option>
+                            <option value="Kandidat Hire: Selamat, kandidat telah diterima!">Kandidat Hire: Selamat, kandidat telah diterima!</option>
+                            <option value="Kandidat Rejected: Mohon maaf, kandidat tidak lolos">Kandidat Rejected: Mohon maaf, kandidat tidak lolos</option>
+                            <option value="Alert: Server mengalami gangguan koneksi">Alert: Server mengalami gangguan koneksi</option>
+                        </select></label>
+                        <label className="block text-xs font-semibold text-slate-700">Link Lampiran <input className="w-full mt-1 p-2 border rounded text-xs" value={telegramLink} onChange={(e) => setTelegramLink(e.target.value)} placeholder="https://..." /></label>
+                        <label className="block text-xs font-semibold text-slate-700">Image URL <input className="w-full mt-1 p-2 border rounded text-xs" value={telegramImageUrl} onChange={(e) => setTelegramImageUrl(e.target.value)} placeholder="https://..." /></label>
                         <label className="block text-xs font-semibold text-slate-700">Tipe Notifikasi <select className="w-full mt-1 p-2 border rounded text-xs"><option>Detail</option><option>Ringkasan</option></select></label>
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-700">Notifikasi Status Perubahan</span>
                             <input type="checkbox" className="h-4 w-4" defaultChecked />
                         </div>
-                        <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-blue-700">Simpan Perubahan</button>
+                        <div className="flex gap-2">
+                          <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-blue-700">Simpan Perubahan</button>
+                          <button onClick={handleTestTelegram} className="bg-slate-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-slate-700">Test Connection</button>
+                          <button onClick={() => setShowPreview(!showPreview)} className="bg-emerald-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-emerald-700">{showPreview ? 'Hide Preview' : 'Preview'}</button>
+                        </div>
+                        {showPreview && (
+                            <div className="p-4 bg-white border rounded shadow-md mt-4">
+                                <h5 className="text-xs font-bold text-slate-800 mb-2">Message Preview:</h5>
+                                <p className="text-xs text-slate-700 whitespace-pre-wrap">{telegramTemplate}</p>
+                                {telegramLink && <a href={telegramLink} className="text-xs text-blue-600 underline block mt-2" target="_blank" rel="noopener noreferrer">{telegramLink}</a>}
+                                {telegramImageUrl && <img src={telegramImageUrl} alt="Preview" className="mt-2 max-w-full h-auto rounded" />}
+                            </div>
+                        )}
                     </div>
                 );
             case 'hak_akses':
