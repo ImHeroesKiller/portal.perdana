@@ -207,6 +207,16 @@ export const TalentManager: React.FC = () => {
             const updatedList = await getEmployees();
             setEmployees(updatedList);
             
+            // Notify Telegram
+            const updatedEmp = updatedList.find(e => e.id === id);
+            if (updatedEmp) {
+                await fetch('/api/send-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Status kandidat ${updatedEmp.fullName} telah diperbarui menjadi ${status}.` })
+                });
+            }
+            
             // Update the active modal selection securely
             const fresh = updatedList.find(e => e.id === id);
             if (fresh && selectedEmp) {
@@ -776,7 +786,7 @@ export const TalentManager: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-3">
                                 {!isJobFormExpanded && (
-                                    <span className="hidden sm:inline bg-indigo-50 text-indigo-650 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                                    <span className="hidden sm:inline bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
                                         Klik untuk Expand Form
                                     </span>
                                 )}

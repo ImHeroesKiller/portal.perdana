@@ -21,8 +21,9 @@ import {
   UsersIcon, BuildingOfficeIcon, ClipboardDocumentListIcon, 
   ChartPieIcon, ShieldCheckIcon, UserGroupIcon, ClockIcon, 
   CreditCardIcon, ScaleIcon, WrenchScrewdriverIcon, 
-  ArrowRightOnRectangleIcon, LockClosedIcon
+  ArrowRightOnRectangleIcon, LockClosedIcon, Cog6ToothIcon
 } from '@heroicons/react/24/outline';
+import { SettingsManager } from './admin/modules/SettingsManager';
 
 const ALL_MODULES = [
   { id: 'talent', label: 'Talent', desc: 'ATS & Pipeline Rekrutmen', icon: UsersIcon, panel: 'talent' },
@@ -34,6 +35,7 @@ const ALL_MODULES = [
   { id: 'finance', label: 'Kas & Buku Kas', desc: 'Ledger Keuangan & Laba-Rugi', icon: ScaleIcon, panel: 'finance' },
   { id: 'assets', label: 'Aset Logistik', desc: 'Alat Kerja & Inventaris', icon: WrenchScrewdriverIcon, panel: 'assets' },
   { id: 'reports', label: 'Reports', desc: 'Sync Telegram & Visual Statistik', icon: ChartPieIcon, panel: 'reports' },
+  { id: 'settings', label: 'Settings', desc: 'Konfigurasi Sistem', icon: Cog6ToothIcon, panel: 'settings' },
   { id: 'rbac', label: 'Hak Akses RBAC', desc: 'Manajemen Staf Admin & Otoritas', icon: ShieldCheckIcon, panel: 'rbac' }
 ];
 
@@ -42,6 +44,7 @@ export const AdminDashboard: React.FC = () => {
   const [activeModule, setActiveModule] = useState<string>('');
   const [activeEmployees, setActiveEmployees] = useState<Employee[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [moduleSearch, setModuleSearch] = useState('');
 
   // Authenticate and load permissions
   useEffect(() => {
@@ -120,120 +123,102 @@ export const AdminDashboard: React.FC = () => {
     return currentUser.permissions?.includes(mod.id);
   });
 
+  // Filter modules by search
+  const filteredModules = permittedModules.filter(m => 
+    m.label.toLowerCase().includes(moduleSearch.toLowerCase()) || 
+    m.desc.toLowerCase().includes(moduleSearch.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-gray-100 text-slate-800 font-sans antialiased">
-      {/* 1. COMPACT DASHBOARD TOP HEADER BAR */}
-      <header className="bg-[#0f172a] text-white py-4.5 px-4 md:px-8 shadow-md">
-        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            {/* Round company avatar placeholder */}
-            <div className="bg-blue-600 p-2.5 rounded-xl text-white">
-              <ShieldCheckIcon className="h-6 w-6 stroke-[2]" />
-            </div>
-            <div>
-              <h1 className="text-lg md:text-xl font-black tracking-tight leading-none text-white">
-                PT Perdana Adi Yuda Operasional
-              </h1>
-              <span className="text-[10px] text-blue-300 font-bold block leading-none mt-1 uppercase tracking-wider">
-                Console Dashboard Multi-Admin & Module RBAC v3.0
-              </span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex text-slate-800 font-sans antialiased">
+      {/* SIDEBAR NAVIGATION */}
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0">
+        <div className="p-5 border-b border-slate-800">
+           <h1 className="text-sm font-black text-white tracking-tight">PT Perdana Adi Yuda</h1>
+           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">Console Dashboard</p>
+        </div>
 
-          <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-            <div className="text-right leading-none hidden md:block">
-              <p className="font-extrabold text-xs text-slate-100">
-                {currentUser.profile?.fullName || currentUser.username}
-              </p>
-              <span className="text-[9px] text-blue-400 font-bold tracking-widest uppercase mt-0.5 block">
-                {currentUser.username === 'admin' ? '⭐ SUPERADMIN MASTER' : '👥 ASISTEN ADMIN OPERATOR'}
-              </span>
-            </div>
+        <div className="p-4">
+           <input 
+             type="text"
+             placeholder="Cari modul..."
+             className="w-full bg-slate-800 text-white rounded-lg px-3 py-2 text-xs border border-slate-700 outline-none focus:border-blue-500"
+             value={moduleSearch}
+             onChange={(e) => setModuleSearch(e.target.value)}
+           />
+        </div>
 
-            {/* Logout anchor design */}
-            <button
+        <nav className="flex-1 overflow-y-auto space-y-1 p-2">
+           {filteredModules.map(item => {
+             const Icon = item.icon;
+             const isActive = activeModule === item.id;
+             return (
+               <button
+                 key={item.id}
+                 onClick={() => setActiveModule(item.id)}
+                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition ${
+                   isActive 
+                   ? 'bg-blue-600 text-white' 
+                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                 }`}
+               >
+                 <Icon className="h-4 w-4" />
+                 {item.label}
+               </button>
+             );
+           })}
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <button
               onClick={handleLogout}
-              className="px-3 py-2 border border-slate-750 bg-slate-850 hover:bg-slate-750 text-slate-350 hover:text-white rounded-xl text-[10px] font-black transition duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer"
-              title="Keluar dari Panel Admin"
-            >
-              <ArrowRightOnRectangleIcon className="h-4.5 w-4.5" />
-              Keluar
-            </button>
-          </div>
+              className="w-full flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white px-2 py-2"
+          >
+            <ArrowRightOnRectangleIcon className="h-4 w-4" />
+            Keluar
+          </button>
         </div>
-      </header>
+      </aside>
 
-      <div className="max-w-[1600px] mx-auto p-4 md:p-8 space-y-6">
-        
-        {/* 2. MAIN MODULAR NAVIGATION SELECTOR - Responsive Bento Style Grid */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-black uppercase tracking-wider pl-1 font-mono">
-              Situs Navigasi Modul Terpedomani
-            </span>
-            <span className="text-[10px] text-blue-700 bg-blue-50 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              {permittedModules.length} Modul Diizinkan
-            </span>
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
+           <h2 className="font-bold text-sm text-slate-900 capitalize">
+             {ALL_MODULES.find(m => m.id === activeModule)?.label || 'Dashboard'}
+           </h2>
+           <p className="text-xs text-slate-500 font-bold">
+             {currentUser.profile?.fullName || currentUser.username}
+           </p>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="animate-fade-in">
+            {activeModule === 'talent' && <TalentManager />}
+            {activeModule === 'client' && <ClientManager />}
+            {activeModule === 'project' && <ProjectManager />}
+            
+            {activeModule === 'employees' && (
+              <EmployeesPanel 
+                activeEmployees={activeEmployees} 
+                onRefresh={loadActiveEmployees} 
+              />
+            )}
+            {activeModule === 'attendance' && (
+              <AttendancePanel activeEmployees={activeEmployees} />
+            )}
+            {activeModule === 'payroll' && (
+              <PayrollPanel activeEmployees={activeEmployees} />
+            )}
+            {activeModule === 'finance' && <FinancePanel />}
+            {activeModule === 'assets' && (
+              <AssetsPanel activeEmployees={activeEmployees} />
+            )}
+
+            {activeModule === 'reports' && <ReportsManager />}
+            {activeModule === 'settings' && <SettingsManager />}
+            {activeModule === 'rbac' && <RBACManager />}
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5" id="main-module-menu-re-segmented">
-            {permittedModules.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeModule === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveModule(item.id)}
-                  className={`flex items-start text-left p-3 md:p-4 rounded-xl border transition-all duration-150 relative select-none cursor-pointer ${
-                    isActive
-                      ? 'bg-white border-blue-600 ring-2 ring-blue-500 text-blue-700 font-bold shadow-sm'
-                      : 'border-slate-200 bg-white text-gray-500 hover:text-slate-800 hover:bg-white/50 hover:border-slate-300'
-                  }`}
-                >
-                  <div className={`p-2 rounded-xl mr-3 shrink-0 ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-50 text-gray-400'}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 w-full">
-                    <p className="font-extrabold text-xs text-slate-900 leading-none">{item.label}</p>
-                    <p className="text-[9.5px] leading-relaxed text-gray-405 font-medium mt-1 truncate hidden md:block">
-                      {item.desc}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 3. SHARP ROUTED LAYOUT VIEWPORT CONTAINER */}
-        <div className="animate-fade-in">
-          {activeModule === 'talent' && <TalentManager />}
-          {activeModule === 'client' && <ClientManager />}
-          {activeModule === 'project' && <ProjectManager />}
-          
-          {/* Newly separated first-class modules from the old monolithic ERPManager */}
-          {activeModule === 'employees' && (
-            <EmployeesPanel 
-              activeEmployees={activeEmployees} 
-              onRefresh={loadActiveEmployees} 
-            />
-          )}
-          {activeModule === 'attendance' && (
-            <AttendancePanel activeEmployees={activeEmployees} />
-          )}
-          {activeModule === 'payroll' && (
-            <PayrollPanel activeEmployees={activeEmployees} />
-          )}
-          {activeModule === 'finance' && <FinancePanel />}
-          {activeModule === 'assets' && (
-            <AssetsPanel activeEmployees={activeEmployees} />
-          )}
-
-          {/* Standard Reports and RBAC */}
-          {activeModule === 'reports' && <ReportsManager />}
-          {activeModule === 'rbac' && <RBACManager />}
-        </div>
+        </main>
       </div>
     </div>
   );

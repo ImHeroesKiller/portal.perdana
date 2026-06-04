@@ -231,7 +231,7 @@ export const ProjectManager: React.FC = () => {
                 </div>
                 <button 
                     onClick={handleOpenAdd} 
-                    className="bg-indigo-650 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg flex items-center text-xs shadow-xs transition"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg flex items-center text-xs shadow-xs transition"
                     id="add-project-modal-btn"
                 >
                     <FolderPlusIcon className="h-4.5 w-4.5 mr-1 stroke-[2]" /> Registrasi Proyek Baru

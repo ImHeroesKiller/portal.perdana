@@ -101,9 +101,21 @@ export const RecruitmentForm: React.FC = () => {
     init();
   }, [searchParams]);
 
+  const toTitleCase = (str: string) => {
+    return str.replace(/\w\S*/g, (txt) => {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const standardFields = ['fullName', 'placeOfBirth', 'addressLine', 'desa', 'kecamatan', 'kabupaten', 'provinsi', 'institutionName', 'major', 'bankName', 'emergencyName'];
+    
+    if (standardFields.includes(name)) {
+        setFormData(prev => ({ ...prev, [name]: toTitleCase(value) }));
+    } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof FileState) => {

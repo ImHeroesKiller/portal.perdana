@@ -238,7 +238,7 @@ export const ClientManager: React.FC = () => {
                 </div>
                 <button 
                     onClick={handleOpenAdd} 
-                    className="bg-indigo-650 hover:bg-indigo-700 font-bold text-white px-4 py-2 rounded-lg flex items-center justify-center text-xs shadow-xs transition"
+                    className="bg-indigo-600 hover:bg-indigo-700 font-bold text-white px-4 py-2 rounded-lg flex items-center justify-center text-xs shadow-xs transition"
                     id="add-client-modal-btn"
                 >
                     <PlusIcon className="h-4.5 w-4.5 mr-1 stroke-[2]" /> Registrasi Klien Baru

@@ -1,6 +1,19 @@
 import { Employee, NewEmployee, JobVacancy, NewJobVacancy, Client, NewClient, Project, NewProject, ApplicationStatus } from '../types';
 import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
+import { toTitleCase } from '../src/utils';
+
+// Helper to standardize text fields
+const standardizeEmployee = (data: Partial<Employee>): Partial<Employee> => {
+  const fieldsToStandardize = ['fullName', 'placeOfBirth', 'domicileAddress', 'institutionName', 'major', 'bankName', 'emergencyName'];
+  const standardized = { ...data };
+  fieldsToStandardize.forEach(field => {
+    if (standardized[field as keyof Employee] && typeof standardized[field as keyof Employee] === 'string') {
+      (standardized as any)[field] = toTitleCase(standardized[field as keyof Employee] as string);
+    }
+  });
+  return standardized;
+};
 
 // Helper to normalize phone numbers for legacy/existing and new data to +62 format
 export const ensurePlus62 = (num: string | undefined): string => {
@@ -632,7 +645,7 @@ export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
   const path = 'employees';
   const id = Math.random().toString(36).substring(2, 11);
   const newEmployee: Employee = {
-    ...data,
+    ...standardizeEmployee(data) as Employee,
     id,
     status: 'APPLIED',
     isInTalentPool: false,
@@ -661,6 +674,7 @@ export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
 
 export const updateEmployee = async (id: string, updates: Partial<Employee>): Promise<Employee> => {
   const path = 'employees';
+  const standardizedUpdates = standardizeEmployee(updates);
   
   let localUpdated: Employee | null = null;
   try {
@@ -670,10 +684,10 @@ export const updateEmployee = async (id: string, updates: Partial<Employee>): Pr
       const idx = list.findIndex(e => e.id === id);
       if (idx !== -1) {
         const extraUpdates: Partial<Employee> = {};
-        if (updates.status === 'REJECTED') {
+        if (standardizedUpdates.status === 'REJECTED') {
           extraUpdates.isInTalentPool = true;
         }
-        list[idx] = { ...list[idx], ...updates, ...extraUpdates };
+        list[idx] = { ...list[idx], ...standardizedUpdates, ...extraUpdates };
         localUpdated = list[idx];
         localStorage.setItem('local_employees', JSON.stringify(list));
       }
@@ -695,10 +709,10 @@ export const updateEmployee = async (id: string, updates: Partial<Employee>): Pr
     }
     const current = snap.data() as Employee;
     const extraUpdates: Partial<Employee> = {};
-    if (updates.status === 'REJECTED') {
+    if (standardizedUpdates.status === 'REJECTED') {
       extraUpdates.isInTalentPool = true;
     }
-    const updated = { ...current, ...updates, ...extraUpdates };
+    const updated = { ...current, ...standardizedUpdates, ...extraUpdates };
     await updateDoc(ref, cleanDoc(updated));
     invalidateCache('employees');
     return updated;

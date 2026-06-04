@@ -6,6 +6,7 @@ import {
   ClockIcon, MapPinIcon, PlusIcon, EyeIcon, CheckIcon, ArchiveBoxIcon, 
   CreditCardIcon, UserGroupIcon, PrinterIcon, ArrowPathIcon, PencilIcon, UserIcon
 } from '@heroicons/react/24/outline';
+import { toTitleCase } from '../../../src/utils';
 import { 
   getAttendance, clockIn, clockOut, 
   getPayroll, processPayroll, paySalary, 
@@ -487,7 +488,7 @@ export const FinancePanel: React.FC = () => {
               <div className="space-y-2 pt-4">
                 <button
                   onClick={() => { handleTypeChange('Pengeluaran'); setShowAddModal(true); }}
-                  className="w-full bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg py-2.5 text-xs font-bold shadow-xs transition flex items-center justify-center gap-1"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2.5 text-xs font-bold shadow-xs transition flex items-center justify-center gap-1"
                 >
                   <PlusIcon className="h-4 w-4" /> Catat Kas Keluar (Beban)
                 </button>
@@ -939,7 +940,7 @@ export const FinancePanel: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg transition shadow-sm"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-sm"
                 >
                   Daftarkan Transaksi Buku Kas
                 </button>
@@ -1986,8 +1987,27 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
   const [selectedClientFilter, setSelectedClientFilter] = useState('ALL');
   const [payrollTypeFilter, setPayrollTypeFilter] = useState('ALL');
 
+  const fixAllEmployeeData = async () => {
+    if (!confirm("Are you sure you want to standardize the formatting for all employees?")) return;
+    setIsLoading(true);
+    try {
+        const emps = await getEmployees();
+        for (const emp of emps) {
+            await updateEmployee(emp.id, emp); // updateEmployee now handles standardization
+        }
+        onRefresh();
+        alert("Formatting standardized.");
+    } catch (err) {
+        console.error(err);
+        alert("Failed to standardize data.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   // Modal editing state
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   
   // Form fields state (for payroll)
   const [formEmployeeType, setFormEmployeeType] = useState<'INTERNAL' | 'PROJECT'>('INTERNAL');
@@ -2191,6 +2211,16 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
             />
           </div>
 
+          <div className="flex items-end">
+            <button
+               onClick={fixAllEmployeeData}
+               disabled={isLoading}
+               className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              Fix Formatting
+            </button>
+          </div>
+
           {/* Tipe Karyawan selection */}
           <div>
             <label className="block text-gray-500 font-semibold mb-1">Tipe Hubungan Kerja</label>
@@ -2362,12 +2392,18 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
                         <span className="text-[9px] text-gray-400 block font-normal">/Jam Lembur</span>
                       </td>
 
-                      <td className="px-5 py-3.5 text-center">
+                      <td className="px-5 py-3.5 text-center flex flex-col gap-1.5 items-center">
+                        <button
+                          onClick={() => setViewingEmployee(emp)}
+                          className="bg-slate-600 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition duration-150 inline-flex items-center gap-1 shadow-sm w-full justify-center"
+                        >
+                          <EyeIcon className="h-3 w-3" /> Lihat Detail
+                        </button>
                         <button
                           onClick={() => handleOpenEdit(emp)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition duration-150 inline-flex items-center gap-1 shadow-sm"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition duration-150 inline-flex items-center gap-1 shadow-sm w-full justify-center"
                         >
-                          <PencilIcon className="h-3 w-3" /> Edit Kontrak & Gaji
+                          <PencilIcon className="h-3 w-3" /> Edit Kontrak
                         </button>
                       </td>
                     </tr>
@@ -2619,7 +2655,7 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 flex justify-end gap-2.5 text-xs">
+              <div className="pt-6 pb-2 flex justify-end gap-2.5 text-xs bg-white border-t sticky bottom-0">
                 <button 
                   type="button" 
                   onClick={() => setEditingEmployee(null)}
@@ -2630,7 +2666,7 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
                 <button 
                   type="submit" 
                   disabled={isLoading}
-                  className="px-5 py-2 bg-indigo-650 text-white rounded-lg font-extrabold hover:bg-indigo-700 transition flex items-center justify-center gap-1 shadow-sm disabled:bg-gray-300"
+                  className="px-5 py-2 bg-indigo-600 text-white rounded-lg font-extrabold hover:bg-indigo-700 transition flex items-center justify-center gap-1 shadow-sm disabled:bg-gray-300"
                 >
                   {isLoading ? 'Menyimpan...' : 'Simpan Setup & Gaji'}
                 </button>
@@ -2639,6 +2675,36 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
           </motion.div>
         </div>
       )}
+
+      {viewingEmployee && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-gray-100"
+          >
+            <div className="bg-slate-700 p-4 text-white flex justify-between items-center">
+              <h3 className="font-bold flex items-center gap-2"><UserIcon className="h-5 w-5"/> Detail Karyawan: {viewingEmployee.fullName}</h3>
+              <button onClick={() => setViewingEmployee(null)} className="text-white hover:text-white/80">✕</button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-sm">
+              <div className="grid grid-cols-2 gap-4">
+               <div><p className="font-semibold text-gray-500 text-xs">NIK</p><p className="font-bold text-gray-900">{viewingEmployee.nik}</p></div>
+               <div><p className="font-semibold text-gray-500 text-xs">Email</p><p className="font-bold text-gray-900">{viewingEmployee.email}</p></div>
+               <div><p className="font-semibold text-gray-500 text-xs">WhatsApp</p><p className="font-bold text-gray-900">{viewingEmployee.whatsappNumber}</p></div>
+               <div><p className="font-semibold text-gray-500 text-xs">Alamat</p><p className="font-bold text-gray-900">{viewingEmployee.domicileAddress}</p></div>
+               <div><p className="font-semibold text-gray-500 text-xs">Posisi</p><p className="font-bold text-gray-900">{viewingEmployee.positionApplied}</p></div>
+               <div><p className="font-semibold text-gray-500 text-xs">Status</p><p className={`font-bold ${viewingEmployee.employmentStatus === 'ACTIVE' ? 'text-emerald-600' : 'text-red-700'}`}>{viewingEmployee.employmentStatus || 'ACTIVE'}</p></div>
+              </div>
+              <div className="border-t pt-4">
+                 <button onClick={() => { setViewingEmployee(null); handleOpenEdit(viewingEmployee); }} className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700">Edit Data Karyawan</button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 };
