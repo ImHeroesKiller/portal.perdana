@@ -1,6 +1,6 @@
 import { Employee, NewEmployee, JobVacancy, NewJobVacancy, Client, NewClient, Project, NewProject, ApplicationStatus } from '../types';
 import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { toTitleCase } from '../src/utils';
 
 // Helper to standardize text fields
@@ -173,8 +173,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: 'anonymous-or-client-session',
-      email: 'client-app@perdana.co.id'
+      userId: auth.currentUser?.uid || 'anonymous-or-client-session',
+      email: auth.currentUser?.email || 'client-app@perdana.co.id'
     },
     operationType,
     path

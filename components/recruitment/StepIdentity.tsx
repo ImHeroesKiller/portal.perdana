@@ -181,12 +181,12 @@ export const StepIdentity: React.FC<Props> = ({ formData, onChange, setFormData,
                   onClick={() => handleCustomRadioSelect('willingToRelocate', opt)}
                   className={`flex items-center gap-3 px-4 py-2 border rounded-full text-sm font-medium transition-all ${
                     selected 
-                      ? 'bg-blue-650 border-blue-600 bg-blue-700 text-white shadow-md' 
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
                       : 'bg-white border-gray-300 text-gray-700 hover:border-blue-300'
                   }`}
                 >
-                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selected ? 'border-white bg-white' : 'border-blue-650'}`}>
-                    {selected && <span className="w-1.5 h-1.5 rounded-full bg-blue-650 bg-blue-800" />}
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selected ? 'border-white bg-white' : 'border-blue-300'}`}>
+                    {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </span>
                   {opt}
                 </button>
