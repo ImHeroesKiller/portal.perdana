@@ -572,30 +572,15 @@ export const getEmployees = async (): Promise<Employee[]> => {
   try {
     const snap = await getDocs(collection(db, path));
     if (snap.empty) {
-      console.log("Employees empty in Firestore. Seeding 35 demo candidates...");
-      const seeded = generateDummyEmployees(35);
-      const batch = writeBatch(db);
-      for (const emp of seeded) {
-        batch.set(doc(db, path, emp.id), emp);
-      }
-      await batch.commit();
-      const sorted = seeded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      const normalized = sorted.map(emp => ({
-        ...emp,
-        whatsappNumber: ensurePlus62(emp.whatsappNumber),
-        emergencyPhone: ensurePlus62(emp.emergencyPhone)
-      }));
-      cache.employees = { data: normalized, timestamp: Date.now() };
-      localStorage.setItem('local_employees', JSON.stringify(normalized));
-      return [...normalized];
+      console.log("Employees empty in Firestore. Returning empty list.");
+      cache.employees = { data: [], timestamp: Date.now() };
+      localStorage.setItem('local_employees', JSON.stringify([]));
+      return [];
     }
     const employees: Employee[] = [];
     snap.forEach((doc) => {
       employees.push(doc.data() as Employee);
     });
-
-    // Ensure Google Demo Candidates exist for robust portal testing
-    // Removed Andi and Siti demo candidates as requested
 
     const sorted = employees.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const normalized = sorted.map(emp => ({
@@ -623,15 +608,8 @@ export const getEmployees = async (): Promise<Employee[]> => {
         console.error("Local JSON parse failed:", e);
       }
     }
-    const seeded = generateDummyEmployees(35);
-    const normalized = seeded.map(emp => ({
-      ...emp,
-      whatsappNumber: ensurePlus62(emp.whatsappNumber),
-      emergencyPhone: ensurePlus62(emp.emergencyPhone)
-    }));
-    localStorage.setItem('local_employees', JSON.stringify(normalized));
-    cache.employees = { data: normalized, timestamp: Date.now() };
-    return [...normalized];
+    cache.employees = { data: [], timestamp: Date.now() };
+    return [];
   }
 };
 
@@ -761,15 +739,10 @@ export const getClients = async (): Promise<Client[]> => {
   try {
     const snap = await getDocs(collection(db, path));
     if (snap.empty) {
-      console.log("Clients empty. Seeding...");
-      const batch = writeBatch(db);
-      for (const cli of defaultClients) {
-        batch.set(doc(db, path, cli.id), cli);
-      }
-      await batch.commit();
-      cache.clients = { data: defaultClients, timestamp: Date.now() };
-      localStorage.setItem('local_clients', JSON.stringify(defaultClients));
-      return [...defaultClients];
+      console.log("Clients empty in Firestore. Returning empty list.");
+      cache.clients = { data: [], timestamp: Date.now() };
+      localStorage.setItem('local_clients', JSON.stringify([]));
+      return [];
     }
     const clients: Client[] = [];
     snap.forEach(doc => {
@@ -790,9 +763,8 @@ export const getClients = async (): Promise<Client[]> => {
         console.error("Local JSON parse failed for clients:", e);
       }
     }
-    localStorage.setItem('local_clients', JSON.stringify(defaultClients));
-    cache.clients = { data: defaultClients, timestamp: Date.now() };
-    return [...defaultClients];
+    cache.clients = { data: [], timestamp: Date.now() };
+    return [];
   }
 };
 
@@ -904,15 +876,10 @@ export const getProjects = async (): Promise<Project[]> => {
   try {
     const snap = await getDocs(collection(db, path));
     if (snap.empty) {
-      console.log("Projects empty. Seeding...");
-      const batch = writeBatch(db);
-      for (const prj of defaultProjects) {
-        batch.set(doc(db, path, prj.id), prj);
-      }
-      await batch.commit();
-      cache.projects = { data: defaultProjects, timestamp: Date.now() };
-      localStorage.setItem('local_projects', JSON.stringify(defaultProjects));
-      return [...defaultProjects];
+      console.log("Projects empty in Firestore. Returning empty list.");
+      cache.projects = { data: [], timestamp: Date.now() };
+      localStorage.setItem('local_projects', JSON.stringify([]));
+      return [];
     }
     const projects: Project[] = [];
     snap.forEach(doc => {
@@ -933,9 +900,8 @@ export const getProjects = async (): Promise<Project[]> => {
         console.error("Local JSON parse failed for projects:", e);
       }
     }
-    localStorage.setItem('local_projects', JSON.stringify(defaultProjects));
-    cache.projects = { data: defaultProjects, timestamp: Date.now() };
-    return [...defaultProjects];
+    cache.projects = { data: [], timestamp: Date.now() };
+    return [];
   }
 };
 
@@ -1046,25 +1012,11 @@ export const getJobs = async (): Promise<JobVacancy[]> => {
 
   try {
     const snap = await getDocs(collection(db, path));
-    if (snap.empty || snap.size !== positions.length) {
-      console.log(`Jobs empty or outdated (${snap.size} vs ${positions.length}). Seeding...`);
-      const seeded = generateDummyJobs();
-      const batch = writeBatch(db);
-      // If we are updating, we should ideally delete the old ones first, 
-      // but for simplicity, we'll just overwrite with the same IDs if they conflict, 
-      // or clear the collection if we could.
-      // Given the Firestore constraints, let's just clear the collection if possible or just overwrite.
-      // Since this is a dev environment, let's clear it.
-      const existingDocs = await getDocs(collection(db, path));
-      existingDocs.forEach(d => batch.delete(d.ref));
-      
-      for (const j of seeded) {
-        batch.set(doc(db, path, j.id), j);
-      }
-      await batch.commit();
-      cache.jobs = { data: seeded, timestamp: Date.now() };
-      localStorage.setItem('local_jobs', JSON.stringify(seeded));
-      return [...seeded];
+    if (snap.empty) {
+      console.log("Jobs empty in Firestore. Returning empty list.");
+      cache.jobs = { data: [], timestamp: Date.now() };
+      localStorage.setItem('local_jobs', JSON.stringify([]));
+      return [];
     }
     const jobs: JobVacancy[] = [];
     snap.forEach(doc => {
@@ -1085,10 +1037,8 @@ export const getJobs = async (): Promise<JobVacancy[]> => {
         console.error("Local JSON parse failed for jobs:", e);
       }
     }
-    const seeded = generateDummyJobs();
-    localStorage.setItem('local_jobs', JSON.stringify(seeded));
-    cache.jobs = { data: seeded, timestamp: Date.now() };
-    return [...seeded];
+    cache.jobs = { data: [], timestamp: Date.now() };
+    return [];
   }
 };
 
