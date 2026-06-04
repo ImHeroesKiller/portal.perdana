@@ -597,6 +597,14 @@ export const getEmployees = async (): Promise<Employee[]> => {
     if (local) {
       try {
         const parsed = JSON.parse(local);
+        // Clean up legacy dummy candidates (IDs like 'emp-1', etc.)
+        const hasDummy = parsed.some((emp: any) => emp.id && (emp.id.startsWith('emp-') || emp.id.startsWith('demo-') || (emp.email && emp.email.endsWith('@example.com'))));
+        if (hasDummy) {
+          console.log("🧹 Legacy dummy candidates detected in localStorage. Automated cleanup triggered.");
+          localStorage.removeItem('local_employees');
+          cache.employees = { data: [], timestamp: Date.now() };
+          return [];
+        }
         const normalized = parsed.map((emp: any) => ({
           ...emp,
           whatsappNumber: ensurePlus62(emp.whatsappNumber),
