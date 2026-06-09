@@ -4,6 +4,7 @@ import { Employee, JobVacancy, ApplicationStatus, OfferingDetails } from '../../
 import { analyzeCandidate, ScoreBadge, StatusBadge } from '../shared/Utils';
 import { UserIcon, RectangleStackIcon, ChartBarIcon, CheckCircleIcon, ArrowDownTrayIcon, PhoneIcon, EnvelopeIcon, DocumentTextIcon, XCircleIcon, BriefcaseIcon, VideoCameraIcon, StarIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { sendInterviewNotification, sendRejectionNotification, sendOfferingLetter, sendContractDocument, sendHiredNotification, sendPassedInterviewNotification } from '../../../services/notifications';
+import { sendEmail } from '../../../services/notifications';
 import { uploadFileMock } from '../../../services/db';
 import { OfferingModal } from './OfferingModal';
 
@@ -14,6 +15,21 @@ interface CandidateModalProps {
     onStatusUpdate: (id: string, status: ApplicationStatus, notes?: string, date?: string, extraData?: any) => void;
     onDelete?: (id: string) => void;
 }
+
+const EMAIL_TEMPLATES = [
+  {
+    id: 'incomplete',
+    label: 'Data Belum Lengkap',
+    subject: 'Informasi Kelengkapan Dokumen Rekrutmen - PT Perdana Adi Yuda',
+    body: (name: string) => `Halo ${name},\n\nTerima kasih telah melamar di PT Perdana Adi Yuda.\n\nKami telah meninjau aplikasi Anda, namun, kami menemukan beberapa dokumen/data yang belum lengkap.\n\nMohon lengkapi dokumen tersebut agar kami dapat memproses aplikasi Anda lebih lanjut.\n\nTerima kasih.`
+  },
+  {
+    id: 'interview',
+    label: 'Jadwal Proses Interview',
+    subject: 'Undangan Interview - PT Perdana Adi Yuda',
+    body: (name: string) => `Halo ${name},\n\nKami senang menginformasikan bahwa aplikasi Anda untuk posisi yang dilamar telah lolos tahap awal.\n\nKami ingin mengundang Anda untuk mengikuti sesi interview.\n\nSilakan bersiap pada waktu yang telah ditentukan.\n\nTerima kasih.`
+  }
+];
 
 export const CandidateModal: React.FC<CandidateModalProps> = ({ employee, job, onClose, onStatusUpdate, onDelete }) => {
   const analysis = job ? analyzeCandidate(employee, job) : null;
@@ -42,7 +58,22 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({ employee, job, o
 
   // Workflow Handlers
   const [showOfferingForm, setShowOfferingForm] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
   const [loadingAction, setLoadingAction] = useState(false);
+
+  const handleTemplateChange = (templateId: string) => {
+    const template = EMAIL_TEMPLATES.find(t => t.id === templateId);
+    if (template) {
+      setEmailSubject(template.subject);
+      setEmailBody(template.body(employee.fullName));
+      setSelectedTemplate(templateId);
+    } else {
+      setSelectedTemplate('');
+    }
+  };
 
   // Custom Confirmation Dialog State
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -164,6 +195,23 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({ employee, job, o
       onStatusUpdate(employee.id, 'CONTRACT', notes, undefined, { contractDocPath: path });
       sendContractDocument(employee, path).catch(err => console.error("Contract document error:", err));
       setLoadingAction(false);
+  };
+
+  const handleSendEmail = async () => {
+      if (!emailSubject || !emailBody) return alert('Mohon isi Subjek dan Isi Email');
+      setLoadingAction(true);
+      try {
+          await sendEmail(employee.email, emailSubject, emailBody);
+          alert('Email berhasil dikirim!');
+          setShowEmailForm(false);
+          setEmailSubject('');
+          setEmailBody('');
+      } catch (err) {
+          console.error("Gagal mengirim email:", err);
+          alert('Gagal mengirim email: ' + (err as Error).message);
+      } finally {
+          setLoadingAction(false);
+      }
   };
 
   return (
@@ -390,6 +438,13 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({ employee, job, o
                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2 px-2 rounded text-xs flex justify-center items-center gap-1.5 transition active:scale-95"
                     >
                         Kirim Notifikasi WA
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowEmailForm(true)}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2 px-2 rounded text-xs flex justify-center items-center gap-1.5 transition active:scale-95"
+                    >
+                        <EnvelopeIcon className="h-4 w-4"/> Kirim Notifikasi Email
                     </button>
                 </div>
 
@@ -647,6 +702,44 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({ employee, job, o
                 onSave={handleSendOffering} 
                 onCancel={() => setShowOfferingForm(false)} 
             />
+        )}
+
+        {/* Email Modal Form */}
+        {showEmailForm && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50">
+               <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                   <h3 className="font-bold text-lg mb-4">Kirim Email ke {employee.fullName}</h3>
+                   <div className="space-y-3">
+                       <select 
+                           className="w-full border rounded p-2 text-sm"
+                           value={selectedTemplate}
+                           onChange={e => handleTemplateChange(e.target.value)}
+                       >
+                           <option value="">-- Pilih Template --</option>
+                           {EMAIL_TEMPLATES.map(t => (
+                               <option key={t.id} value={t.id}>{t.label}</option>
+                           ))}
+                       </select>
+                       <input 
+                           type="text" 
+                           placeholder="Subjek Email" 
+                           className="w-full border rounded p-2 text-sm" 
+                           value={emailSubject}
+                           onChange={e => setEmailSubject(e.target.value)}
+                       />
+                       <textarea 
+                           placeholder="Isi Email" 
+                           className="w-full border rounded p-2 text-sm h-32" 
+                           value={emailBody}
+                           onChange={e => setEmailBody(e.target.value)}
+                       />
+                   </div>
+                   <div className="flex gap-2 mt-4">
+                       <button onClick={() => setShowEmailForm(false)} className="flex-1 border px-4 py-2 rounded text-sm">Batal</button>
+                       <button onClick={handleSendEmail} disabled={loadingAction} className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded text-sm">Kirim</button>
+                   </div>
+               </div>
+            </div>
         )}
 
         {/* Custom Confirmation Dialog Overlay */}

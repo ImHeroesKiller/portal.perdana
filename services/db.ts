@@ -1151,3 +1151,39 @@ export const clearDatabase = () => {
   clearAllCaches();
   window.location.reload();
 };
+
+export const seedAllDemoData = async (): Promise<void> => {
+  const batch = writeBatch(db);
+  
+  // 1. Clients
+  for (const cli of defaultClients) {
+    batch.set(doc(db, 'clients', cli.id), cleanDoc(cli));
+  }
+  
+  // 2. Projects
+  for (const prj of defaultProjects) {
+    batch.set(doc(db, 'projects', prj.id), cleanDoc(prj));
+  }
+  
+  // 3. Jobs
+  const jobs = generateDummyJobs();
+  for (const j of jobs) {
+    batch.set(doc(db, 'jobs', j.id), cleanDoc(j));
+  }
+  
+  // 4. Employees
+  const employees = generateDummyEmployees(35);
+  for (const emp of employees) {
+    batch.set(doc(db, 'employees', emp.id), cleanDoc(emp));
+  }
+
+  try {
+    await batch.commit();
+    localStorage.clear();
+    clearAllCaches();
+    console.log("🚀 Firestore successfully seeded with 35 demo candidates, jobs, clients, and projects!");
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'seed-demo-data');
+  }
+};
+

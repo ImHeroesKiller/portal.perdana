@@ -1,6 +1,17 @@
 
 import { Employee, OfferingDetails } from '../types';
 import { sendTelegramMessage } from './telegram';
+import { sendGmail } from './gmail';
+
+// --- UTILS ---
+export const sendEmail = async (to: string, subject: string, body: string) => {
+    try {
+        await sendGmail(to, subject, body);
+    } catch(e) {
+        console.error('Email sending failed:', e);
+        throw e; // rethrow so the caller knows it failed
+    }
+};
 
 // --- TEMPLATES ---
 
@@ -113,13 +124,9 @@ export const sendInterviewNotification = async (
         console.warn("Could not open WhatsApp Web in iframe sandbox. Fallback logging messaging instead:", e);
     }
 
-    // 3. Email (Simulated)
+    // 3. Email
+    await sendEmail(emp.email, 'Undangan Interview', msg);
     console.log(`[EMAIL SENT to ${emp.email}]\nSubject: Undangan Interview\nBody: ${msg}`);
-    try {
-        alert(`Email undangan interview telah dikirim ke ${emp.email}`);
-    } catch (e) {
-        console.warn("Could not display alert in iframe sandbox environment:", e);
-    }
 };
 
 export const sendPassedInterviewNotification = async (emp: Employee) => {
@@ -140,12 +147,8 @@ export const sendPassedInterviewNotification = async (emp: Employee) => {
         console.warn("Could not open WhatsApp Web in iframe sandbox:", e);
     }
 
+    await sendEmail(emp.email, 'Hasil Seleksi Interview', msg);
     console.log(`[EMAIL SENT to ${emp.email}]\nSubject: Hasil Seleksi Interview\nBody: ${msg}`);
-    try {
-        alert(`Notifikasi kelulusan interview telah disiapkan via WhatsApp & dikirim ke email ${emp.email}`);
-    } catch (e) {
-        console.warn("Could not display alert in iframe sandbox environment:", e);
-    }
 };
 
 export const sendRejectionNotification = async (emp: Employee) => {
@@ -166,12 +169,8 @@ export const sendRejectionNotification = async (emp: Employee) => {
         console.warn("Could not open WhatsApp Web in iframe sandbox:", e);
     }
 
+    await sendEmail(emp.email, 'Update Lamaran', msg);
     console.log(`[EMAIL SENT to ${emp.email}]\nSubject: Update Lamaran\nBody: ${msg}`);
-    try {
-        alert(`Notifikasi penolakan telah dikirim ke ${emp.email}`);
-    } catch (e) {
-        console.warn("Could not display alert in iframe sandbox environment:", e);
-    }
 };
 
 export const sendOfferingLetter = async (emp: Employee, offer: OfferingDetails) => {
@@ -196,12 +195,8 @@ export const sendOfferingLetter = async (emp: Employee, offer: OfferingDetails) 
     }
 
     // 2. Email with "Button" simulation
+    await sendEmail(emp.email, `OFFICIAL OFFERING LETTER - ${emp.positionApplied}`, emailBody);
     console.log(`[EMAIL SENT to ${emp.email}]\nSubject: OFFICIAL OFFERING LETTER - ${emp.positionApplied}\nBody: ${emailBody}`);
-    try {
-        alert(`Offering Letter telah dikirim ke email ${emp.email}. Menunggu konfirmasi kandidat.`);
-    } catch (e) {
-        console.warn("Could not display alert in iframe sandbox environment:", e);
-    }
 };
 
 export const sendContractDocument = async (emp: Employee, fileUrl: string) => {
@@ -217,12 +212,8 @@ export const sendContractDocument = async (emp: Employee, fileUrl: string) => {
     }
 
     // 2. Email
+    await sendEmail(emp.email, 'KONTRAK KERJA (PKWT)', msg);
     console.log(`[EMAIL SENT to ${emp.email}]\nSubject: KONTRAK KERJA (PKWT)\nAttachment: ${fileUrl}\nBody: ${msg}`);
-    try {
-        alert(`Dokumen Kontrak telah dikirim ke email ${emp.email}.`);
-    } catch (e) {
-        console.warn("Could not display alert in iframe sandbox environment:", e);
-    }
 };
 
 export const sendHiredNotification = async (emp: Employee) => {
@@ -234,5 +225,6 @@ export const sendHiredNotification = async (emp: Employee) => {
             console.error("Failed to send Telegram hired welcome board:", e);
         }
     }
+    await sendEmail(emp.email, 'Welcome Aboard', msg);
     console.log(`[EMAIL SENT] Welcome Email sent to ${emp.email}`);
 };

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Cog6ToothIcon, DevicePhoneMobileIcon, TableCellsIcon, ChartBarIcon, BellAlertIcon, MagnifyingGlassIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import { Cog6ToothIcon, DevicePhoneMobileIcon, TableCellsIcon, ChartBarIcon, BellAlertIcon, MagnifyingGlassIcon, ShieldCheckIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { seedAllDemoData } from '../../../services/db';
+import { getGmailAccessToken, authorizeGmailAdmin } from '../../../services/gmail';
 
 export const SettingsManager: React.FC = () => {
     const [activeCategory, setActiveCategory] = useState('konfigurasi');
@@ -8,6 +10,22 @@ export const SettingsManager: React.FC = () => {
     const [telegramLink, setTelegramLink] = useState('');
     const [telegramImageUrl, setTelegramImageUrl] = useState('');
     const [showPreview, setShowPreview] = useState(false);
+    const [gmailConnected, setGmailConnected] = useState<boolean>(!!getGmailAccessToken());
+
+    const handleConnectGmail = async () => {
+        try {
+            await authorizeGmailAdmin();
+            setGmailConnected(true);
+            alert('Koneksi Gmail berhasil! Akun Google Anda terhubung sebagai admin pengirim notifikasi.');
+        } catch (error: any) {
+            console.error(error);
+            // Do not show an alert if the user simply closed the popup
+            if (error.code === 'auth/popup-closed-by-user') {
+                return;
+            }
+            alert('Gagal menghubungkan akun Gmail. Pastikan email Anda terdaftar sebagai penguji di Google Cloud Console: ' + (error.message || error));
+        }
+    };
 
     const categories = [
         { id: 'konfigurasi', label: 'Konfigurasi', icon: Cog6ToothIcon },
@@ -15,6 +33,7 @@ export const SettingsManager: React.FC = () => {
         { id: 'data', label: 'Data', icon: TableCellsIcon },
         { id: 'gl', label: 'General Ledger', icon: ChartBarIcon },
         { id: 'telegram', label: 'Telegram', icon: BellAlertIcon },
+        { id: 'gmail', label: 'Gmail Admin', icon: EnvelopeIcon },
         { id: 'hak_akses', label: 'Hak Akses', icon: ShieldCheckIcon },
     ];
 
@@ -80,14 +99,60 @@ export const SettingsManager: React.FC = () => {
                 );
             case 'data':
                 return (
-                    <div className="space-y-4">
-                        <label className="block text-xs font-semibold text-slate-700">Frekuensi Backup <select className="w-full mt-1 p-2 border rounded text-xs"><option>Harian</option><option>Mingguan</option><option>Bulanan</option></select></label>
-                        <label className="block text-xs font-semibold text-slate-700">Format Ekspor Default <select className="w-full mt-1 p-2 border rounded text-xs"><option>CSV</option><option>JSON</option><option>XLSX</option></select></label>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-700">Hapus Log Lama (30 Hari)</span>
-                            <input type="checkbox" className="h-4 w-4" defaultChecked />
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-slate-900 border-b pb-2">Pengaturan Data</h4>
+                            <label className="block text-xs font-semibold text-slate-700">Frekuensi Backup <select className="w-full mt-1 p-2 border rounded text-xs"><option>Harian</option><option>Mingguan</option><option>Bulanan</option></select></label>
+                            <label className="block text-xs font-semibold text-slate-700">Format Ekspor Default <select className="w-full mt-1 p-2 border rounded text-xs"><option>CSV</option><option>JSON</option><option>XLSX</option></select></label>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-700">Hapus Log Lama (30 Hari)</span>
+                                <input type="checkbox" className="h-4 w-4" defaultChecked />
+                            </div>
+                            <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-blue-700">Simpan Perubahan</button>
                         </div>
-                        <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-blue-700">Simpan Perubahan</button>
+                        
+                        <div className="space-y-3 pt-5 border-t border-slate-100">
+                            <h4 className="text-xs font-bold text-slate-900">Inisialisasi & Simulasi Data</h4>
+                            <p className="text-[11px] text-slate-500 leading-relaxed">
+                                Jika database Firebase Anda dalam keadaan kosong di Vercel, klik tombol di bawah untuk memasukkan kembali 35 data simulasi pelamar (termasuk 16 pelamar di kolom Applied) secara utuh ke database Firestore Anda (termasuk data klien B2B, proyek, dan daftar lowongan).
+                            </p>
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                <button 
+                                    onClick={async (e) => {
+                                        const btn = e.currentTarget;
+                                        if (window.confirm("Apakah Anda yakin ingin memasukkan kembali 35 data simulasi pelamar baru ke database Firebase Anda?")) {
+                                            btn.disabled = true;
+                                            const originalText = btn.innerText;
+                                            btn.innerText = "Sourcing & Seeding...";
+                                            try {
+                                                await seedAllDemoData();
+                                                alert("Sukses! 35 data simulasi berhasil dimasukkan ke database Firebase Anda. Halaman akan dimuat ulang.");
+                                                window.location.reload();
+                                            } catch (error: any) {
+                                                alert("Gagal menginisialisasi data: " + (error.message || error));
+                                                btn.disabled = false;
+                                                btn.innerText = originalText;
+                                            }
+                                        }
+                                    }}
+                                    className="bg-emerald-600 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-emerald-700 transition"
+                                >
+                                    Masukkan 35 Data Pelamar Simulasi ke Firebase
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (window.confirm("Apakah Anda yakin ingin membersihkan seluruh cache & local storage aplikasi pada browser ini?")) {
+                                            localStorage.clear();
+                                            alert("Cache lokal dibersihkan.");
+                                            window.location.reload();
+                                        }
+                                    }}
+                                    className="bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded text-xs font-semibold hover:bg-slate-200 transition"
+                                >
+                                    Bersihkan Cache & Reload
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 );
             case 'gl':
@@ -144,6 +209,35 @@ export const SettingsManager: React.FC = () => {
                                 {telegramImageUrl && <img src={telegramImageUrl} alt="Preview" className="mt-2 max-w-full h-auto rounded" />}
                             </div>
                         )}
+                    </div>
+                );
+            case 'gmail':
+                return (
+                    <div className="space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                            <h4 className="text-xs font-bold text-slate-800 mb-1">Status Gmail Admin</h4>
+                            <p className="text-[11px] text-slate-500 mb-3">Akun Ary Wibowo (ary.wibowo@perada.net) digunakan untuk mengirim notifikasi sistem.</p>
+                            
+                            {gmailConnected ? (
+                                <div className="flex items-center gap-2 p-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded border border-emerald-200">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    Gmail Terhubung
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={handleConnectGmail}
+                                    className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded transition"
+                                >
+                                    Hubungkan Kembali Gmail
+                                </button>
+                            )}
+                        </div>
+                        <div className="p-4 bg-sky-50 rounded-lg border border-sky-100">
+                            <h4 className="text-xs font-bold text-sky-900 mb-1">Catatan Penting</h4>
+                            <p className="text-[11px] text-sky-700 leading-relaxed">
+                                Jika muncul error "Access blocked: ... has not completed the Google verification process", silakan buka Google Cloud Console Anda, cari project ID <code>gen-lang-client-0987251808</code>, navigasi ke "OAuth consent screen", dan tambahkan email <code>ary.wibowo@perada.net</code> ke dalam daftar "Test users".
+                            </p>
+                        </div>
                     </div>
                 );
             case 'hak_akses':

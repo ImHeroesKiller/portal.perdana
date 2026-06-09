@@ -207,14 +207,18 @@ export const TalentManager: React.FC = () => {
             const updatedList = await getEmployees();
             setEmployees(updatedList);
             
-            // Notify Telegram
-            const updatedEmp = updatedList.find(e => e.id === id);
-            if (updatedEmp) {
-                await fetch('/api/send-telegram', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Status kandidat ${updatedEmp.fullName} telah diperbarui menjadi ${status}.` })
-                });
+            // Notify Telegram (wrapped in a try-catch to prevent offline or unconfigured server errors from stopping the application)
+            try {
+                const updatedEmp = updatedList.find(e => e.id === id);
+                if (updatedEmp) {
+                    await fetch('/api/send-telegram', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: `Status kandidat ${updatedEmp.fullName} telah diperbarui menjadi ${status}.` })
+                    });
+                }
+            } catch (telegramErr) {
+                console.warn("Gagal mengirimkan notifikasi status ke bot Telegram:", telegramErr);
             }
             
             // Update the active modal selection securely

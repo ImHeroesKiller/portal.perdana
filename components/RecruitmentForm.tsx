@@ -15,6 +15,7 @@ import { StepIdentity } from './recruitment/StepIdentity';
 import { StepContact } from './recruitment/StepContact';
 import { StepProfessional } from './recruitment/StepProfessional';
 import { StepDocuments } from './recruitment/StepDocuments';
+import { AIChatroomForm } from './AIChatroomForm';
 
 // Shared Types
 export interface FormDataState {
@@ -64,6 +65,7 @@ const STEPS = [
 
 export const RecruitmentForm: React.FC = () => {
   const navigate = useNavigate();
+  const [useAIChat, setUseAIChat] = useState(false);
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<FormDataState>(initialFormState);
   const [availableJobs, setAvailableJobs] = useState<JobVacancy[]>([]);
@@ -272,68 +274,111 @@ export const RecruitmentForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden my-8 relative">
-      {/* Absolute Header Back navigation */}
-      <button 
-        type="button"
-        onClick={() => navigate(-1)} 
-        className="absolute top-4 left-4 text-white hover:text-blue-150 transition-colors flex items-center gap-1 bg-white/15 hover:bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold border border-white/25 active:scale-95"
-      >
-        <ChevronLeftIcon className="h-4 w-4 stroke-2" /> Kembali
-      </button>
-
-      <div className="bg-blue-900 text-white p-6 text-center">
-          <h1 className="text-2xl font-bold">Formulir Rekrutmen</h1>
-          <p className="text-blue-200 text-sm">PT Perdana Adi Yuda</p>
+    <div className="w-full">
+      {/* Sticky Dual Mode Switcher Bar */}
+      <div className="max-w-7xl mx-auto px-4 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <span className="text-xs text-gray-500 font-medium font-sans">
+          Mendaftar Pekerjaan di <b>PT Perdana Adi Yuda</b>: Pilih metode pengisian data pendaftaran Anda.
+        </span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            id="btn_mode_traditional"
+            onClick={() => setUseAIChat(false)}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border ${!useAIChat ? 'bg-blue-900 border-blue-900 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+          >
+            📝 Formulir Manual
+          </button>
+          <button
+            type="button"
+            id="btn_mode_ai"
+            onClick={() => setUseAIChat(true)}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 ${useAIChat ? 'bg-blue-950 border-blue-950 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+          >
+            💬 Virtual Assistant SARA
+          </button>
+        </div>
       </div>
 
-      <div className="bg-gray-50 p-4 border-b">
-          <div className="flex justify-between max-w-2xl mx-auto">
-              {STEPS.map((step) => {
-                  const Icon = step.icon;
-                  const active = currentStep === step.id;
-                  const done = currentStep > step.id;
-                  return (
-                      <div key={step.id} className={`flex flex-col items-center ${active ? 'text-blue-600' : done ? 'text-green-600' : 'text-gray-400'}`}>
-                          <Icon className={`h-6 w-6 mb-1 ${active || done ? 'stroke-2' : ''}`} />
-                          <span className="text-xs font-medium">{step.title}</span>
-                      </div>
-                  );
-              })}
+      {useAIChat ? (
+        <AIChatroomForm />
+      ) : (
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden my-8 relative">
+          {/* Absolute Header Back navigation */}
+          <button 
+            type="button"
+            onClick={() => navigate(-1)} 
+            className="absolute top-4 left-4 text-white hover:text-blue-150 transition-colors flex items-center gap-1 bg-white/15 hover:bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold border border-white/25 active:scale-95"
+          >
+            <ChevronLeftIcon className="h-4 w-4 stroke-2" /> Kembali
+          </button>
+
+          <div className="bg-blue-900 text-white p-6 text-center">
+              <h1 className="text-2xl font-bold">Formulir Rekrutmen</h1>
+              <p className="text-blue-200 text-sm">PT Perdana Adi Yuda</p>
           </div>
-          <div className="h-1 bg-gray-200 mt-2 rounded-full overflow-hidden max-w-2xl mx-auto">
-              <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${(currentStep / STEPS.length) * 100}%` }}></div>
+
+          <div className="bg-gray-50 p-4 border-b">
+              <div className="flex justify-between max-w-2xl mx-auto">
+                  {STEPS.map((step) => {
+                      const Icon = step.icon;
+                      const active = currentStep === step.id;
+                      const done = currentStep > step.id;
+                      return (
+                          <div key={step.id} className={`flex flex-col items-center ${active ? 'text-blue-600' : done ? 'text-green-600' : 'text-gray-400'}`}>
+                              <Icon className={`h-6 w-6 mb-1 ${active || done ? 'stroke-2' : ''}`} />
+                              <span className="text-xs font-medium">{step.title}</span>
+                          </div>
+                      );
+                  })}
+              </div>
+              <div className="h-1 bg-gray-200 mt-2 rounded-full overflow-hidden max-w-2xl mx-auto">
+                  <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${(currentStep / STEPS.length) * 100}%` }}></div>
+              </div>
           </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8">
-        {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 text-red-700 text-sm">{error}</div>}
+          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+            <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex gap-3">
+                <div className="bg-indigo-600 p-2 rounded-xl text-white">💬</div>
+                <div>
+                   <h4 className="text-xs font-bold text-indigo-900">Ingin dibantu Sara?</h4>
+                   <p className="text-[10px] text-indigo-700">Gunakan Virtual Assistant untuk mengisi form lebih cepat.</p>
+                </div>
+              </div>
+                <button type="button" onClick={() => setUseAIChat(true)} className="w-full sm:w-auto px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-xl hover:bg-indigo-900 transition-all shadow-sm">
+                    Gunakan Virtual Assistant
+                </button>
+            </div>
+            {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 text-red-700 text-sm">{error}</div>}
 
-        <div className="min-h-[400px]">
-            {currentStep === 1 && <StepIdentity formData={formData} onChange={handleChange} setFormData={setFormData} jobs={availableJobs} />}
-            {currentStep === 2 && <StepContact formData={formData} onChange={handleChange} setFormData={setFormData} />}
-            {currentStep === 3 && <StepProfessional formData={formData} onChange={handleChange} />}
-            {currentStep === 4 && <StepDocuments formData={formData} onChange={handleChange} files={files} onFileChange={handleFileChange} />}
+            <div className="min-h-[400px]">
+                {currentStep === 1 && <StepIdentity formData={formData} onChange={handleChange} setFormData={setFormData} jobs={availableJobs} />}
+                {currentStep === 2 && <StepContact formData={formData} onChange={handleChange} setFormData={setFormData} />}
+                {currentStep === 3 && <StepProfessional formData={formData} onChange={handleChange} />}
+                {currentStep === 4 && <StepDocuments formData={formData} onChange={handleChange} files={files} onFileChange={handleFileChange} />}
+            </div>
+
+            <div className="flex justify-between mt-8 pt-6 border-t">
+                {currentStep > 1 ? (
+                    <button type="button" onClick={() => setCurrentStep(p => p - 1)} className="flex items-center px-6 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                        <ChevronLeftIcon className="h-4 w-4 mr-1" /> Kembali
+                    </button>
+                ) : <div />}
+
+                {currentStep < 4 ? (
+                    <button type="button" onClick={handleNext} className="flex items-center px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Lanjut <ChevronRightIcon className="h-4 w-4 ml-1" />
+                    </button>
+                ) : (
+                    <button type="submit" disabled={loading} className="flex items-center px-8 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        {loading ? 'Mengirim...' : 'Kirim Lamaran'}
+                    </button>
+                )}
+            </div>
+          </form>
         </div>
-
-        <div className="flex justify-between mt-8 pt-6 border-t">
-            {currentStep > 1 ? (
-                <button type="button" onClick={() => setCurrentStep(p => p - 1)} className="flex items-center px-6 py-2 border border-gray-300 rounded hover:bg-gray-50">
-                    <ChevronLeftIcon className="h-4 w-4 mr-1" /> Kembali
-                </button>
-            ) : <div />}
-
-            {currentStep < 4 ? (
-                <button type="button" onClick={handleNext} className="flex items-center px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    Lanjut <ChevronRightIcon className="h-4 w-4 ml-1" />
-                </button>
-            ) : (
-                <button type="submit" disabled={loading} className="flex items-center px-8 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                    {loading ? 'Mengirim...' : 'Kirim Lamaran'}
-                </button>
-            )}
-        </div>
-      </form>
+      )}
     </div>
   );
 };

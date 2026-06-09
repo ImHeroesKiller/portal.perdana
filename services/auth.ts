@@ -2,6 +2,7 @@
 import { User, NewEmployee } from '../types';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from './firebase';
+import { setGmailAccessToken } from './gmail';
 
 const USERS_KEY = 'pt_perdana_users';
 const SESSION_KEY = 'pt_perdana_session';
@@ -245,11 +246,16 @@ export const loginWithGoogleMock = (email: string, phone?: string): Promise<User
 
 export const loginWithGoogle = async (): Promise<User> => {
   const provider = new GoogleAuthProvider();
+  provider.addScope('https://www.googleapis.com/auth/gmail.send');
   provider.setCustomParameters({
     prompt: 'select_account'
   });
   
   const result = await signInWithPopup(auth, provider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  if (credential?.accessToken) {
+    setGmailAccessToken(credential.accessToken);
+  }
   const email = result.user.email;
   if (!email) {
     throw new Error('Alamat email dari akun Google Anda tidak dapat ditemukan.');

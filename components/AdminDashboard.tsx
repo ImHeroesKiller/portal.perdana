@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { TalentManager } from './admin/modules/TalentManager';
 import { ClientManager } from './admin/modules/ClientManager';
 import { ProjectManager } from './admin/modules/ProjectManager';
@@ -21,7 +22,8 @@ import {
   UsersIcon, BuildingOfficeIcon, ClipboardDocumentListIcon, 
   ChartPieIcon, ShieldCheckIcon, UserGroupIcon, ClockIcon, 
   CreditCardIcon, ScaleIcon, WrenchScrewdriverIcon, 
-  ArrowRightOnRectangleIcon, LockClosedIcon, Cog6ToothIcon
+  ArrowRightOnRectangleIcon, LockClosedIcon, Cog6ToothIcon,
+  Bars3Icon, XMarkIcon
 } from '@heroicons/react/24/outline';
 import { SettingsManager } from './admin/modules/SettingsManager';
 
@@ -45,6 +47,8 @@ export const AdminDashboard: React.FC = () => {
   const [activeEmployees, setActiveEmployees] = useState<Employee[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [moduleSearch, setModuleSearch] = useState('');
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Authenticate and load permissions
   useEffect(() => {
@@ -130,12 +134,29 @@ export const AdminDashboard: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex text-slate-800 font-sans antialiased">
+    <div className="min-h-screen bg-gray-50 flex text-slate-800 font-sans antialiased relative">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0">
-        <div className="p-5 border-b border-slate-800">
-           <h1 className="text-sm font-black text-white tracking-tight">PT Perdana Adi Yuda</h1>
-           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">Console Dashboard</p>
+      <motion.aside 
+        initial={false}
+        animate={{ x: isSidebarOpen ? 0 : -256 }}
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 md:relative md:translate-x-0"
+      >
+        <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+           <div>
+            <h1 className="text-sm font-black text-white tracking-tight">PT Perdana Adi Yuda</h1>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">Console Dashboard</p>
+           </div>
+           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-white">
+             <XMarkIcon className="h-6 w-6" />
+           </button>
         </div>
 
         <div className="p-4">
@@ -155,7 +176,10 @@ export const AdminDashboard: React.FC = () => {
              return (
                <button
                  key={item.id}
-                 onClick={() => setActiveModule(item.id)}
+                 onClick={() => {
+                   setActiveModule(item.id);
+                   setIsSidebarOpen(false);
+                 }}
                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition ${
                    isActive 
                    ? 'bg-blue-600 text-white' 
@@ -171,21 +195,29 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="p-4 border-t border-slate-800">
           <button
-              onClick={handleLogout}
+              onClick={() => {
+                setIsSidebarOpen(false);
+                handleLogout();
+              }}
               className="w-full flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white px-2 py-2"
           >
             <ArrowRightOnRectangleIcon className="h-4 w-4" />
             Keluar
           </button>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
-           <h2 className="font-bold text-sm text-slate-900 capitalize">
-             {ALL_MODULES.find(m => m.id === activeModule)?.label || 'Dashboard'}
-           </h2>
+           <div className="flex items-center gap-3">
+             <button onClick={() => setIsSidebarOpen(true)} className="md:hidden">
+               <Bars3Icon className="h-6 w-6 text-slate-600" />
+             </button>
+             <h2 className="font-bold text-sm text-slate-900 capitalize">
+               {ALL_MODULES.find(m => m.id === activeModule)?.label || 'Dashboard'}
+             </h2>
+           </div>
            <p className="text-xs text-slate-500 font-bold">
              {currentUser.profile?.fullName || currentUser.username}
            </p>
