@@ -55,9 +55,10 @@ export const About: React.FC = () => {
         <div className="bg-gradient-to-br from-blue-900 to-[#0F172A] text-white rounded-3xl overflow-hidden shadow-xs relative">
           <div className="absolute inset-0 opacity-15 mix-blend-overlay">
             <img 
-              src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" 
-              alt="Skyscraper background" 
+              src="/assets/site_shoveling.jpg" 
+              alt="Site project background" 
               className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
             />
           </div>
 
@@ -80,9 +81,10 @@ export const About: React.FC = () => {
             {/* Right Team photo column */}
             <div className="w-full md:w-[280px] h-[180px] rounded-2xl overflow-hidden shrink-0 border border-white/10 shadow-xs relative">
               <img 
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=520&q=80" 
+                src="/assets/site_workers.jpg" 
                 alt="Representative Team" 
                 className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
               />
             </div>
 
@@ -116,9 +118,10 @@ export const About: React.FC = () => {
           {/* Right Image representing Perdana Officer wearing Blue custom uniform with clip board */}
           <div className="w-full md:w-[280px] h-[310px] rounded-2xl overflow-hidden border border-slate-100 relative shrink-0">
             <img 
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=480&q=80" 
+              src="/assets/site_bricklaying.jpg" 
               alt="Perdana Corporate Officer" 
               className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
             />
             {/* PERDANA custom badge banner overlays the image bottom */}
             <div className="absolute bottom-4 left-4 right-4 bg-slate-900/80 backdrop-blur-xs p-3 rounded-xl border border-white/10 text-white text-center">

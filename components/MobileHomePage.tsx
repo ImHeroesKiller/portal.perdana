@@ -47,9 +47,9 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   const currentUser = getCurrentUser();
 
   const slideshowImages = [
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=300&q=80",
-    "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=300&q=80"
+    "/assets/site_workers.jpg",
+    "/assets/site_bricklaying.jpg",
+    "/assets/site_shoveling.jpg"
   ];
   const [activeImageIdx, setActiveImageIdx] = React.useState(0);
 

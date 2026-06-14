@@ -208,7 +208,11 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({ employee, job, o
           setEmailBody('');
       } catch (err) {
           console.error("Gagal mengirim email:", err);
-          alert('Gagal mengirim email: ' + (err as Error).message);
+          const errorMessage = (err as Error).message;
+          const userFriendlyMessage = errorMessage.includes('authorize') || errorMessage.includes('expired')
+              ? 'Gagal mengirim email: Sesi Gmail Anda telah berakhir atau belum terhubung. Silakan buka menu "Settings" di dashboard admin dan hubungkan kembali akun Gmail Anda.'
+              : 'Gagal mengirim email: ' + errorMessage;
+          alert(userFriendlyMessage);
       } finally {
           setLoadingAction(false);
       }

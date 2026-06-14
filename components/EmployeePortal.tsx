@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser, logout } from '../services/auth';
 import { getEmployees, updateEmployee, createEmployee } from '../services/db';
+import { getCompanySettings } from '../services/companySettings';
 import { 
   getAttendance, clockIn, clockOut, ERPAbsensi,
   getLeaveRequests, createLeaveRequest, ERPLeaveRequest,
@@ -1572,19 +1573,25 @@ export const EmployeePortal: React.FC = () => {
             <div className="p-8 text-black bg-white space-y-6 text-xs leading-relaxed" id="printable-payslip">
               
               {/* Header Letterhead */}
-              <div className="border-b-2 border-slate-900 pb-4 flex flex-col sm:flex-row justify-between gap-4">
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl">PT PERDANA ADI YUDA</h3>
-                  <p className="text-[10px] text-gray-500 max-w-sm">
-                    Premium Sourcing & Outsource Operator | Cabang Palu: Jl. Wolter Monginsidi No. 45, Palu Selatan, Kota Palu, Sulteng
-                  </p>
-                </div>
-                <div className="text-right sm:text-right text-[10px] space-y-0.5">
-                  <h4 className="font-bold text-slate-850">SLIP GAJI RESMI INDIVIDU</h4>
-                  <p className="font-mono text-gray-400">ID: {activePayslip.id.toUpperCase()}</p>
-                  <p className="font-semibold text-slate-700">Periode: {activePayslip.period}</p>
-                </div>
-              </div>
+              {(() => {
+                const cmpS = getCompanySettings();
+                const branchText = cmpS.branches.map(b => b.name + ": " + b.address.replace(/\n/g, ' ')).join(' | ');
+                return (
+                  <div className="border-b-2 border-slate-900 pb-4 flex flex-col sm:flex-row justify-between gap-4">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl">{cmpS.companyName.toUpperCase()}</h3>
+                      <p className="text-[10px] text-gray-500 max-w-sm">
+                        Premium Sourcing & Outsource Operator | {branchText}
+                      </p>
+                    </div>
+                    <div className="text-right sm:text-right text-[10px] space-y-0.5">
+                      <h4 className="font-bold text-slate-850">SLIP GAJI RESMI INDIVIDU</h4>
+                      <p className="font-mono text-gray-400">ID: {activePayslip.id.toUpperCase()}</p>
+                      <p className="font-semibold text-slate-700">Periode: {activePayslip.period}</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Worker metadata card */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded border">
@@ -1680,17 +1687,22 @@ export const EmployeePortal: React.FC = () => {
               </div>
 
               {/* Footer and Sign Off */}
-              <div className="flex justify-between items-end pt-6 border-t font-sans">
-                <div className="text-[10px] text-gray-400">
-                  PT Perdana Adi Yuda menjamin bahwa rincian upah di atas bersifat rahasia dan tervalidasi oleh kearsipan Kantor Cabang Palu.
-                </div>
-                <div className="text-right text-[10px] font-semibold space-y-1">
-                  <p>Ditandatangani secara digital oleh:</p>
-                  <p className="font-bold text-slate-800">HR & Payroll Division</p>
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e2/Fake_Signature.png" height="35" className="h-8 ml-auto" />
-                  <p className="text-[9px] text-gray-400">PT Perdana Adi Yuda</p>
-                </div>
-              </div>
+              {(() => {
+                const cmpS = getCompanySettings();
+                return (
+                  <div className="flex justify-between items-end pt-6 border-t font-sans">
+                    <div className="text-[10px] text-gray-400">
+                      {cmpS.companyName} menjamin bahwa rincian upah di atas bersifat rahasia dan tervalidasi oleh kearsipan Kantor Cabang resmi.
+                    </div>
+                    <div className="text-right text-[10px] font-semibold space-y-1">
+                      <p>Ditandatangani secara digital oleh:</p>
+                      <p className="font-bold text-slate-800">HR & Payroll Division</p>
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/e/e2/Fake_Signature.png" height="35" className="h-8 ml-auto" />
+                      <p className="text-[9px] text-gray-400">{cmpS.companyName}</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
 

@@ -17,6 +17,7 @@ import { VacanciesPage } from './components/VacanciesPage';
 import { Cog6ToothIcon, UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { getCurrentUser, logout } from './services/auth';
 import { LanguageProvider, useLanguage } from './services/i18n';
+import { getCompanySettings } from './services/companySettings';
 
 const NavBar = () => {
   const location = useLocation();
@@ -26,6 +27,15 @@ const NavBar = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const currentUser = getCurrentUser();
   const { t, language, toggleLanguage } = useLanguage();
+  const [settings, setSettings] = useState(() => getCompanySettings());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setSettings(getCompanySettings());
+    };
+    window.addEventListener('company-settings-updated', handleUpdate);
+    return () => window.removeEventListener('company-settings-updated', handleUpdate);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -83,8 +93,7 @@ const NavBar = () => {
                 className="h-8 w-auto md:h-10 object-contain"
               />
               <div className="flex flex-col justify-center min-w-0">
-                <span className="font-bold text-gray-900 leading-tight text-xs sm:text-sm md:text-base truncate">PT Perdana Adi Yuda</span>
-                <span className="text-[8px] sm:text-[10px] text-gray-500 uppercase tracking-wider truncate">Portal Rekrutmen</span>
+                <span className="font-bold text-gray-900 leading-tight text-xs sm:text-sm md:text-base truncate">{settings.companyName}</span>
               </div>
             </Link>
             
@@ -194,6 +203,7 @@ const Footer = () => {
     const { t } = useLanguage();
     const location = useLocation();
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [settings, setSettings] = useState(() => getCompanySettings());
 
     useEffect(() => {
         const handleResize = () => {
@@ -201,6 +211,14 @@ const Footer = () => {
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const handleUpdate = () => {
+          setSettings(getCompanySettings());
+        };
+        window.addEventListener('company-settings-updated', handleUpdate);
+        return () => window.removeEventListener('company-settings-updated', handleUpdate);
     }, []);
 
     // Hide Footer on Interview Session
@@ -220,11 +238,11 @@ const Footer = () => {
                 </div>
                 <div className="h-6 w-[1.5px] bg-white/30"></div>
                 <span className="text-[10px] font-extrabold tracking-wider whitespace-nowrap">
-                  PT PERDANA ADI YUDA
+                  {settings.companyName.toUpperCase()}
                 </span>
               </Link>
               <p className="text-[9px] text-white/80 font-medium font-sans text-center sm:text-right">
-                © 2026 PT Perdana Adi Yuda. All rights reserved.
+                © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
               </p>
             </div>
           </div>
@@ -238,12 +256,12 @@ const Footer = () => {
                 <Link to="/" className="bg-white px-4 py-1.5 rounded-2xl inline-flex items-center justify-center shadow-md hover:bg-gray-25 transition-colors cursor-pointer">
                     <img 
                         src="/assets/logo.png" 
-                        alt="PT Perdana Adi Yuda" 
+                        alt="PT Perdana" 
                         className="h-9 w-auto object-contain" 
                     />
                 </Link>
                 <div>
-                    <h3 className="font-bold text-lg mb-2 text-white">PT Perdana Adi Yuda</h3>
+                    <h3 className="font-bold text-lg mb-2 text-white">{settings.companyName}</h3>
                     <p className="text-gray-400 leading-relaxed">
                       {t('footer_desc')}
                     </p>
@@ -255,19 +273,14 @@ const Footer = () => {
                 <div className="text-gray-400 space-y-4 text-xs md:text-sm">
                   <div>
                     <h4 className="font-semibold text-gray-200">Kantor Pusat:</h4>
-                    <p>
-                      Plaza Summarecon Bekasi Lt. 7<br/>
-                      Jl. Bulevar Ahmad Yani, Marga Mulya<br/>
-                      Bekasi Utara, Kota Bekasi - 17142
-                    </p>
+                    <p className="whitespace-pre-wrap">{settings.headOfficeAddress}</p>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-200">Kantor Cabang (Sulteng):</h4>
-                    <p>
-                      Jl. Wolter Monginsidi No. 45, Palu Selatan<br/>
-                      Kota Palu, Sulawesi Tengah - 94111
-                    </p>
-                  </div>
+                  {settings.branches.map((branch) => (
+                    <div key={branch.id}>
+                      <h4 className="font-semibold text-gray-200">{branch.name}:</h4>
+                      <p className="whitespace-pre-wrap">{branch.address}</p>
+                    </div>
+                  ))}
                 </div>
             </div>
 
@@ -275,22 +288,24 @@ const Footer = () => {
                 <h3 className="font-bold text-lg mb-4 text-white">{t('contact_title')}</h3>
                 <div className="space-y-2 text-gray-400">
                   <p>
-                    <span className="font-medium text-gray-300">Telp:</span> 0858 9366 1683
+                    <span className="font-medium text-gray-300">Telp:</span> {settings.phone}
                   </p>
                   <p>
-                    <span className="font-medium text-gray-300">Email:</span> info@perada.net
+                    <span className="font-medium text-gray-300">Email:</span> {settings.email}
                   </p>
-                  <p>
-                    <span className="font-medium text-gray-300">Website:</span>{' '}
-                    <a href="https://perada.net" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                      https://perada.net
-                    </a>
-                  </p>
+                  {settings.website && (
+                    <p>
+                      <span className="font-medium text-gray-300">Website:</span>{' '}
+                      <a href={settings.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                        {settings.website}
+                      </a>
+                    </p>
+                  )}
                 </div>
             </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 mt-10 pt-8 border-t border-gray-700 text-center">
-            <p className="text-gray-500 text-xs">&copy; {new Date().getFullYear()} PT Perdana Adi Yuda. {t('footer_rights')}</p>
+            <p className="text-gray-500 text-xs">&copy; {new Date().getFullYear()} {settings.companyName}. {t('footer_rights')}</p>
         </div>
       </footer>
     );

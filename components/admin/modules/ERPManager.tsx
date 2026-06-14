@@ -17,6 +17,7 @@ import {
 } from '../../../services/erp';
 import { getEmployees, getClients, getProjects, updateEmployee } from '../../../services/db';
 import { Employee, Client, Project } from '../../../types';
+import { getCompanySettings } from '../../../services/companySettings';
 
 declare global {
   interface Window {
@@ -1471,21 +1472,27 @@ export const PayrollPanel: React.FC<PayrollPanelProps> = ({ activeEmployees }) =
             {/* Slip Gaji Printable Content */}
             <div id="payslip-box" className="p-8 space-y-6 text-2xs text-gray-800 bg-white leading-tight">
               {/* Logo & Corporate Title */}
-              <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4">
-                <div className="flex gap-3 items-center">
-                  <img src="/assets/logo.png" alt="Logo PT Perdana" className="h-12 w-auto object-contain" />
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-950">PT Perdana Adi Yuda</h3>
-                    <p className="text-[10px] text-gray-500">Recruitment & Outsourcing Manpower Services</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5">Kantor Pusat: Plaza Summarecon Bekasi | Cabang Sulteng: Jl. Wolter Monginsidi No. 45, Palu | info@perada.net</p>
+              {(() => {
+                const cmpS = getCompanySettings();
+                const branchText = cmpS.branches.map(b => b.name + ": " + b.address.replace(/\n/g, ' ')).join(' | ');
+                return (
+                  <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4">
+                    <div className="flex gap-3 items-center">
+                      <img src="/assets/logo.png" alt="Logo PT Perdana" className="h-12 w-auto object-contain" />
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-950">{cmpS.companyName}</h3>
+                        <p className="text-[10px] text-gray-500">Recruitment & Outsourcing Manpower Services</p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">Kantor Pusat: {cmpS.headOfficeAddress.replace(/\n/g, ' ')} | {branchText} | {cmpS.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <h4 className="text-base font-extrabold text-gray-950 uppercase tracking-wide">SLIP GAJI KARYAWAN</h4>
+                      <p className="text-[10px] font-bold text-gray-600 mt-1">Periode: {selectedSlip.period}</p>
+                      <p className="text-[9px] text-gray-400">ID Dok: SLIP/{selectedSlip.id.toUpperCase()}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <h4 className="text-base font-extrabold text-gray-950 uppercase tracking-wide">SLIP GAJI KARYAWAN</h4>
-                  <p className="text-[10px] font-bold text-gray-600 mt-1">Periode: {selectedSlip.period}</p>
-                  <p className="text-[9px] text-gray-400">ID Dok: SLIP/{selectedSlip.id.toUpperCase()}</p>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Employee & Admin details */}
               <div className="grid grid-cols-2 gap-4 text-[11px] bg-gray-50 p-4 rounded-xl">

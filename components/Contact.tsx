@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MapPinIcon, PhoneIcon, EnvelopeIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { Input, TextArea } from './ui/Input';
 import { useLanguage } from '../services/i18n';
+import { getCompanySettings } from '../services/companySettings';
 
 // Declare Leaflet global
 declare const L: any;
@@ -11,6 +12,16 @@ export const Contact: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const { t } = useLanguage();
+  const [settings, setSettings] = useState(() => getCompanySettings());
+
+  // Subscribe to changes
+  useEffect(() => {
+    const handleUpdate = () => {
+      setSettings(getCompanySettings());
+    };
+    window.addEventListener('company-settings-updated', handleUpdate);
+    return () => window.removeEventListener('company-settings-updated', handleUpdate);
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
@@ -18,23 +29,35 @@ export const Contact: React.FC = () => {
 
   // Initialize Map
   useEffect(() => {
-    if (mapRef.current && !mapInstance.current) {
-        // Koordinat Palu, Sulawesi Tengah (Approximate)
-        const lat = -0.900600;
-        const lng = 119.830700;
+    if (mapRef.current) {
+        // Destroy existing map if any
+        if (mapInstance.current) {
+            mapInstance.current.remove();
+            mapInstance.current = null;
+        }
 
-        const map = L.map(mapRef.current).setView([lat, lng], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        const mainBranch = settings.branches[0] || { lat: -2.8227, lng: 122.1462 };
+        const lat = mainBranch.lat;
+        const lng = mainBranch.lng;
 
-        L.marker([lat, lng]).addTo(map)
-            .bindPopup('<b>PT Perdana Adi Yuda</b><br>Kantor Perwakilan Palu')
-            .openPopup();
+        try {
+            const map = L.map(mapRef.current).setView([lat, lng], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-        mapInstance.current = map;
+            settings.branches.forEach(branch => {
+              L.marker([branch.lat, branch.lng]).addTo(map)
+                  .bindPopup(`<b>${settings.companyName}</b><br>${branch.name}`)
+                  .openPopup();
+            });
+
+            mapInstance.current = map;
+        } catch (err) {
+            console.error("Leaflet initialization error:", err);
+        }
     }
-  }, []);
+  }, [settings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,19 +97,14 @@ export const Contact: React.FC = () => {
                             <div className="space-y-3 text-sm text-gray-600">
                                 <div>
                                     <h4 className="font-semibold text-gray-800">Kantor Pusat:</h4>
-                                    <p>
-                                        Plaza Summarecon Bekasi Lt. 7<br/>
-                                        Jl. Bulevar Ahmad Yani, Marga Mulya<br/>
-                                        Bekasi Utara, Kota Bekasi - 17142
-                                    </p>
+                                    <p className="whitespace-pre-wrap">{settings.headOfficeAddress}</p>
                                 </div>
-                                <div>
-                                    <h4 className="font-semibold text-gray-800">Kantor Cabang / Perwakilan Palu:</h4>
-                                    <p>
-                                        Jl. Wolter Monginsidi No. 45, Palu Selatan<br/>
-                                        Kota Palu, Sulawesi Tengah - 94111
-                                    </p>
-                                </div>
+                                {settings.branches.map((branch) => (
+                                    <div key={branch.id}>
+                                        <h4 className="font-semibold text-gray-800">{branch.name}:</h4>
+                                        <p className="whitespace-pre-wrap">{branch.address}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -97,8 +115,8 @@ export const Contact: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900">{t('contact_phone')}</h3>
-                            <p className="text-gray-600 text-sm mt-1">0858 9366 1683</p>
-                            <a href="https://wa.me/6285893661683" target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline flex items-center gap-1 mt-1">
+                            <p className="text-gray-600 text-sm mt-1">{settings.phone}</p>
+                            <a href={`https://wa.me/${settings.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline flex items-center gap-1 mt-1">
                                 <ChatBubbleLeftRightIcon className="h-4 w-4"/> Chat WhatsApp
                             </a>
                         </div>
@@ -110,7 +128,12 @@ export const Contact: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900">Email</h3>
-                            <p className="text-gray-600 text-sm mt-1">info@perada.net</p>
+                            <p className="text-gray-650 text-sm mt-1">{settings.email}</p>
+                            {settings.website && (
+                                <p className="text-gray-500 text-xs mt-0.5">
+                                    Website: <a href={settings.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{settings.website}</a>
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

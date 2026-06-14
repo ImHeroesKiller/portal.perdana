@@ -116,9 +116,10 @@ export const HomePage: React.FC = () => {
       <div className="relative bg-gray-900 text-white">
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1920&q=80"
-            alt="Office background"
+            src="/assets/site_scaffolding.jpg"
+            alt="Site project background"
             className="w-full h-full object-cover object-center"
+            referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-slate-900 opacity-75"></div>
         </div>
