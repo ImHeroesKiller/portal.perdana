@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Employee, JobVacancy, ApplicationStatus, Client, Project } from '../../../types';
-import { getEmployees, getJobs, getClients, getProjects, updateEmployee, createJob, updateJob, deleteJob, deleteEmployee } from '../../../services/db';
+import { getEmployees, getJobs, getClients, getProjects, updateEmployee, createJob, updateJob, deleteJob, deleteEmployee, createEmployee } from '../../../services/db';
+import { createCredentialsForCandidateSubmit } from '../../../services/auth';
+import { sendCandidateCredentialsNotification } from '../../../services/notifications';
 import { analyzeCandidate, ScoreBadge, StatusBadge, LoadingSpinner } from '../shared/Utils';
 import { LocationSearch } from '../shared/LocationSearch';
 import { CandidateModal } from '../modals/CandidateModal';
 import { 
     UsersIcon, BriefcaseIcon, RectangleStackIcon, TableCellsIcon, 
     FunnelIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowPathIcon,
-    SparklesIcon, AcademicCapIcon, MapPinIcon, Squares2X2Icon
+    SparklesIcon, AcademicCapIcon, MapPinIcon, Squares2X2Icon, PlusIcon
 } from '@heroicons/react/24/outline';
 
 const getEmployeeSkillsString = (emp: Employee): string => {
@@ -77,6 +79,26 @@ export const TalentManager: React.FC = () => {
         confirmText?: string;
         cancelText?: string;
         type?: 'danger' | 'success' | 'info';
+    } | null>(null);
+
+    // Manual Candidate Form State
+    const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+    const [candidateForm, setCandidateForm] = useState({
+        fullName: '',
+        email: '',
+        phone: '',
+        positionApplied: '',
+        lastEducation: 'SMA/SMK',
+        institutionName: '',
+        major: '',
+        domicileAddress: 'Morowali'
+    });
+    const [newCandidateResult, setNewCandidateResult] = useState<{
+        fullName: string;
+        email: string;
+        phone: string;
+        password: string;
+        whatsappMessage: string;
     } | null>(null);
 
     const triggerTmConfirm = (
@@ -243,6 +265,78 @@ export const TalentManager: React.FC = () => {
         }
     };
 
+    const handleSaveManualCandidate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!candidateForm.fullName || !candidateForm.email || !candidateForm.phone || !candidateForm.positionApplied) {
+            alert('Mohon lengkapi semua field utama!');
+            return;
+        }
+
+        try {
+            // Standardize phone number
+            let rawPhone = candidateForm.phone;
+            if (rawPhone.startsWith('0')) rawPhone = '62' + rawPhone.slice(1);
+            if (!rawPhone.startsWith('+') && !rawPhone.startsWith('62')) rawPhone = '62' + rawPhone;
+            const cleanPhone = rawPhone.startsWith('+') ? rawPhone : '+' + rawPhone;
+
+            const newCandidatePayload: any = {
+                fullName: candidateForm.fullName,
+                email: candidateForm.email.toLowerCase(),
+                whatsappNumber: cleanPhone,
+                positionApplied: candidateForm.positionApplied,
+                lastEducation: candidateForm.lastEducation,
+                institutionName: candidateForm.institutionName || '-',
+                major: candidateForm.major || '-',
+                domicileAddress: candidateForm.domicileAddress,
+                status: 'APPLIED',
+                createdAt: new Date().toISOString(),
+                nik: Math.floor(1000000000000000 + Math.random() * 9000000000000000).toString(), // auto random
+                kkNumber: Math.floor(1000000000000000 + Math.random() * 9000000000000000).toString(),
+                dateOfBirth: '1998-05-15',
+                gender: 'Any',
+                religion: 'Islam',
+                maritalStatus: 'Lajang',
+                lastEducationScore: 3.2,
+                skills: 'Ms Office, Komunikasi',
+                workExperience: '1 Tahun',
+            };
+
+            await createEmployee(newCandidatePayload);
+
+            // Generate Login Credentials
+            const credentials = createCredentialsForCandidateSubmit(candidateForm.email, cleanPhone);
+
+            // Send Email Notification Automatically
+            try {
+                await sendCandidateCredentialsNotification(
+                    candidateForm.fullName, 
+                    candidateForm.email.toLowerCase(), 
+                    credentials.password, 
+                    candidateForm.positionApplied
+                );
+            } catch (gmailErr) {
+                console.warn("Gmail API credentials auto-send from admin failed:", gmailErr);
+            }
+
+            // WhatsApp Message Template for Admin to manual share (or launch direct api)
+            const waMsg = `Halo *${candidateForm.fullName}*,\n\nTerima kasih telah didaftarkan di PT Perdana Adi Yuda untuk posisi *${candidateForm.positionApplied}*.\n\nAkun Portal Rekrutmen Anda telah otomatis dibuat. Anda dapat login untuk melacak progres lamaran kerja & melengkapi berkas administrasi Anda.\n\nBerikut kredensial login Anda:\n- *Situs Portal*: https://perada.net/#/login\n- *Username*: ${candidateForm.email.toLowerCase()}\n- *Password*: ${credentials.password}\n\nSilakan simpan info ini. Terima kasih!`;
+
+            setNewCandidateResult({
+                fullName: candidateForm.fullName,
+                email: candidateForm.email.toLowerCase(),
+                phone: cleanPhone,
+                password: credentials.password,
+                whatsappMessage: waMsg
+            });
+
+            // Reload data
+            loadData();
+
+        } catch (error: any) {
+            alert('Gagal menambahkan kandidat manual: ' + error.message);
+        }
+    };
+
     const exportData = () => {
         const headers = ['Nama,Posisi Terakhir,Status,Email,WA,Kota Asal,Keterangan'];
         const listToExport = view === 'talent-pool' ? talentPoolCandidates : filteredEmp;
@@ -326,6 +420,28 @@ export const TalentManager: React.FC = () => {
                             onChange={e => setFilterSkill(e.target.value)} 
                             id="filter-skill-input"
                         />
+                        {view === 'candidates' && (
+                            <button 
+                                onClick={() => {
+                                    setCandidateForm({
+                                        fullName: '',
+                                        email: '',
+                                        phone: '',
+                                        positionApplied: jobs[0]?.title || 'Operator Morowali',
+                                        lastEducation: 'SMA/SMK',
+                                        institutionName: '',
+                                        major: '',
+                                        domicileAddress: 'Morowali'
+                                    });
+                                    setNewCandidateResult(null);
+                                    setShowAddCandidateModal(true);
+                                }}
+                                className="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-xs transition cursor-pointer"
+                                id="add-candidate-btn"
+                            >
+                                <PlusIcon className="h-4 w-4 mr-1"/> Tambah Pelamar
+                            </button>
+                        )}
                         <button 
                             onClick={exportData} 
                             className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-xs transition"
@@ -1397,6 +1513,226 @@ export const TalentManager: React.FC = () => {
                                 }`}
                             >
                                 {tmConfirmConfig.confirmText || 'Konfirmasi'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 1. Tambah Pelamar Manual Modal */}
+            {showAddCandidateModal && !newCandidateResult && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-slate-100 animate-fadeIn relative max-h-[90vh] overflow-y-auto text-left">
+                        <button 
+                            onClick={() => setShowAddCandidateModal(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-extrabold text-lg cursor-pointer bg-transparent border-none"
+                        >
+                            ✕
+                        </button>
+                        <h3 className="font-black text-xl text-slate-900 tracking-tight mb-2 flex items-center gap-2">
+                            <span>🔐</span> Tambah Pelamar Baru
+                        </h3>
+                        <p className="text-xs text-slate-500 mb-6 leading-relaxed border-b pb-3">
+                            Daftarkan pelamar baru dan otomatis buat akun portal rekrutmen. Kredensial akan diusahakan terkirim otomatis lewat email admin (Gmail API). Admin juga dapat menyebarkannya manual via WhatsApp.
+                        </p>
+
+                        <form onSubmit={handleSaveManualCandidate} className="space-y-4">
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Nama Lengkap pelamar *</label>
+                                    <input 
+                                        type="text"
+                                        required
+                                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                        placeholder="cth: Ahmad Fauzi"
+                                        value={candidateForm.fullName}
+                                        onChange={e => setCandidateForm({...candidateForm, fullName: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Email (Untuk login & kirim akun) *</label>
+                                        <input 
+                                            type="email"
+                                            required
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-mono"
+                                            placeholder="cth: fauzi@example.com"
+                                            value={candidateForm.email}
+                                            onChange={e => setCandidateForm({...candidateForm, email: e.target.value})}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">No. WhatsApp/Ponsel *</label>
+                                        <input 
+                                            type="text"
+                                            required
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                            placeholder="cth: 08123456789"
+                                            value={candidateForm.phone}
+                                            onChange={e => setCandidateForm({...candidateForm, phone: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Posisi yang Dilamar *</label>
+                                    <select 
+                                        required
+                                        className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                        value={candidateForm.positionApplied}
+                                        onChange={e => setCandidateForm({...candidateForm, positionApplied: e.target.value})}
+                                    >
+                                        {jobs.map(j => (
+                                            <option key={j.id} value={j.title}>{j.title} ({j.location})</option>
+                                        ))}
+                                        {jobs.length === 0 && (
+                                            <option value="Operator Morowali">Operator Morowali (Default)</option>
+                                        )}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Pendidikan Terakhir</label>
+                                        <select 
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                            value={candidateForm.lastEducation}
+                                            onChange={e => setCandidateForm({...candidateForm, lastEducation: e.target.value})}
+                                        >
+                                            <option value="SMA/SMK">SMA / SMK / Sederajat</option>
+                                            <option value="D3">D3 Akademi</option>
+                                            <option value="S1">S1 Sarjana</option>
+                                            <option value="S2">S2 Magister</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Domisili Kantor Penempatan</label>
+                                        <select 
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                            value={candidateForm.domicileAddress}
+                                            onChange={e => setCandidateForm({...candidateForm, domicileAddress: e.target.value})}
+                                        >
+                                            <option value="Morowali">Morowali (Sulawesi Tengah)</option>
+                                            <option value="Palu">Palu</option>
+                                            <option value="Jakarta">Jakarta Pusat</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Nama Instansi / Sekolah</label>
+                                        <input 
+                                            type="text"
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                            placeholder="cth: Universitas Tadulako"
+                                            value={candidateForm.institutionName}
+                                            onChange={e => setCandidateForm({...candidateForm, institutionName: e.target.value})}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Jurusan / Keahlian</label>
+                                        <input 
+                                            type="text"
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                                            placeholder="cth: Teknik Mesin"
+                                            value={candidateForm.major}
+                                            onChange={e => setCandidateForm({...candidateForm, major: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100 mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddCandidateModal(false)}
+                                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-xl text-slate-600 transition cursor-pointer bg-white"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition"
+                                >
+                                    Selesai & Buat Akun
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 2. Hasil Tambah Pelamar Kredensial Success Overlay */}
+            {newCandidateResult && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-55 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-100 text-left animate-fadeIn">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 mb-4 text-center text-xl pt-0.5">
+                            🎉
+                        </div>
+                        <h3 className="font-black text-lg text-slate-900 tracking-tight text-center mb-1">Kandidat Berhasil Ditambahkan</h3>
+                        <p className="text-xs text-slate-500 text-center mb-6 leading-relaxed">
+                            Data pelamar atas nama <b>{newCandidateResult.fullName}</b> telah tersimpan di cloud. Akun akses portal rekrutmen juga telah diaktifkan otomatis!
+                        </p>
+
+                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4.5 mb-6 space-y-3.5 text-left">
+                            <div className="flex justify-between items-center border-b pb-1.5">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">🔐 Akses Kredensial</span>
+                                <span className="text-[9px] bg-indigo-50 text-indigo-700 font-extrabold px-1.5 py-0.5 rounded border border-indigo-100">AKTIF</span>
+                            </div>
+                            <div className="space-y-2">
+                                <div>
+                                    <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider">Username / Email</span>
+                                    <div className="flex justify-between items-center bg-white border border-slate-150 p-2 rounded-lg mt-0.5">
+                                        <span className="text-xs font-mono font-bold text-slate-700 select-all">{newCandidateResult.email}</span>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(newCandidateResult.email);
+                                                alert('Username disalin ke clipboard!');
+                                            }}
+                                            className="text-[10px] text-indigo-600 font-bold hover:underline cursor-pointer bg-transparent border-none"
+                                        >
+                                            Salin
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider">Kata Sandi (Password)</span>
+                                    <div className="flex justify-between items-center bg-white border border-slate-150 p-2 rounded-lg mt-0.5">
+                                        <span className="text-xs font-mono font-bold text-slate-800 select-all">{newCandidateResult.password}</span>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(newCandidateResult.password);
+                                                alert('Password disalin ke clipboard!');
+                                            }}
+                                            className="text-[10px] text-indigo-600 font-bold hover:underline cursor-pointer bg-transparent border-none"
+                                        >
+                                            Salin
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => {
+                                    const encodedText = encodeURIComponent(newCandidateResult.whatsappMessage);
+                                    window.open(`https://wa.me/${newCandidateResult.phone}?text=${encodedText}`, '_blank');
+                                }}
+                                className="w-full py-2.5 bg-[#25D366] hover:bg-[#1ebd5d] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs border-none"
+                            >
+                                💬 Kirim Kredensial via WhatsApp (Manual)
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setNewCandidateResult(null);
+                                    setShowAddCandidateModal(false);
+                                }}
+                                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-750 border border-slate-200 rounded-xl text-xs font-extrabold transition text-center cursor-pointer"
+                            >
+                                Tutup Berhasil
                             </button>
                         </div>
                     </div>

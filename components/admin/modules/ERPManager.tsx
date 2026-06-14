@@ -1034,9 +1034,9 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({ activeEmployee
     if (!emp) return;
 
     // Coordinate simulation based on selected physical landmark
-    let lat = -0.9006;
-    let lon = 119.8307; // Kantor Perwakilan Palu
-    let locationName = "Kantor Perwakilan Palu";
+    let lat = -2.8227;
+    let lon = 122.1462; // Kantor Perwakilan Morowali
+    let locationName = "Kantor Perwakilan Morowali";
 
     if (coordsOption === 'smelterMorowali') {
       lat = -2.2136; lon = 121.9141;
@@ -1046,7 +1046,7 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({ activeEmployee
       locationName = "PLTA Poso Hydro-Energy Sector";
     } else if (coordsOption === 'sigiCore') {
       lat = -1.3850; lon = 119.9328;
-      locationName = "Pos Security Kantor Sigi Biromaru";
+      locationName = "Kantor Perwakilan Morowali Utama";
     }
 
     try {
@@ -1132,8 +1132,8 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({ activeEmployee
                       className="text-blue-600"
                     />
                     <div>
-                      <p className="font-bold text-gray-800 text-[11px]">Kantor Perwakilan Palu</p>
-                      <p className="text-[10px] text-gray-400">HQ Representative (GPS: -0.9006, 119.8307)</p>
+                      <p className="font-bold text-gray-800 text-[11px]">Kantor Perwakilan Morowali (Bahodopi)</p>
+                      <p className="text-[10px] text-gray-400">HQ Representative (GPS: -2.8227, 122.1462)</p>
                     </div>
                   </label>
                   <label className="flex items-center gap-2 block bg-white border p-2 rounded-lg cursor-pointer hover:bg-gray-50/55">

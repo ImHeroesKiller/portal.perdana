@@ -2,8 +2,9 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createEmployee, uploadFileMock, getJobs } from '../services/db';
-import { getCurrentUser, updateUserProfile } from '../services/auth';
+import { getCurrentUser, updateUserProfile, createCredentialsForCandidateSubmit } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
+import { sendCandidateCredentialsNotification } from '../services/notifications';
 import { NewEmployee, JobVacancy } from '../types';
 import {
   UserIcon, PhoneIcon, AcademicCapIcon, BriefcaseIcon, 
@@ -78,6 +79,7 @@ export const RecruitmentForm: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [submittedName, setSubmittedName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string; isNew: boolean } | null>(null);
 
   const currentUser = getCurrentUser();
 
@@ -250,6 +252,18 @@ export const RecruitmentForm: React.FC = () => {
       };
 
       await createEmployee(payload);
+      
+      // Automatically generate access credentials for the new applicant
+      const credentials = createCredentialsForCandidateSubmit(payload.email, payload.whatsappNumber);
+      setCreatedCredentials(credentials);
+
+      // Attempt to send the credentials via Gmail API automatically
+      try {
+        await sendCandidateCredentialsNotification(payload.fullName, payload.email, credentials.password, payload.positionApplied);
+      } catch (gmailErr) {
+        console.warn("Gmail API credentials auto-send failed (Expected if Admin is not synced in this browser):", gmailErr);
+      }
+
       if (currentUser) updateUserProfile(payload);
       if (payload.telegramId) await sendTelegramMessage(payload.telegramId, `*Lamaran Terkirim*\nPosisi: ${payload.positionApplied}`);
 
@@ -264,11 +278,81 @@ export const RecruitmentForm: React.FC = () => {
 
   if (success) {
     return (
-      <div className="max-w-xl mx-auto mt-10 p-8 bg-white rounded-lg shadow-lg text-center animate-fade-in">
-        <CheckCircleIcon className="h-16 w-16 text-green-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Lamaran Terkirim!</h2>
-        <p className="text-gray-600 mb-6">Terima kasih {submittedName}, data Anda berhasil kami terima.</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Kirim Lagi</button>
+      <div className="max-w-xl mx-auto mt-15 p-8 sm:p-10 bg-white rounded-3xl shadow-xl border border-slate-100 text-center animate-fade-in font-sans">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 mb-4">
+          <CheckCircleIcon className="h-10 w-10 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Lamaran Terkirim!</h2>
+        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+          Terima kasih <b>{submittedName}</b>, berkas administrasi dan data lamaran kerja Anda berhasil kami arsipkan di database internal perusahaan.
+        </p>
+
+        {/* Credentials Info card */}
+        {createdCredentials && (
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 mb-8 text-left space-y-3.5">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">🔐 Akun Portal Anda Telah Dibuat</span>
+              <span className="text-[9px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded border border-indigo-150 uppercase tracking-widest animate-pulse">AKTIF</span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-normal font-medium">
+              Sistem telah menerima formulir baru Anda dan otomatis membuat akun agar Anda dapat memantau status lamaran secara langsung. Kredensial login Anda juga diusahakan terkirim otomatis via email (Gmail API):
+            </p>
+            <div className="space-y-2 font-sans">
+              <div>
+                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Username (Email Anda)</span>
+                <div className="flex items-center justify-between bg-white border border-slate-150 p-2.5 rounded-xl mt-1">
+                  <span className="text-xs font-mono font-bold text-slate-705 truncate select-all">{createdCredentials.email}</span>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdCredentials.email);
+                      alert('Username disalin ke clipboard!');
+                    }}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer bg-transparent border-none"
+                  >
+                    Salin
+                  </button>
+                </div>
+              </div>
+              <div>
+                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Kata Sandi (Password Otomatis)</span>
+                <div className="flex items-center justify-between bg-white border border-slate-150 p-2.5 rounded-xl mt-1">
+                  <span className="text-xs font-mono font-bold text-slate-800 select-all">{createdCredentials.password}</span>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdCredentials.password);
+                      alert('Kata sandi disalin ke clipboard!');
+                    }}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer bg-transparent border-none"
+                  >
+                    Salin
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-[9px] text-amber-600 font-bold leading-normal italic pl-1 pt-1">
+              Catatan: Pastikan Anda menyalin kredensial ini sekarang untuk masuk ke Portal. Admin juga akan mengirimkannya secara manual via WhatsApp sebagai alternatif.
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+          <button 
+            onClick={() => {
+              navigate(`/login?email=${encodeURIComponent(createdCredentials?.email || '')}`);
+            }} 
+            className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl text-xs font-black shadow-xs hover:bg-blue-700 transition cursor-pointer"
+          >
+            🔑 Masuk Melacak Progres
+          </button>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="w-full sm:w-auto px-6 py-3 bg-slate-100 text-slate-750 hover:bg-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
+          >
+            Kirim Ulang / Baru
+          </button>
+        </div>
       </div>
     );
   }

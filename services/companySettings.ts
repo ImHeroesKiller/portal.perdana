@@ -41,13 +41,29 @@ export const getCompanySettings = (): CompanySettings => {
       const parsed = JSON.parse(data);
       // Ensure we have correct keys and array structure
       if (parsed && typeof parsed === 'object') {
+        let branches = Array.isArray(parsed.branches) ? parsed.branches : DEFAULT_COMPANY_SETTINGS.branches;
+        
+        // Dynamic migration: Replace any Palu branch with Morowali as requested
+        branches = branches.map((b: any) => {
+          if (b.name.toLowerCase().includes('palu') || b.address.toLowerCase().includes('palu')) {
+            return {
+              id: "branch-morowali",
+              name: "Kantor Cabang / Perwakilan Morowali",
+              address: "Jl. Trans Sulawesi, Desa Labota, Kec. Bahodopi\nKabupaten Morowali, Sulawesi Tengah - 94974",
+              lat: -2.8227,
+              lng: 122.1462
+            };
+          }
+          return b;
+        });
+
         return {
           companyName: parsed.companyName || DEFAULT_COMPANY_SETTINGS.companyName,
           email: parsed.email || DEFAULT_COMPANY_SETTINGS.email,
           phone: parsed.phone || DEFAULT_COMPANY_SETTINGS.phone,
           website: parsed.website || DEFAULT_COMPANY_SETTINGS.website,
           headOfficeAddress: parsed.headOfficeAddress || DEFAULT_COMPANY_SETTINGS.headOfficeAddress,
-          branches: Array.isArray(parsed.branches) ? parsed.branches : DEFAULT_COMPANY_SETTINGS.branches,
+          branches: branches,
         };
       }
     }

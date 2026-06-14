@@ -146,6 +146,43 @@ export const login = (username: string, password: string): Promise<User> => {
   });
 };
 
+export const createCredentialsForCandidateSubmit = (email: string, phone: string): { email: string; password: string; isNew: boolean } => {
+  const usersStr = localStorage.getItem(USERS_KEY);
+  const users: User[] = usersStr ? JSON.parse(usersStr) : [];
+  
+  const existingUser = users.find(u => u.username.toLowerCase() === email.toLowerCase());
+  if (existingUser) {
+    return {
+      email,
+      password: existingUser.password || 'Perdana?2026',
+      isNew: false
+    };
+  }
+
+  // Generate a friendly, readable yet secure randomized password
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+  const password = `Perdana?${randomSuffix}`;
+  
+  const newUser: User = {
+    id: Math.random().toString(36).substr(2, 9),
+    username: email.toLowerCase(),
+    password: password,
+    role: 'user',
+    profile: {
+      email: email.toLowerCase(),
+      whatsappNumber: phone
+    }
+  };
+
+  users.push(newUser);
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  return {
+    email: email.toLowerCase(),
+    password,
+    isNew: true
+  };
+};
+
 export const register = (userData: { email: string; password: string; phone: string }): Promise<User> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {

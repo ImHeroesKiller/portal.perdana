@@ -228,3 +228,28 @@ export const sendHiredNotification = async (emp: Employee) => {
     await sendEmail(emp.email, 'Welcome Aboard', msg);
     console.log(`[EMAIL SENT] Welcome Email sent to ${emp.email}`);
 };
+
+export const sendCandidateCredentialsNotification = async (fullName: string, email: string, valPass: string, position: string) => {
+    const subject = `Kredensial Akun Portal Rekrutmen PT Perdana Adi Yuda`;
+    const body = `Halo ${fullName},
+
+Terima kasih telah mengajukan lamaran kerja di PT Perdana Adi Yuda untuk posisi ${position}.
+
+Akun Portal Rekrutmen Anda telah otomatis dibuat oleh sistem. Anda wajib login menggunakan akun ini untuk memantau progres lamaran kerja, melengkapi berkas administrasi, dan menaksir tawaran kerja/kontrak di kemudian hari.
+
+Berikut adalah kredensial akses masuk Anda:
+- Link Login: https://perada.net/#/login
+- Alamat Email (Username): ${email}
+- Kata Sandi (Password): ${valPass}
+
+Harap simpan informasi login ini dengan baik dan rahasia. Ketika nanti telah resmi bergabung menjadi karyawan, portal ini juga terbuka penuh untuk akses Slip Gaji (Payroll), Absensi Geo-Location, dan Manajemen Project Anda.
+
+Salam Sukses,
+Recruitment & HRD Team
+PT Perdana Adi Yuda
+`;
+
+    await sendEmail(email, subject, body);
+    console.log(`[EMAIL SENT to ${email}] Credentials sent successfully.`);
+};
+

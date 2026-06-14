@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { register, loginWithGoogleMock } from '../services/auth';
 import { Input } from './ui/Input';
 import { ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 export const Register: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
-    email: '',
-    phone: '',
+    email: searchParams.get('email') || '',
+    phone: searchParams.get('phone') || '',
     password: '',
     confirmPassword: ''
   });

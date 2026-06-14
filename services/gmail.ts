@@ -1,17 +1,28 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 
 const GMAIL_TOKEN_KEY = 'pt_perdana_gmail_token';
 let cachedAccessToken: string | null = typeof window !== 'undefined' ? localStorage.getItem(GMAIL_TOKEN_KEY) : null;
 const SENDER_EMAIL = 'ary.wibowo@perada.net';
 
-export const setGmailAccessToken = (token: string | null) => {
+export const setGmailAccessToken = async (token: string | null) => {
     cachedAccessToken = token;
     if (typeof window !== 'undefined') {
         if (token) {
             localStorage.setItem(GMAIL_TOKEN_KEY, token);
+            try {
+                await setDoc(doc(db, 'system_settings', 'gmail_api'), { accessToken: token, updatedAt: new Date().toISOString() });
+            } catch (e) {
+                console.error('Failed to sync Gmail token to Firestore:', e);
+            }
         } else {
             localStorage.removeItem(GMAIL_TOKEN_KEY);
+            try {
+                await setDoc(doc(db, 'system_settings', 'gmail_api'), { accessToken: null, updatedAt: new Date().toISOString() });
+            } catch (e) {
+                console.error('Failed to clear Gmail token in Firestore:', e);
+            }
         }
     }
 };
@@ -31,7 +42,7 @@ export const authorizeGmailAdmin = async (): Promise<string> => {
         const credential = GoogleAuthProvider.credentialFromResult(result);
         const token = credential?.accessToken || null;
         if (token) {
-            setGmailAccessToken(token);
+            await setGmailAccessToken(token);
             return token;
         } else {
             throw new Error('Gagal memperoleh Gmail Access Token dari login Google.');
@@ -43,6 +54,17 @@ export const authorizeGmailAdmin = async (): Promise<string> => {
 };
 
 export const sendGmail = async (to: string, subject: string, body: string) => {
+    if (!cachedAccessToken) {
+        try {
+            const snap = await getDoc(doc(db, 'system_settings', 'gmail_api'));
+            if (snap.exists() && snap.data().accessToken) {
+                cachedAccessToken = snap.data().accessToken;
+            }
+        } catch (e) {
+            console.error('Failed to retrieve fallback Gmail token from Firestore:', e);
+        }
+    }
+
     if (!cachedAccessToken) {
         throw new Error('Gmail access token not available. Please authorize Gmail in the admin settings/header.');
     }
