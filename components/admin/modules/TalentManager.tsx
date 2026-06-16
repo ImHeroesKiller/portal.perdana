@@ -357,7 +357,7 @@ export const TalentManager: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header Navigation Tab Menu */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100 gap-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                 <div className="grid grid-cols-5 md:flex w-full md:w-auto bg-slate-100 p-1.5 rounded-xl gap-1" id="talent-submenu">
                     {navItems.map((item) => {
                         const Icon = item.icon;
@@ -384,80 +384,80 @@ export const TalentManager: React.FC = () => {
                         );
                     })}
                 </div>
+            </div>
 
-                {/* Live Responsive Filters */}
-                {view !== 'dashboard' && view !== 'pipeline' && view !== 'jobs' && (
-                    <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
-                        <div className="relative">
-                            <MagnifyingGlassIcon className="h-4 w-4 text-slate-400 absolute left-3 top-2.5" />
-                            <input 
-                                className="border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-48 bg-slate-50 focus:bg-white" 
-                                placeholder="Cari nama, keahlian..." 
-                                value={search} 
-                                onChange={e => setSearch(e.target.value)} 
-                                id="talent-search-input"
-                            />
-                        </div>
-                        {view === 'candidates' && (
-                            <select 
-                                className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                                value={filterStatus} 
-                                onChange={e => setFilterStatus(e.target.value)}
-                                id="filter-status-select"
-                            >
-                                <option value="All">Semua Tahapan</option>
-                                <option value="HIRED_OR_CONTRACT">Hired / Kontrak</option>
-                                {['APPLIED','INTERVIEW','OFFERING','CONTRACT','HIRED','REJECTED'].map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        )}
+            {/* Live Responsive Filters */}
+            {view !== 'dashboard' && view !== 'pipeline' && view !== 'jobs' && (
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-wrap gap-2 w-full items-center">
+                    <div className="relative">
+                        <MagnifyingGlassIcon className="h-4 w-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input 
+                            className="border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-48 bg-slate-50 focus:bg-white" 
+                            placeholder="Cari nama, keahlian..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                            id="talent-search-input"
+                        />
+                    </div>
+                    {view === 'candidates' && (
                         <select 
                             className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                            value={filterCity} 
-                            onChange={e => setFilterCity(e.target.value)}
-                            id="filter-city-select"
+                            value={filterStatus} 
+                            onChange={e => setFilterStatus(e.target.value)}
+                            id="filter-status-select"
                         >
-                            <option value="All">Semua Domisili</option>
-                            {activeCities.map(c => <option key={c} value={c}>{c}</option>)}
+                            <option value="All">Semua Tahapan</option>
+                            <option value="HIRED_OR_CONTRACT">Hired / Kontrak</option>
+                            {['APPLIED','INTERVIEW','OFFERING','CONTRACT','HIRED','REJECTED'].map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
-                        <input 
-                            className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-28 bg-slate-50 focus:bg-white" 
-                            placeholder="Keahlian spesifik" 
-                            value={filterSkill} 
-                            onChange={e => setFilterSkill(e.target.value)} 
-                            id="filter-skill-input"
-                        />
-                        {view === 'candidates' && (
-                            <button 
-                                onClick={() => {
-                                    setCandidateForm({
-                                        fullName: '',
-                                        email: '',
-                                        phone: '',
-                                        positionApplied: jobs[0]?.title || 'Operator Morowali',
-                                        lastEducation: 'SMA/SMK',
-                                        institutionName: '',
-                                        major: '',
-                                        domicileAddress: 'Morowali'
-                                    });
-                                    setNewCandidateResult(null);
-                                    setShowAddCandidateModal(true);
-                                }}
-                                className="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-xs transition cursor-pointer"
-                                id="add-candidate-btn"
-                            >
-                                <PlusIcon className="h-4 w-4 mr-1"/> Tambah Pelamar
-                            </button>
-                        )}
+                    )}
+                    <select 
+                        className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                        value={filterCity} 
+                        onChange={e => setFilterCity(e.target.value)}
+                        id="filter-city-select"
+                    >
+                        <option value="All">Semua Domisili</option>
+                        {activeCities.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <input 
+                        className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-28 bg-slate-50 focus:bg-white" 
+                        placeholder="Keahlian spesifik" 
+                        value={filterSkill} 
+                        onChange={e => setFilterSkill(e.target.value)} 
+                        id="filter-skill-input"
+                    />
+                    {view === 'candidates' && (
                         <button 
-                            onClick={exportData} 
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-xs transition"
-                            id="export-csv-btn"
+                            onClick={() => {
+                                setCandidateForm({
+                                    fullName: '',
+                                    email: '',
+                                    phone: '',
+                                    positionApplied: jobs[0]?.title || 'Operator Morowali',
+                                    lastEducation: 'SMA/SMK',
+                                    institutionName: '',
+                                    major: '',
+                                    domicileAddress: 'Morowali'
+                                });
+                                setNewCandidateResult(null);
+                                setShowAddCandidateModal(true);
+                            }}
+                            className="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-xs transition cursor-pointer"
+                            id="add-candidate-btn"
                         >
-                            <ArrowDownTrayIcon className="h-4 w-4 mr-1"/> Ekspor CSV
+                            <PlusIcon className="h-4 w-4 mr-1"/> Tambah Pelamar
                         </button>
-                    </div>
-                )}
-            </div>
+                    )}
+                    <button 
+                        onClick={exportData} 
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-xs transition"
+                        id="export-csv-btn"
+                    >
+                        <ArrowDownTrayIcon className="h-4 w-4 mr-1"/> Ekspor CSV
+                    </button>
+                </div>
+            )}
 
             {loading && <div className="py-20 flex justify-center"><LoadingSpinner /></div>}
 
