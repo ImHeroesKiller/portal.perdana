@@ -49,6 +49,20 @@ export const AdminDashboard: React.FC = () => {
   const [moduleSearch, setModuleSearch] = useState('');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Track viewport matches for md breakpoint (768px in Tailwind)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mediaQuery.matches);
+    
+    const handler = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+    
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   // Authenticate and load permissions
   useEffect(() => {
@@ -146,7 +160,7 @@ export const AdminDashboard: React.FC = () => {
       {/* SIDEBAR NAVIGATION */}
       <motion.aside 
         initial={false}
-        animate={{ x: isSidebarOpen ? 0 : -256 }}
+        animate={isMobile ? { x: isSidebarOpen ? 0 : -256 } : { x: 0 }}
         className="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 md:relative md:translate-x-0"
       >
         <div className="p-5 border-b border-slate-800 flex justify-between items-center">
