@@ -167,12 +167,17 @@ export const TalentManager: React.FC = () => {
                 e.fullName.toLowerCase().includes(query) || 
                 getEmployeeSkillsString(e).toLowerCase().includes(query) || 
                 e.positionApplied.toLowerCase().includes(query) ||
-                e.nik.includes(query)
+                e.nik.includes(query) ||
+                (e.hrNotes && e.hrNotes.toLowerCase().includes(query))
             );
         }
         
         if (filterStatus !== 'All') {
-            res = res.filter(e => e.status === filterStatus);
+            if (filterStatus === 'HIRED_OR_CONTRACT') {
+                res = res.filter(e => ['HIRED', 'CONTRACT'].includes(e.status));
+            } else {
+                res = res.filter(e => e.status === filterStatus);
+            }
         }
 
         if (filterCity !== 'All') {
@@ -401,6 +406,7 @@ export const TalentManager: React.FC = () => {
                                 id="filter-status-select"
                             >
                                 <option value="All">Semua Tahapan</option>
+                                <option value="HIRED_OR_CONTRACT">Hired / Kontrak</option>
                                 {['APPLIED','INTERVIEW','OFFERING','CONTRACT','HIRED','REJECTED'].map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         )}
@@ -459,35 +465,79 @@ export const TalentManager: React.FC = () => {
             {!loading && view === 'dashboard' && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        <StatCard title="Total Pelamar" value={stats.total} percentage="100%" color="slate" desc="Terdaftar di Cloud" />
-                        <StatCard title="Interview" value={stats.interview} percentage={`${((stats.interview/stats.total)*100 || 0).toFixed(0)}%`} color="indigo" desc="Tahap Wawancara" />
-                        <StatCard title="Offering" value={stats.offering} percentage={`${((stats.offering/stats.total)*100 || 0).toFixed(0)}%`} color="amber" desc="Menunggu TTD" />
-                        <StatCard title="Hired/Kontrak" value={stats.hired} percentage={`${((stats.hired/stats.total)*100 || 0).toFixed(0)}%`} color="emerald" desc="Karyawan Aktif" />
-                        <StatCard title="Talent Pool" value={stats.talentPool} percentage={`${((stats.talentPool/stats.total)*100 || 0).toFixed(0)}%`} color="violet" desc="Database Recycle" highlight />
-                        <StatCard title="Tersalurkan" value={stats.recycledCount} percentage="Bantu Kerja" color="rose" desc="Daur Ulang Karir" highlight />
-                    </div>
-
-                    {/* Interactive Pool Information Card */}
-                    <div className="bg-slate-900 text-slate-100 rounded-xl p-6 relative overflow-hidden shadow-md flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
-                        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-                            <SparklesIcon className="h-64 w-64 text-indigo-400" />
-                        </div>
-                        <div className="space-y-2 z-10">
-                            <div className="bg-indigo-500/20 text-indigo-300 font-bold text-xs uppercase px-2.5 py-1 rounded-full display inline-block border border-indigo-500/30">
-                                Fitur Pemulihan & Daur Ulang Karir
-                            </div>
-                            <h3 className="text-xl font-bold tracking-tight">Kandidat Tereliminasi Dapat Disalurkan ke Kebutuhan Lain</h3>
-                            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-                                Sesuai anjuran audit operasional, kandidat yang ditolak atau tidak masuk syarat di satu proyek kini otomatis masuk ke **Pool Talent**. Administrasi dapat mengalihkan mereka secara otomatis ke lowongan lain tanpa meminta mereka mendaftar ulang, memaksimalkan efisiensi rekrutmen.
-                            </p>
-                        </div>
-                        <button 
-                            onClick={() => setView('talent-pool')} 
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-5 py-3 rounded-xl shadow-lg transition duration-200 z-10 flex items-center gap-1.5 self-start md:self-center"
-                            id="dashboard-go-pool"
-                        >
-                            <SparklesIcon className="h-4 w-4"/> Buka Database Pool Talent
-                        </button>
+                        <StatCard 
+                            title="Total Pelamar" 
+                            value={stats.total} 
+                            percentage="100%" 
+                            color="slate" 
+                            desc="Terdaftar di Cloud" 
+                            onClick={() => {
+                                setView('candidates');
+                                setFilterStatus('All');
+                                setSearch('');
+                            }}
+                        />
+                        <StatCard 
+                            title="Interview" 
+                            value={stats.interview} 
+                            percentage={`${((stats.interview/stats.total)*100 || 0).toFixed(0)}%`} 
+                            color="indigo" 
+                            desc="Tahap Wawancara" 
+                            onClick={() => {
+                                setView('candidates');
+                                setFilterStatus('INTERVIEW');
+                                setSearch('');
+                            }}
+                        />
+                        <StatCard 
+                            title="Offering" 
+                            value={stats.offering} 
+                            percentage={`${((stats.offering/stats.total)*100 || 0).toFixed(0)}%`} 
+                            color="amber" 
+                            desc="Menunggu TTD" 
+                            onClick={() => {
+                                setView('candidates');
+                                setFilterStatus('OFFERING');
+                                setSearch('');
+                            }}
+                        />
+                        <StatCard 
+                            title="Hired/Kontrak" 
+                            value={stats.hired} 
+                            percentage={`${((stats.hired/stats.total)*100 || 0).toFixed(0)}%`} 
+                            color="emerald" 
+                            desc="Karyawan Aktif" 
+                            onClick={() => {
+                                setView('candidates');
+                                setFilterStatus('HIRED_OR_CONTRACT');
+                                setSearch('');
+                            }}
+                        />
+                        <StatCard 
+                            title="Talent Pool" 
+                            value={stats.talentPool} 
+                            percentage={`${((stats.talentPool/stats.total)*100 || 0).toFixed(0)}%`} 
+                            color="violet" 
+                            desc="Database Recycle" 
+                            highlight 
+                            onClick={() => {
+                                setView('talent-pool');
+                                setSearch('');
+                            }}
+                        />
+                        <StatCard 
+                            title="Tersalurkan" 
+                            value={stats.recycledCount} 
+                            percentage="Bantu Kerja" 
+                            color="rose" 
+                            desc="Daur Ulang Karir" 
+                            highlight 
+                            onClick={() => {
+                                setView('candidates');
+                                setFilterStatus('All');
+                                setSearch('[Recycled]');
+                            }}
+                        />
                     </div>
 
                     {/* Integrated Job Vacancy Progress Dashboard */}
@@ -1743,18 +1793,29 @@ export const TalentManager: React.FC = () => {
 };
 
 // Polished reusable StatCard with sleek indicators
-const StatCard = ({ title, value, percentage, color, desc, highlight }: any) => {
+const StatCard = ({ title, value, percentage, color, desc, highlight, onClick }: any) => {
     const colorClasses: Record<string, string> = {
-        slate: "border-slate-400 bg-slate-50 text-slate-900",
-        indigo: "border-indigo-500 bg-indigo-50/20 text-indigo-750",
-        amber: "border-amber-500 bg-amber-50/20 text-amber-750",
-        emerald: "border-emerald-500 bg-emerald-50/20 text-emerald-750",
-        violet: "border-violet-500 bg-violet-50/30 text-violet-850",
-        rose: "border-rose-500 bg-rose-50/30 text-rose-850"
+        slate: "border-slate-400 bg-slate-50 text-slate-900 hover:bg-slate-100/50",
+        indigo: "border-indigo-500 bg-indigo-50/20 text-indigo-750 hover:bg-indigo-50/40",
+        amber: "border-amber-500 bg-amber-50/20 text-amber-750 hover:bg-amber-50/40",
+        emerald: "border-emerald-500 bg-emerald-50/20 text-emerald-750 hover:bg-emerald-50/40",
+        violet: "border-violet-500 bg-violet-50/30 text-violet-850 hover:bg-violet-50/55",
+        rose: "border-rose-500 bg-rose-50/30 text-rose-850 hover:bg-rose-50/55"
     };
 
     return (
-        <div className={`p-4 rounded-xl shadow-xs border-l-4 ${colorClasses[color] || 'border-slate-300 bg-white'} flex flex-col justify-between h-28 hover:scale-[1.02] transition ${highlight ? 'ring-2 ring-indigo-100' : ''}`}>
+        <div 
+            onClick={onClick}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onClick();
+                }
+            }}
+            className={`p-4 rounded-xl shadow-xs border-l-4 ${colorClasses[color] || 'border-slate-300 bg-white'} flex flex-col justify-between h-28 hover:scale-[1.04] active:scale-[0.98] transition-all duration-200 outline-none select-none ${onClick ? 'cursor-pointer hover:shadow-md' : ''} ${highlight ? 'ring-2 ring-indigo-100' : ''}`}
+        >
             <div className="flex justify-between items-start">
                 <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider leading-none">{title}</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/80 border text-slate-600">{percentage}</span>

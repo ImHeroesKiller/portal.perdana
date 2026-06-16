@@ -15,7 +15,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'ztquality@gmail.com' || 
-        request.auth.token.email.endsWith('@perada.net') ||
+        (request.auth.token.email != null && request.auth.token.email.matches('^.*@perada[.]net$')) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -93,6 +93,11 @@ service cloud.firestore {
       allow create: if isAdmin() && isValidId(projectId) && isValidProject(request.resource.data);
       allow update: if isAdmin() && isValidProject(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    // System Settings Collection
+    match /system_settings/{settingId} {
+      allow read, write: if isAdmin();
     }
   }
 }
