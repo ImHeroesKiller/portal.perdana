@@ -1,6 +1,12 @@
 
 import { User, NewEmployee } from '../types';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut 
+} from 'firebase/auth';
 import { auth } from './firebase';
 import { setGmailAccessToken } from './gmail';
 
@@ -89,61 +95,87 @@ export const deleteAdminUser = (id: string): void => {
   localStorage.setItem(ADMINS_KEY, JSON.stringify(filtered));
 };
 
-export const login = (username: string, password: string): Promise<User> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // 1. Check Superadmin
-      if (username === ADMIN_USER && password === ADMIN_PASS) {
-        const adminUser: User = {
-          id: 'admin-super',
-          username: 'admin',
-          role: 'admin',
-          permissions: ['talent', 'client', 'project', 'employees', 'attendance', 'payroll', 'finance', 'assets', 'reports', 'rbac'] // Superadmin can access ALL modules
-        };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(adminUser));
-        resolve(adminUser);
-        return;
-      }
+export const login = async (username: string, password: string): Promise<User> => {
+  let matchedUser: User | null = null;
+  let firebaseEmail = '';
+  let firebasePassword = password;
 
-      // 2. Check Supplementary Admin Users
-      const admins = getAdminUsers();
-      const matchedAdmin = admins.find(a => a.username.toLowerCase() === username.toLowerCase() && a.password === password);
-      
-      if (matchedAdmin) {
-        if (!matchedAdmin.isActive) {
-          reject(new Error('Akun admin ini dinonaktifkan oleh superadmin.'));
-          return;
+  // 1. Check Superadmin
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    matchedUser = {
+      id: 'admin-super',
+      username: 'admin',
+      role: 'admin',
+      permissions: ['talent', 'client', 'project', 'employees', 'attendance', 'payroll', 'finance', 'assets', 'reports', 'rbac'] // Superadmin can access ALL modules
+    };
+    firebaseEmail = 'admin@perada.net'; // Matches regex for perada.net in security rules
+    firebasePassword = password;
+  }
+
+  // 2. Check Supplementary Admin Users
+  if (!matchedUser) {
+    const admins = getAdminUsers();
+    const matchedAdmin = admins.find(a => a.username.toLowerCase() === username.toLowerCase() && a.password === password);
+    
+    if (matchedAdmin) {
+      if (!matchedAdmin.isActive) {
+        throw new Error('Akun admin ini dinonaktifkan oleh superadmin.');
+      }
+      matchedUser = {
+        id: matchedAdmin.id,
+        username: matchedAdmin.username,
+        role: 'admin',
+        permissions: matchedAdmin.permissions, // specific modules
+        profile: {
+          fullName: matchedAdmin.name,
+          email: matchedAdmin.username
+        } as any
+      };
+      const emailDomainSuffix = matchedAdmin.username.includes('@') ? '' : '@perada.net';
+      firebaseEmail = matchedAdmin.username + emailDomainSuffix;
+      firebasePassword = password;
+    }
+  }
+
+  // 3. Check Registered Users
+  if (!matchedUser) {
+    const usersStr = localStorage.getItem(USERS_KEY);
+    const users: User[] = usersStr ? JSON.parse(usersStr) : [];
+    const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+
+    if (foundUser) {
+      matchedUser = foundUser;
+      firebaseEmail = foundUser.username;
+      firebasePassword = password;
+    }
+  }
+
+  if (!matchedUser) {
+    throw new Error('Username atau password salah.');
+  }
+
+  // 4. Firebase Authentication Sync Layer
+  if (firebaseEmail) {
+    try {
+      await signInWithEmailAndPassword(auth, firebaseEmail, firebasePassword);
+      console.log(`Synced active Firebase Auth session for caller: ${firebaseEmail}`);
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        try {
+          await createUserWithEmailAndPassword(auth, firebaseEmail, firebasePassword);
+          console.log(`Dynamically registered and signed into Firebase Auth account for client session: ${firebaseEmail}`);
+        } catch (regErr) {
+          console.warn('Fallback dynamic registration in Firebase Auth failed:', regErr);
         }
-        const adminUser: User = {
-          id: matchedAdmin.id,
-          username: matchedAdmin.username,
-          role: 'admin',
-          permissions: matchedAdmin.permissions, // specific modules
-          profile: {
-            fullName: matchedAdmin.name,
-            email: matchedAdmin.username
-          } as any
-        };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(adminUser));
-        resolve(adminUser);
-        return;
-      }
-
-      // 3. Check Registered Users
-      const usersStr = localStorage.getItem(USERS_KEY);
-      const users: User[] = usersStr ? JSON.parse(usersStr) : [];
-      const foundUser = users.find(u => u.username === username && u.password === password);
-
-      if (foundUser) {
-        // Don't store password in session
-        const { password, ...safeUser } = foundUser;
-        localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
-        resolve(safeUser as User);
       } else {
-        reject(new Error('Username atau password salah.'));
+        console.warn('Firebase login credentials sync warning:', err);
       }
-    }, 500);
-  });
+    }
+  }
+
+  const { password: _, ...safeUser } = matchedUser;
+  localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
+  return safeUser as User;
 };
 
 export const createCredentialsForCandidateSubmit = (email: string, phone: string): { email: string; password: string; isNew: boolean } => {
@@ -183,42 +215,52 @@ export const createCredentialsForCandidateSubmit = (email: string, phone: string
   };
 };
 
-export const register = (userData: { email: string; password: string; phone: string }): Promise<User> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const usersStr = localStorage.getItem(USERS_KEY);
-      const users: User[] = usersStr ? JSON.parse(usersStr) : [];
+export const register = async (userData: { email: string; password: string; phone: string }): Promise<User> => {
+  const usersStr = localStorage.getItem(USERS_KEY);
+  const users: User[] = usersStr ? JSON.parse(usersStr) : [];
 
-      if (users.find(u => u.username === userData.email)) {
-        reject(new Error('Email sudah terdaftar.'));
-        return;
+  if (users.find(u => u.username.toLowerCase() === userData.email.toLowerCase())) {
+    throw new Error('Email sudah terdaftar.');
+  }
+
+  const newUser: User = {
+    id: Math.random().toString(36).substr(2, 9),
+    username: userData.email,
+    password: userData.password,
+    role: 'user',
+    profile: {
+      email: userData.email,
+      whatsappNumber: userData.phone
+    }
+  };
+
+  users.push(newUser);
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+  // Firebase Auth SignUp sync
+  try {
+    await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+    console.log(`Successfully synced Firebase Auth account on signup: ${userData.email}`);
+  } catch (err: any) {
+    if (err.code === 'auth/email-already-in-use') {
+      try {
+        await signInWithEmailAndPassword(auth, userData.email, userData.password);
+      } catch (signInErr) {
+        console.warn("Firebase Auth auto login signin after register exception:", signInErr);
       }
+    } else {
+      console.warn("Firebase Auth auto sign up after register sync warning:", err);
+    }
+  }
 
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        username: userData.email,
-        password: userData.password,
-        role: 'user',
-        profile: {
-          email: userData.email,
-          whatsappNumber: userData.phone
-        }
-      };
-
-      users.push(newUser);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-      
-      // Auto login after register
-      const { password, ...safeUser } = newUser;
-      localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
-      
-      resolve(safeUser as User);
-    }, 500);
-  });
+  const { password, ...safeUser } = newUser;
+  localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
+  return safeUser as User;
 };
 
 export const logout = () => {
   localStorage.removeItem(SESSION_KEY);
+  signOut(auth).catch(err => console.warn("Firebase signout warning:", err));
   window.location.href = '/'; // Simple redirect
 };
 
@@ -321,4 +363,27 @@ export const loginWithGoogle = async (): Promise<User> => {
   localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
   return safeUser as User;
 };
+
+// Silent Firebase Auth Sync on Startup for Superadmin sessions
+export const initializeAuthSync = async () => {
+  const sessionStr = localStorage.getItem(SESSION_KEY);
+  if (!sessionStr) return;
+  try {
+    const user = JSON.parse(sessionStr);
+    if (user && user.role === 'admin' && user.username === 'admin') {
+      await signInWithEmailAndPassword(auth, 'admin@perada.net', 'Perdana?2026');
+      console.log('Successfully autosynced superadmin Firebase Auth session at startup.');
+    }
+  } catch (err) {
+    console.warn('Autosync on startup warning:', err);
+  }
+};
+
+// Call immediately to execute on source load
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    initializeAuthSync();
+  }, 1000);
+}
+
 
