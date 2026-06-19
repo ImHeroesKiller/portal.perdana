@@ -1,19 +1,21 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import localConfig from '../firebase-applet-config.json';
+import admin from 'firebase-admin';
 
-// Support Vercel environment variables with VITE_ prefix, falling back to local JSON config
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || localConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || localConfig.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || localConfig.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || localConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || localConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || localConfig.appId,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || localConfig.firestoreDatabaseId,
-};
+// Hindari inisialisasi berulang
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Firebase Admin initialization error:', error);
+  }
+}
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined); /* CRITICAL: The app will break without this line */
-export const auth = getAuth();
+export const firestore = admin.firestore();
+export const auth = admin.auth();
+export default admin;
