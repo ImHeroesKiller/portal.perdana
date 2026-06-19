@@ -1,4 +1,5 @@
-import { GoogleGenAI } from "@google/genai"; // tetap diimport kalau masih dipakai file lain, boleh dihapus nanti
+import { applyCors, handleOptions } from '../lib/api-cors';
+import { trySaveCandidateFromReply } from '../lib/candidate';
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda yang profesional, efisien, dan ramah. Tugas Anda adalah memandu pelamar kerja mengisi formulir pendaftaran secara bertahap melalui percakapan natural.
@@ -24,22 +25,49 @@ Tugas & Batasan Operasional:
 5. Format Output Kritis:
    - Selama data belum lengkap, berikan balasan chat yang alami dan ramah.
    - HANYA SETELAH seluruh data Tahap 1, Tahap 2, dan Tahap 3 sudah lengkap terkumpul dan divalidasi dengan baik, Anda wajib memberikan respon berupa SATU BLOCK JSON MURNI (tanpa teks pembuka atau kata penutup apapun, dan tanpa markdown block seperti \`\`\`json).
+
+Skema JSON yang harus Anda buat adalah sebagai berikut:
+{
+  "positionApplied": "...",
+  "fullName": "...",
+  "nik": "...",
+  "kkNumber": "...",
+  "npwp": "...",
+  "placeOfBirth": "...",
+  "dateOfBirth": "...",
+  "gender": "...",
+  "maritalStatus": "...",
+  "religion": "...",
+  "willingToRelocate": "...",
+  "certifications": "...",
+  "email": "...",
+  "whatsappNumber": "...",
+  "addressLine": "...",
+  "provinsi": "...",
+  "kabupaten": "...",
+  "kecamatan": "...",
+  "desa": "...",
+  "rt": "...",
+  "rw": "...",
+  "latitude": "...",
+  "longitude": "...",
+  "lastEducation": "...",
+  "institutionName": "...",
+  "major": "...",
+  "graduationYear": 2024,
+  "skills": "...",
+  "workExperience": "...",
+  "bankName": "...",
+  "accountNumber": "...",
+  "emergencyName": "...",
+  "emergencyRelation": "...",
+  "emergencyPhone": "..."
+}
 `;
 
 export default async function handler(req: any, res: any) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  applyCors(res);
+  if (handleOptions(req, res)) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -48,8 +76,8 @@ export default async function handler(req: any, res: any) {
   const { messages } = req.body;
 
   if (!process.env.GROK_API_KEY) {
-    return res.status(500).json({ 
-      error: "GROK_API_KEY belum dikonfigurasi di Vercel Environment Variables" 
+    return res.status(500).json({
+      error: 'GROK_API_KEY belum dikonfigurasi di Vercel Environment Variables',
     });
   }
 
@@ -58,57 +86,65 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Trim history agar tidak terlalu panjang
     const trimmedMessages = messages.slice(-12);
 
-    // Susun messages untuk Grok (OpenAI format)
     const grokMessages = [
-      { role: "system", content: SARA_SYSTEM_INSTRUCTION },
+      { role: 'system', content: SARA_SYSTEM_INSTRUCTION },
       ...trimmedMessages.map((m: any) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content
-      }))
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content,
+      })),
     ];
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.GROK_API_KEY}`
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "grok-4.3",
+        model: 'grok-4.3',
         messages: grokMessages,
         temperature: 0.6,
-        max_tokens: 2000
-      })
+        max_tokens: 2000,
+      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Grok API Error:", errorData);
+      console.error('Grok API Error:', errorData);
 
       if (response.status === 429) {
-        return res.status(429).json({ 
-          error: "Maaf, kuota Grok sedang penuh. Silakan coba lagi dalam beberapa saat.",
-          retryAfter: 30
+        return res.status(429).json({
+          error: 'Maaf, kuota Grok sedang penuh. Silakan coba lagi dalam beberapa saat.',
+          retryAfter: 30,
         });
       }
 
-      return res.status(500).json({ 
-        error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti." 
+      return res.status(500).json({
+        error: 'Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti.',
       });
     }
 
     const data = await response.json();
-    const replyText = data.choices?.[0]?.message?.content || "";
+    const replyText = (data.choices?.[0]?.message?.content || '').trim();
 
-    res.status(200).json({ reply: replyText.trim() });
+    let savedCandidate: Awaited<ReturnType<typeof trySaveCandidateFromReply>> = null;
+    try {
+      savedCandidate = await trySaveCandidateFromReply(replyText);
+    } catch (saveError: any) {
+      console.error('Auto-save candidate error:', saveError);
+    }
 
+    return res.status(200).json({
+      reply: replyText,
+      saved: Boolean(savedCandidate),
+      candidateId: savedCandidate?.id ?? null,
+    });
   } catch (error: any) {
-    console.error("Grok Error:", error);
-    res.status(500).json({ 
-      error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti." 
+    console.error('Grok Error:', error);
+    return res.status(500).json({
+      error: 'Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti.',
     });
   }
 }

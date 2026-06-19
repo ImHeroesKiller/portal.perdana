@@ -1,6 +1,10 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+/**
+ * Firebase Client SDK — hanya untuk browser (auth, firestore client).
+ * Untuk operasi server-side (API routes), gunakan lib/firebase-admin.ts.
+ */
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,10 +15,31 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export function isFirebaseConfigured(): boolean {
+  return Boolean(
+    firebaseConfig.apiKey &&
+      firebaseConfig.authDomain &&
+      firebaseConfig.projectId &&
+      firebaseConfig.appId
+  );
+}
+
+function initFirebaseApp(): FirebaseApp {
+  if (getApps().length) return getApps()[0];
+
+  if (!isFirebaseConfigured()) {
+    throw new Error(
+      'Firebase Client SDK belum dikonfigurasi. Set VITE_FIREBASE_* di environment variables.'
+    );
+  }
+
+  return initializeApp(firebaseConfig);
+}
+
+const app = initFirebaseApp();
 const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
 
-export const auth = getAuth(app);
-export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+export const auth: Auth = getAuth(app);
+export const db: Firestore = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
 export const firestore = db;
 export default app;
