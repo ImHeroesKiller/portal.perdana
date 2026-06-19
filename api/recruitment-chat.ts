@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from "@google/genai"; // tetap diimport kalau masih dipakai file lain, boleh dihapus nanti
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda yang profesional, efisien, dan ramah. Tugas Anda adalah memandu pelamar kerja mengisi formulir pendaftaran secara bertahap melalui percakapan natural.
@@ -26,18 +26,8 @@ Tugas & Batasan Operasional:
    - HANYA SETELAH seluruh data Tahap 1, Tahap 2, dan Tahap 3 sudah lengkap terkumpul dan divalidasi dengan baik, Anda wajib memberikan respon berupa SATU BLOCK JSON MURNI (tanpa teks pembuka atau kata penutup apapun, dan tanpa markdown block seperti \`\`\`json).
 `;
 
-async function callGemini(ai: any, contents: any) {
-  return await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite",
-    contents,
-    config: {
-      systemInstruction: SARA_SYSTEM_INSTRUCTION,
-      temperature: 0.6,
-    },
-  });
-}
-
 export default async function handler(req: any, res: any) {
+  // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -57,9 +47,9 @@ export default async function handler(req: any, res: any) {
 
   const { messages } = req.body;
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.GROK_API_KEY) {
     return res.status(500).json({ 
-      error: "GEMINI_API_KEY belum dikonfigurasi di Vercel Environment Variables" 
+      error: "GROK_API_KEY belum dikonfigurasi di Vercel Environment Variables" 
     });
   }
 
@@ -68,82 +58,55 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey: process.env.GEMINI_API_KEY 
-    });
-
     // Trim history agar tidak terlalu panjang
     const trimmedMessages = messages.slice(-12);
 
-    const contents = trimmedMessages.map((m: any) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }]
-    }));
+    // Susun messages untuk Grok (OpenAI format)
+    const grokMessages = [
+      { role: "system", content: SARA_SYSTEM_INSTRUCTION },
+      ...trimmedMessages.map((m: any) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content
+      }))
+    ];
 
-    // === RETRY LOGIC (maksimal 2 kali) ===
-    let response;
-    let lastError;
+    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.GROK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "grok-4.3",
+        messages: grokMessages,
+        temperature: 0.6,
+        max_tokens: 2000
+      })
+    });
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        response = await callGemini(ai, contents);
-        break; // berhasil, keluar dari loop
-      } catch (err: any) {
-        lastError = err;
-        
-        // Kalau error 503, tunggu sebentar lalu coba lagi
-        if (err.status === 503) {
-          console.log(`Attempt ${attempt} failed with 503, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1500)); // tunggu 1.5 detik
-          continue;
-        } else {
-          // Error selain 503, langsung lempar
-          throw err;
-        }
-      }
-    }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Grok API Error:", errorData);
 
-    // Kalau masih gagal setelah 2 kali percobaan
-    if (!response) {
-      if (lastError?.status === 503) {
-        return res.status(503).json({ 
-          error: "Maaf, layanan AI sedang sibuk saat ini. Silakan coba lagi dalam beberapa menit." 
+      if (response.status === 429) {
+        return res.status(429).json({ 
+          error: "Maaf, kuota Grok sedang penuh. Silakan coba lagi dalam beberapa saat.",
+          retryAfter: 30
         });
       }
-      throw lastError;
+
+      return res.status(500).json({ 
+        error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti." 
+      });
     }
 
-    const replyText = response.text || "";
+    const data = await response.json();
+    const replyText = data.choices?.[0]?.message?.content || "";
+
     res.status(200).json({ reply: replyText.trim() });
 
   } catch (error: any) {
-    console.error("=== Gemini Error Detail ===");
-    console.error("Status:", error.status);
-    console.error("Message:", error.message);
-
-    // Quota / Rate Limit
-    if (error.status === 429 || error.message?.includes("quota") || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      return res.status(429).json({ 
-        error: "Maaf, kuota AI sedang penuh. Silakan coba lagi dalam beberapa saat.",
-        retryAfter: 30
-      });
-    }
-
-    // Permission Denied
-    if (error.status === 403 || error.message?.includes("PERMISSION_DENIED")) {
-      return res.status(403).json({ 
-        error: "Maaf, terjadi masalah pada konfigurasi AI. Tim kami sedang memperbaikinya." 
-      });
-    }
-
-    // High Demand / 503
-    if (error.status === 503 || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE")) {
-      return res.status(503).json({ 
-        error: "Maaf, layanan AI sedang sibuk saat ini. Silakan coba lagi dalam beberapa menit." 
-      });
-    }
-
-    // Generic error
+    console.error("Grok Error:", error);
     res.status(500).json({ 
       error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti." 
     });
