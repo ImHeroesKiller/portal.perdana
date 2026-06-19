@@ -14,8 +14,9 @@
       "includeFiles": "node_modules/firebase-admin/**"
     },
     "api/**/*.js": {
-      "memory": 512,
-      "maxDuration": 30
+      "memory": 1024,
+      "maxDuration": 60,
+      "includeFiles": "node_modules/firebase-admin/**"
     }
   },
 
