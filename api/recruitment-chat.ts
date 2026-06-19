@@ -68,7 +68,7 @@ export default async function handler(req: any, res: any) {
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",     // ← SUDAH DIGANTI KE VERSI LITE
       contents,
       config: {
         systemInstruction: SARA_SYSTEM_INSTRUCTION,
@@ -86,8 +86,7 @@ export default async function handler(req: any, res: any) {
     // Handle quota / rate limit error (429)
     if (error.status === 429 || error.message?.includes("quota") || error.message?.includes("RESOURCE_EXHAUSTED")) {
       
-      // Try to extract retryDelay from Google error details
-      let retryAfter = 30; // default 30 seconds
+      let retryAfter = 30;
       let retryMessage = "beberapa saat";
 
       try {
@@ -95,7 +94,6 @@ export default async function handler(req: any, res: any) {
         for (const detail of details) {
           if (detail["@type"]?.includes("RetryInfo") && detail.retryDelay) {
             const delayStr = detail.retryDelay;
-            // Parse "17s" or "17.254551841s"
             const seconds = parseFloat(delayStr.replace('s', ''));
             if (!isNaN(seconds)) {
               retryAfter = Math.ceil(seconds);
@@ -104,7 +102,7 @@ export default async function handler(req: any, res: any) {
           }
         }
       } catch (parseErr) {
-        console.log("Could not parse retry delay, using default");
+        console.log("Could not parse retry delay");
       }
 
       return res.status(429).json({ 
