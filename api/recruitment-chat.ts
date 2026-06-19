@@ -26,6 +26,17 @@ Tugas & Batasan Operasional:
    - HANYA SETELAH seluruh data Tahap 1, Tahap 2, dan Tahap 3 sudah lengkap terkumpul dan divalidasi dengan baik, Anda wajib memberikan respon berupa SATU BLOCK JSON MURNI (tanpa teks pembuka atau kata penutup apapun, dan tanpa markdown block seperti \`\`\`json).
 `;
 
+async function callGemini(ai: any, contents: any) {
+  return await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite",
+    contents,
+    config: {
+      systemInstruction: SARA_SYSTEM_INSTRUCTION,
+      temperature: 0.6,
+    },
+  });
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -61,7 +72,7 @@ export default async function handler(req: any, res: any) {
       apiKey: process.env.GEMINI_API_KEY 
     });
 
-    // === TRIM HISTORY: hanya ambil 12 pesan terakhir ===
+    // Trim history agar tidak terlalu panjang
     const trimmedMessages = messages.slice(-12);
 
     const contents = trimmedMessages.map((m: any) => ({
@@ -69,46 +80,52 @@ export default async function handler(req: any, res: any) {
       parts: [{ text: m.content }]
     }));
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents,
-      config: {
-        systemInstruction: SARA_SYSTEM_INSTRUCTION,
-        temperature: 0.6,
-      },
-    });
+    // === RETRY LOGIC (maksimal 2 kali) ===
+    let response;
+    let lastError;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        response = await callGemini(ai, contents);
+        break; // berhasil, keluar dari loop
+      } catch (err: any) {
+        lastError = err;
+        
+        // Kalau error 503, tunggu sebentar lalu coba lagi
+        if (err.status === 503) {
+          console.log(`Attempt ${attempt} failed with 503, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1500)); // tunggu 1.5 detik
+          continue;
+        } else {
+          // Error selain 503, langsung lempar
+          throw err;
+        }
+      }
+    }
+
+    // Kalau masih gagal setelah 2 kali percobaan
+    if (!response) {
+      if (lastError?.status === 503) {
+        return res.status(503).json({ 
+          error: "Maaf, layanan AI sedang sibuk saat ini. Silakan coba lagi dalam beberapa menit." 
+        });
+      }
+      throw lastError;
+    }
 
     const replyText = response.text || "";
-    
     res.status(200).json({ reply: replyText.trim() });
 
   } catch (error: any) {
     console.error("=== Gemini Error Detail ===");
     console.error("Status:", error.status);
     console.error("Message:", error.message);
-    console.error("Full Error:", JSON.stringify(error, null, 2));
 
     // Quota / Rate Limit
     if (error.status === 429 || error.message?.includes("quota") || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      let retryAfter = 30;
-      let retryMessage = "beberapa saat";
-
-      try {
-        const details = error.details || error.error?.details || [];
-        for (const detail of details) {
-          if (detail["@type"]?.includes("RetryInfo") && detail.retryDelay) {
-            const seconds = parseFloat(detail.retryDelay.replace('s', ''));
-            if (!isNaN(seconds)) {
-              retryAfter = Math.ceil(seconds);
-              retryMessage = `${retryAfter} detik`;
-            }
-          }
-        }
-      } catch (_) {}
-
       return res.status(429).json({ 
-        error: `Maaf, kuota AI sedang penuh. Silakan coba lagi dalam ${retryMessage}.`,
-        retryAfter: retryAfter
+        error: "Maaf, kuota AI sedang penuh. Silakan coba lagi dalam beberapa saat.",
+        retryAfter: 30
       });
     }
 
@@ -116,6 +133,13 @@ export default async function handler(req: any, res: any) {
     if (error.status === 403 || error.message?.includes("PERMISSION_DENIED")) {
       return res.status(403).json({ 
         error: "Maaf, terjadi masalah pada konfigurasi AI. Tim kami sedang memperbaikinya." 
+      });
+    }
+
+    // High Demand / 503
+    if (error.status === 503 || error.message?.includes("high demand") || error.message?.includes("UNAVAILABLE")) {
+      return res.status(503).json({ 
+        error: "Maaf, layanan AI sedang sibuk saat ini. Silakan coba lagi dalam beberapa menit." 
       });
     }
 
