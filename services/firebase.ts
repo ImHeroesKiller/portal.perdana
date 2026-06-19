@@ -1,21 +1,20 @@
-import admin from 'firebase-admin';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-    console.log('Firebase Admin initialized successfully');
-  } catch (error) {
-    console.error('Firebase Admin initialization error:', error);
-  }
-}
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
 
-export const firestore = admin.firestore();
-export const db = firestore;           // ← alias untuk gmail.ts
-export const auth = admin.auth();
-export default admin;
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
+
+export const auth = getAuth(app);
+export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+export const firestore = db;
+export default app;
