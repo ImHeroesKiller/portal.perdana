@@ -7,7 +7,14 @@ import { join, relative, dirname } from 'path';
 
 const SRC_ROOT = new URL('../serverless-src', import.meta.url).pathname;
 const API_ROOT = new URL('../api', import.meta.url).pathname;
-const HANDWRITTEN = new Set(['send-telegram.js', 'ping.js', 'package.json']);
+const HANDWRITTEN = new Set([
+  'send-telegram.js',
+  'ping.js',
+  'package.json',
+  'firebase-health.js',
+  'db/[collection].js',
+  'db/[collection]/[id].js',
+]);
 
 function walkTsFiles(dir, out = []) {
   for (const name of readdirSync(dir)) {
