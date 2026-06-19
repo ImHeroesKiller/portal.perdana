@@ -25,7 +25,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { Timestamp, type Firestore } from 'firebase-admin/firestore';
-import { getAdminDb } from '../lib/firebase-admin';
+import { getAdminDb, isAdminConfigured, testAdminConnection } from '../lib/firebase-admin';
 
 // ─── Env loader (.env is optional) ───────────────────────────────────────────
 
@@ -350,15 +350,21 @@ async function main(): Promise<void> {
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
   const databaseId = process.env.FIRESTORE_DATABASE_ID || process.env.VITE_FIREBASE_DATABASE_ID;
 
-  if (!projectId) {
-    throw new Error('FIREBASE_PROJECT_ID (atau VITE_FIREBASE_PROJECT_ID) wajib diisi.');
-  }
-  if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-    throw new Error('FIREBASE_CLIENT_EMAIL dan FIREBASE_PRIVATE_KEY wajib diisi untuk Admin SDK.');
+  if (!isAdminConfigured()) {
+    throw new Error(
+      'Firebase Admin env belum lengkap. Wajib: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
+    );
   }
 
   log('🔧', `Project ID : ${projectId}`);
   log('🔧', `Database ID: ${databaseId || '(default)'}`);
+  console.log('');
+
+  const connection = await testAdminConnection();
+  if (!connection.ok) {
+    throw new Error(`Connection test gagal: ${connection.error}`);
+  }
+  log('🔗', `Firestore terhubung (project: ${connection.projectId}, db: ${connection.databaseId})`);
   console.log('');
 
   const db = getAdminDb();

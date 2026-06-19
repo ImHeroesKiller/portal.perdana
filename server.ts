@@ -3,8 +3,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import axios from "axios";
 import { GoogleGenAI } from "@google/genai";
-import admin from "firebase-admin";
-import fs from "fs";
+import type { Firestore } from "firebase-admin/firestore";
+import { getAdminDb, isAdminConfigured, testAdminConnection } from "./lib/firebase-admin";
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda yang profesional, efisien, dan ramah. Tugas Anda adalah memandu pelamar kerja mengisi formulir pendaftaran secara bertahap melalui percakapan natural.
@@ -76,25 +76,36 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Initialize server-side Firebase Admin SDK for bypass of security rules & direct robust access
-  let adminDb: admin.firestore.Firestore | null = null;
+  // Initialize server-side Firebase Admin SDK (env-based, firebase-admin v14 modular API)
+  let adminDb: Firestore | null = null;
   try {
-    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      if (admin.apps.length === 0) {
-        admin.initializeApp({
-          projectId: config.projectId,
-        });
+    if (isAdminConfigured()) {
+      adminDb = getAdminDb();
+      const health = await testAdminConnection();
+      if (health.ok) {
+        console.log(
+          `🚀 Server-Side Firestore Ready (project: ${health.projectId}, database: ${health.databaseId})`
+        );
+      } else {
+        console.warn("⚠️ Firestore Admin configured but connection test failed:", health.error);
       }
-      adminDb = admin.firestore(config.firestoreDatabaseId);
-      console.log("🚀 Server-Side Firestore Access Ready (Database ID: " + config.firestoreDatabaseId + ")");
     } else {
-      console.warn("⚠️ firebase-applet-config.json not found on the server");
+      console.warn(
+        "⚠️ Firebase Admin not configured — set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY"
+      );
     }
   } catch (err) {
     console.error("❌ Firebase Admin init error:", err);
   }
+
+  app.get("/api/firebase-health", async (_req, res) => {
+    const health = await testAdminConnection();
+    res.status(health.ok ? 200 : 503).json({
+      ok: health.ok,
+      timestamp: new Date().toISOString(),
+      admin: health,
+    });
+  });
 
   // Initialize server-side GoogleGenAI Client
   const geminiApiKey = process.env.GEMINI_API_KEY;

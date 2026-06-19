@@ -1,4 +1,7 @@
-import { getAdminDb } from './firebase-admin';
+import { getAdminDb, isAdminConfigured } from './firebase-admin';
+import { FirebaseConfigError, FirebaseConnectionError, formatFirebaseError } from './firebase-errors';
+
+export const CANDIDATES_COLLECTION = 'candidates';
 
 export interface CandidatePayload {
   positionApplied?: string;
@@ -11,7 +14,7 @@ export interface CandidatePayload {
   gender?: string;
   maritalStatus?: string;
   religion?: string;
-  willingToRelocate?: string;
+  willingToRelocate?: string | boolean;
   certifications?: string;
   email?: string;
   whatsappNumber?: string;
@@ -36,6 +39,7 @@ export interface CandidatePayload {
   emergencyRelation?: string;
   emergencyPhone?: string;
   telegramId?: string;
+  source?: string;
 }
 
 const REQUIRED_FIELDS: (keyof CandidatePayload)[] = [
@@ -85,28 +89,18 @@ function cleanDoc(obj: unknown): unknown {
   return cleaned;
 }
 
-export function mapCandidateToEmployee(data: CandidatePayload, id?: string) {
-  const employeeId = id || Math.random().toString(36).substring(2, 11);
+function parseWillingToRelocate(value: CandidatePayload['willingToRelocate']): boolean {
+  if (typeof value === 'boolean') return value;
+  if (!value) return true;
+  const normalized = value.toString().trim().toLowerCase();
+  return !['tidak', 'no', 'false', '0'].includes(normalized);
+}
 
-  const cleanWA = ensurePlus62(data.whatsappNumber);
-  const cleanEmergency = ensurePlus62(data.emergencyPhone);
-
-  const domicileAddress =
-    data.addressLine ||
-    [
-      data.addressLine,
-      data.desa ? `Desa ${data.desa}` : null,
-      data.kecamatan ? `Kec. ${data.kecamatan}` : null,
-      data.kabupaten,
-      data.provinsi,
-      data.rt || data.rw ? `RT ${data.rt || '0'} RW ${data.rw || '0'}` : null,
-    ]
-      .filter(Boolean)
-      .join(', ') ||
-    'Alamat Domisili';
+export function mapCandidateDocument(data: CandidatePayload, id?: string) {
+  const candidateId = id || Math.random().toString(36).substring(2, 11);
 
   return {
-    id: employeeId,
+    id: candidateId,
     positionApplied: data.positionApplied || 'Staff Operasional',
     fullName: data.fullName || '',
     nik: data.nik || '',
@@ -115,16 +109,21 @@ export function mapCandidateToEmployee(data: CandidatePayload, id?: string) {
     placeOfBirth: data.placeOfBirth || '-',
     dateOfBirth: data.dateOfBirth || new Date().toISOString().split('T')[0],
     gender: data.gender || 'Laki-laki',
-    religion: data.religion || 'Islam',
     maritalStatus: data.maritalStatus || 'Belum Menikah',
-    willingToRelocate: data.willingToRelocate || 'Ya',
+    religion: data.religion || 'Islam',
+    willingToRelocate: parseWillingToRelocate(data.willingToRelocate),
     certifications: data.certifications || '',
     email: (data.email || '').toLowerCase(),
-    whatsappNumber: cleanWA,
-    domicileAddress,
+    whatsappNumber: ensurePlus62(data.whatsappNumber),
+    addressLine: data.addressLine || '',
+    provinsi: data.provinsi || '',
+    kabupaten: data.kabupaten || '',
+    kecamatan: data.kecamatan || '',
+    desa: data.desa || '',
+    rt: data.rt || '',
+    rw: data.rw || '',
     latitude: parseFloat(String(data.latitude)) || -0.9489,
     longitude: parseFloat(String(data.longitude)) || 119.8707,
-    telegramId: data.telegramId || '',
     lastEducation: data.lastEducation || '-',
     institutionName: data.institutionName || '-',
     major: data.major || '-',
@@ -135,16 +134,9 @@ export function mapCandidateToEmployee(data: CandidatePayload, id?: string) {
     accountNumber: data.accountNumber || '-',
     emergencyName: data.emergencyName || '-',
     emergencyRelation: data.emergencyRelation || '-',
-    emergencyPhone: cleanEmergency || '-',
-    applicationLetterPath: '',
-    cvPath: '',
-    ktpPath: '',
-    diplomaPath: '',
-    photoPath: '',
-    kkPath: '',
-    certificatePath: '',
-    status: 'APPLIED',
-    source: 'ai-chatroom',
+    emergencyPhone: ensurePlus62(data.emergencyPhone) || '-',
+    status: 'new',
+    source: data.source || 'ai-sara',
     createdAt: new Date().toISOString(),
   };
 }
@@ -153,21 +145,35 @@ export async function saveCandidateToFirestore(
   data: CandidatePayload,
   options?: { id?: string; merge?: boolean }
 ) {
+  if (!isAdminConfigured()) {
+    throw new FirebaseConfigError(
+      'Firebase Admin belum dikonfigurasi di server. Tidak dapat menyimpan kandidat.'
+    );
+  }
+
   if (!isCompleteCandidateData(data)) {
     throw new Error('Data kandidat belum lengkap untuk disimpan ke Firestore.');
   }
 
-  const db = getAdminDb();
-  const employee = mapCandidateToEmployee(data, options?.id);
-  const docRef = db.collection('employees').doc(employee.id);
+  try {
+    const db = getAdminDb();
+    const candidate = mapCandidateDocument(data, options?.id);
+    const docRef = db.collection(CANDIDATES_COLLECTION).doc(candidate.id);
 
-  if (options?.merge) {
-    await docRef.set(cleanDoc(employee) as Record<string, unknown>, { merge: true });
-  } else {
-    await docRef.set(cleanDoc(employee) as Record<string, unknown>);
+    if (options?.merge) {
+      await docRef.set(cleanDoc(candidate) as Record<string, unknown>, { merge: true });
+    } else {
+      await docRef.set(cleanDoc(candidate) as Record<string, unknown>);
+    }
+
+    return candidate;
+  } catch (error) {
+    if (error instanceof FirebaseConfigError) throw error;
+    throw new FirebaseConnectionError(
+      `Gagal menyimpan kandidat ke Firestore (${CANDIDATES_COLLECTION}).`,
+      error
+    );
   }
-
-  return employee;
 }
 
 export function extractPureJsonReply(text: string): string | null {
@@ -189,8 +195,9 @@ export async function trySaveCandidateFromReply(replyText: string) {
 
   try {
     const parsed = JSON.parse(pureJson) as CandidatePayload;
-    return await saveCandidateToFirestore(parsed, { merge: true });
-  } catch {
+    return await saveCandidateToFirestore({ ...parsed, source: 'ai-sara' }, { merge: true });
+  } catch (error) {
+    console.error('trySaveCandidateFromReply error:', formatFirebaseError(error));
     return null;
   }
 }

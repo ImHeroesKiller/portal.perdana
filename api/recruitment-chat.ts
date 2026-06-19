@@ -1,5 +1,7 @@
 import { applyCors, handleOptions } from '../lib/api-cors';
 import { extractPureJsonReply, trySaveCandidateFromReply } from '../lib/candidate';
+import { isAdminConfigured } from '../lib/firebase-admin';
+import { formatFirebaseError } from '../lib/firebase-errors';
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda. Anda memandu pelamar mengisi formulir melalui percakapan bertahap.
@@ -190,17 +192,29 @@ export default async function handler(req: any, res: any) {
     }
 
     let savedCandidate: Awaited<ReturnType<typeof trySaveCandidateFromReply>> = null;
-    try {
-      savedCandidate = await trySaveCandidateFromReply(replyText);
-    } catch (saveError: any) {
-      console.error('Auto-save candidate error:', saveError);
+    let saveWarning: string | null = null;
+
+    if (pureJson && !isAdminConfigured()) {
+      saveWarning = 'Firebase Admin belum dikonfigurasi — data tidak disimpan ke Firestore.';
+    } else if (pureJson) {
+      try {
+        savedCandidate = await trySaveCandidateFromReply(replyText);
+        if (!savedCandidate) {
+          saveWarning = 'JSON terdeteksi tetapi gagal disimpan (data belum valid atau error Firestore).';
+        }
+      } catch (saveError: unknown) {
+        saveWarning = formatFirebaseError(saveError);
+        console.error('Auto-save candidate error:', saveError);
+      }
     }
 
     return res.status(200).json({
       reply: replyText,
       saved: Boolean(savedCandidate),
       candidateId: savedCandidate?.id ?? null,
+      collection: savedCandidate ? 'candidates' : null,
       isPureJson: Boolean(pureJson),
+      saveWarning,
     });
   } catch (error: any) {
     console.error('Grok Error:', error);

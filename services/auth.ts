@@ -7,7 +7,7 @@ import {
   createUserWithEmailAndPassword, 
   signOut 
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { getClientAuth } from './firebase';
 import { setGmailAccessToken } from './gmail';
 
 const USERS_KEY = 'pt_perdana_users';
@@ -157,12 +157,12 @@ export const login = async (username: string, password: string): Promise<User> =
   // 4. Firebase Authentication Sync Layer
   if (firebaseEmail) {
     try {
-      await signInWithEmailAndPassword(auth, firebaseEmail, firebasePassword);
+      await signInWithEmailAndPassword(getClientAuth(), firebaseEmail, firebasePassword);
       console.log(`Synced active Firebase Auth session for caller: ${firebaseEmail}`);
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         try {
-          await createUserWithEmailAndPassword(auth, firebaseEmail, firebasePassword);
+          await createUserWithEmailAndPassword(getClientAuth(), firebaseEmail, firebasePassword);
           console.log(`Dynamically registered and signed into Firebase Auth account for client session: ${firebaseEmail}`);
         } catch (regErr) {
           console.warn('Fallback dynamic registration in Firebase Auth failed:', regErr);
@@ -239,12 +239,12 @@ export const register = async (userData: { email: string; password: string; phon
 
   // Firebase Auth SignUp sync
   try {
-    await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+    await createUserWithEmailAndPassword(getClientAuth(), userData.email, userData.password);
     console.log(`Successfully synced Firebase Auth account on signup: ${userData.email}`);
   } catch (err: any) {
     if (err.code === 'auth/email-already-in-use') {
       try {
-        await signInWithEmailAndPassword(auth, userData.email, userData.password);
+        await signInWithEmailAndPassword(getClientAuth(), userData.email, userData.password);
       } catch (signInErr) {
         console.warn("Firebase Auth auto login signin after register exception:", signInErr);
       }
@@ -260,7 +260,7 @@ export const register = async (userData: { email: string; password: string; phon
 
 export const logout = () => {
   localStorage.removeItem(SESSION_KEY);
-  signOut(auth).catch(err => console.warn("Firebase signout warning:", err));
+  signOut(getClientAuth()).catch(err => console.warn("Firebase signout warning:", err));
   window.location.href = '/'; // Simple redirect
 };
 
@@ -330,7 +330,7 @@ export const loginWithGoogle = async (): Promise<User> => {
     prompt: 'select_account'
   });
   
-  const result = await signInWithPopup(auth, provider);
+  const result = await signInWithPopup(getClientAuth(), provider);
   const credential = GoogleAuthProvider.credentialFromResult(result);
   if (credential?.accessToken) {
     setGmailAccessToken(credential.accessToken);
@@ -371,7 +371,7 @@ export const initializeAuthSync = async () => {
   try {
     const user = JSON.parse(sessionStr);
     if (user && user.role === 'admin' && user.username === 'admin') {
-      await signInWithEmailAndPassword(auth, 'admin@perada.net', 'Perdana?2026');
+      await signInWithEmailAndPassword(getClientAuth(), 'admin@perada.net', 'Perdana?2026');
       console.log('Successfully autosynced superadmin Firebase Auth session at startup.');
     }
   } catch (err) {

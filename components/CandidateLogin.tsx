@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { getClientAuth } from '../services/firebase';
 
 export const CandidateLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ export const CandidateLogin: React.FC = () => {
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithPopup(getClientAuth(), provider);
       navigate('/candidate/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
