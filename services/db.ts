@@ -1,6 +1,4 @@
 import { Employee, NewEmployee, JobVacancy, NewJobVacancy, Client, NewClient, Project, NewProject, ApplicationStatus } from '../types';
-import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { db, auth } from './firebase';
 import { toTitleCase } from '../src/utils';
 
 // Helper to standardize text fields
@@ -52,7 +50,6 @@ export const cleanDoc = (obj: any): any => {
 // Helper to simulate file upload with high-efficiency thumbnailing and document receipt generation
 export const uploadFileMock = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    // 1. If it's an image, downscale it to a safe standard (max 400px width/height at 0.6 quality)
     if (file.type && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -93,7 +90,6 @@ export const uploadFileMock = (file: File): Promise<string> => {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     } else {
-      // 2. For heavy documents (PDF, Docx, etc.), generate a polished, lightweight HTML preview page
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
       const htmlContent = `data:text/html;charset=utf-8,${encodeURIComponent(`
         <!DOCTYPE html>
@@ -148,40 +144,6 @@ export const safeSetItem = (key: string, value: string) => {
     console.error(error);
   }
 };
-
-// --- FIRESTORE DIAGNOSTIC ERROR HANDLERS ---
-export enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-export interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid || 'anonymous-or-client-session',
-      email: auth.currentUser?.email || 'client-app@perdana.co.id'
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
 
 // --- INITIAL DATA SEEDERS FOR SULAWESI TENGAH ---
 
@@ -319,10 +281,10 @@ const generateDummyJobs = (): JobVacancy[] => {
       id: `job-${i + 1}`,
       title: title,
       department: spec.department,
-      location: loc, // Morowali
+      location: loc, 
       latitude: coords.lat + (Math.random() - 0.5) * 0.04,
       longitude: coords.lng + (Math.random() - 0.5) * 0.04,
-      clientId: "IMIP", // PT Indonesia Morowali Industrial Park
+      clientId: "IMIP", 
       projectId: "IMIP-PROJ",
       type: 'Contract',
       description: spec.description,
@@ -388,12 +350,11 @@ const generateDummyEmployees = (count: number): Employee[] => {
       kkPath: '',
       certificatePath: '',
       status: status,
-      isInTalentPool: status === 'REJECTED' || Math.random() > 0.85, // Preseed talent pool for simulation
+      isInTalentPool: status === 'REJECTED' || Math.random() > 0.85, 
       jobId: `job-${getRandomInt(1, 10)}`,
       hrNotes: status === 'REJECTED' ? 'Kualifikasi teknis belum memenuhi minimal pengalaman' : (status === 'INTERVIEW' ? 'Jadwal wawancara di Morowali' : ''),
       interviewDate: status === 'INTERVIEW' ? new Date(Date.now() + 86400000 * 2).toISOString() : undefined,
       
-      // Seed ERP database fields
       employeeType: i % 3 === 0 ? 'INTERNAL' : 'PROJECT',
       clientId: i % 3 === 0 ? undefined : (1 + (i % 5)).toString(),
       projectId: i % 3 === 0 ? undefined : (1 + (i % 3)).toString(),
@@ -518,7 +479,7 @@ const defaultProjects: Project[] = [
     id: '3', 
     name: 'Hydroelectric Security Poso', 
     clientId: '3', 
-    description: 'Sistem pengamanan, patroli lingkungan keria terproteksi, serta mitigasi risiko vital pada Turbin Utama Pembangkit Listrik PLTA Poso Energy Sektor Sulewana.', 
+    description: 'Sistem pengamanan, patroli lingkungan kerja terproteksi, serta mitigasi risiko vital pada Turbin Utama Pembangkit Listrik PLTA Poso Energy Sektor Sulewana.', 
     startDate: '2023-05-20', 
     createdAt: new Date().toISOString(),
     poNumber: 'PO-POSO-ENERGY-H9',
@@ -545,7 +506,7 @@ const cache: CacheStore = {
   jobs: null
 };
 
-const CACHE_STALE_MS = 20000; // 20 seconds cache TTL for blistering speed & high responsiveness
+const CACHE_STALE_MS = 20000; 
 
 export const invalidateCache = (collectionName: keyof CacheStore) => {
   cache[collectionName] = null;
@@ -560,7 +521,7 @@ export const clearAllCaches = () => {
   console.log(`🧹 All database caches cleared.`);
 };
 
-// --- CORE FIRESTORE CRUDS WITH AUTO-SEEDING ---
+// --- CORE REST API AND PROXIED FIRESTORE OPERATIONS ---
 
 export const getEmployees = async (): Promise<Employee[]> => {
   const path = 'employees';
@@ -568,52 +529,31 @@ export const getEmployees = async (): Promise<Employee[]> => {
     console.log("⚡ [CACHE HIT] getEmployees retrieved from memory cache.");
     return [...cache.employees.data];
   }
-
   try {
-    const snap = await getDocs(collection(db, path));
-    if (snap.empty) {
-      console.log("Employees empty in Firestore. Returning empty list.");
-      cache.employees = { data: [], timestamp: Date.now() };
-      localStorage.setItem('local_employees', JSON.stringify([]));
-      return [];
-    }
-    const employees: Employee[] = [];
-    snap.forEach((doc) => {
-      employees.push(doc.data() as Employee);
-    });
-
-    const sorted = employees.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const res = await fetch(`/api/db/${path}`);
+    if (!res.ok) throw new Error("Gagal mengambil data karyawan dari server");
+    const list = await res.json() as Employee[];
+    
+    const sorted = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const normalized = sorted.map(emp => ({
       ...emp,
       whatsappNumber: ensurePlus62(emp.whatsappNumber),
       emergencyPhone: ensurePlus62(emp.emergencyPhone)
     }));
+
     cache.employees = { data: normalized, timestamp: Date.now() };
     localStorage.setItem('local_employees', JSON.stringify(normalized));
     return [...normalized];
   } catch (error) {
-    console.warn("⚠️ [FIRESTORE EXCEPTION] getEmployees failed. Falling back to Local Storage/InMemory Database.", error);
+    console.warn("⚠️ [REST FAILING] getEmployees fallback to LocalStorage", error);
     const local = localStorage.getItem('local_employees');
     if (local) {
       try {
         const parsed = JSON.parse(local);
-        // Clean up legacy dummy candidates (IDs like 'emp-1', etc.)
-        const hasDummy = parsed.some((emp: any) => emp.id && (emp.id.startsWith('emp-') || emp.id.startsWith('demo-') || (emp.email && emp.email.endsWith('@example.com'))));
-        if (hasDummy) {
-          console.log("🧹 Legacy dummy candidates detected in localStorage. Automated cleanup triggered.");
-          localStorage.removeItem('local_employees');
-          cache.employees = { data: [], timestamp: Date.now() };
-          return [];
-        }
-        const normalized = parsed.map((emp: any) => ({
-          ...emp,
-          whatsappNumber: ensurePlus62(emp.whatsappNumber),
-          emergencyPhone: ensurePlus62(emp.emergencyPhone)
-        }));
-        cache.employees = { data: normalized, timestamp: Date.now() };
-        return normalized;
+        cache.employees = { data: parsed, timestamp: Date.now() };
+        return parsed;
       } catch (e) {
-        console.error("Local JSON parse failed:", e);
+        console.error("Local JSON parse failed for employees:", e);
       }
     }
     cache.employees = { data: [], timestamp: Date.now() };
@@ -622,99 +562,91 @@ export const getEmployees = async (): Promise<Employee[]> => {
 };
 
 export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
-  // Check if NIK already exists to prevent duplicate application
-  const currentEmployees = await getEmployees();
-  if (data.nik && currentEmployees.some(emp => emp.nik === data.nik)) {
-    throw new Error(`Anda sudah pernah mendaftar sebelumnya. NIK (${data.nik}) sudah terdaftar di sistem kami.`);
-  }
-
   const path = 'employees';
   const id = Math.random().toString(36).substring(2, 11);
-  const newEmployee: Employee = {
-    ...standardizeEmployee(data) as Employee,
+  const newEmp: Employee = {
+    ...data,
     id,
     status: 'APPLIED',
-    isInTalentPool: false,
     createdAt: new Date().toISOString()
   };
 
-  try {
-    const local = localStorage.getItem('local_employees');
-    const list = local ? JSON.parse(local) : [];
-    list.unshift(newEmployee);
-    localStorage.setItem('local_employees', JSON.stringify(list));
-  } catch (e) {
-    console.error("Local storage employee sync error", e);
-  }
+  const standardized = standardizeEmployee(newEmp) as Employee;
+  standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
+  standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
 
   try {
-    await setDoc(doc(db, path, id), cleanDoc(newEmployee));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(standardized))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('employees');
-    return newEmployee;
+    return standardized;
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
+    console.warn("⚠️ createEmployee failed, caching offline:", error);
+    try {
+      const local = localStorage.getItem('local_employees');
+      const list = local ? JSON.parse(local) : [];
+      list.push(standardized);
+      localStorage.setItem('local_employees', JSON.stringify(list));
+    } catch (e) {
+      console.error("Local cache sync error", e);
+    }
     invalidateCache('employees');
-    return newEmployee;
+    return standardized;
   }
 };
 
 export const updateEmployee = async (id: string, updates: Partial<Employee>): Promise<Employee> => {
   const path = 'employees';
-  const standardizedUpdates = standardizeEmployee(updates);
-  
-  let localUpdated: Employee | null = null;
+  const standardized = standardizeEmployee(updates);
+  if (standardized.whatsappNumber) standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
+  if (standardized.emergencyPhone) standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
+
+  try {
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: "PUT",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(standardized))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
+    invalidateCache('employees');
+  } catch (error) {
+    console.warn("⚠️ updateEmployee failed on server:", error);
+  }
+
+  let updatedObj: Employee | null = null;
   try {
     const local = localStorage.getItem('local_employees');
     if (local) {
       const list: Employee[] = JSON.parse(local);
       const idx = list.findIndex(e => e.id === id);
       if (idx !== -1) {
-        const extraUpdates: Partial<Employee> = {};
-        if (standardizedUpdates.status === 'REJECTED') {
-          extraUpdates.isInTalentPool = true;
-        }
-        list[idx] = { ...list[idx], ...standardizedUpdates, ...extraUpdates };
-        localUpdated = list[idx];
+        list[idx] = { ...list[idx], ...standardized };
+        updatedObj = list[idx];
         localStorage.setItem('local_employees', JSON.stringify(list));
       }
     }
   } catch (e) {
-    console.error("Local storage employee update sync error", e);
+    console.error("Local cache update error", e);
   }
 
-  try {
-    const ref = doc(db, path, id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      if (localUpdated) {
-        await setDoc(ref, cleanDoc(localUpdated));
-        invalidateCache('employees');
-        return localUpdated;
-      }
-      throw new Error("Kandidat tidak ditemukan");
-    }
-    const current = snap.data() as Employee;
-    const extraUpdates: Partial<Employee> = {};
-    if (standardizedUpdates.status === 'REJECTED') {
-      extraUpdates.isInTalentPool = true;
-    }
-    const updated = { ...current, ...standardizedUpdates, ...extraUpdates };
-    await updateDoc(ref, cleanDoc(updated));
-    invalidateCache('employees');
-    return updated;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `${path}/${id}`);
-    invalidateCache('employees');
-    if (localUpdated) {
-      return localUpdated;
-    }
-    throw error;
-  }
+  invalidateCache('employees');
+  return updatedObj || { ...updates, id } as Employee;
 };
 
 export const deleteEmployee = async (id: string): Promise<void> => {
   const path = 'employees';
-  
+  try {
+    const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
+    invalidateCache('employees');
+  } catch (error) {
+    console.warn("⚠️ deleteEmployee failed on server:", error);
+  }
+
   try {
     const local = localStorage.getItem('local_employees');
     if (local) {
@@ -723,19 +655,10 @@ export const deleteEmployee = async (id: string): Promise<void> => {
       localStorage.setItem('local_employees', JSON.stringify(filtered));
     }
   } catch (e) {
-    console.error("Local storage employee delete sync error", e);
+    console.error("Local cache delete error", e);
   }
-
-  try {
-    await deleteDoc(doc(db, path, id));
-    invalidateCache('employees');
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
-    invalidateCache('employees');
-  }
+  invalidateCache('employees');
 };
-
-// --- CLIENTS OPERATIONS ---
 
 export const getClients = async (): Promise<Client[]> => {
   const path = 'clients';
@@ -743,24 +666,15 @@ export const getClients = async (): Promise<Client[]> => {
     console.log("⚡ [CACHE HIT] getClients retrieved from memory cache.");
     return [...cache.clients.data];
   }
-
   try {
-    const snap = await getDocs(collection(db, path));
-    if (snap.empty) {
-      console.log("Clients empty in Firestore. Returning empty list.");
-      cache.clients = { data: [], timestamp: Date.now() };
-      localStorage.setItem('local_clients', JSON.stringify([]));
-      return [];
-    }
-    const clients: Client[] = [];
-    snap.forEach(doc => {
-      clients.push(doc.data() as Client);
-    });
-    cache.clients = { data: clients, timestamp: Date.now() };
-    localStorage.setItem('local_clients', JSON.stringify(clients));
-    return [...clients];
+    const res = await fetch(`/api/db/${path}`);
+    if (!res.ok) throw new Error("Gagal mengambil data klien dari server");
+    const list = await res.json() as Client[];
+    cache.clients = { data: list, timestamp: Date.now() };
+    localStorage.setItem('local_clients', JSON.stringify(list));
+    return [...list];
   } catch (error) {
-    console.warn("⚠️ [FIRESTORE EXCEPTION] getClients failed. Falling back to Local Storage/InMemory Database.", error);
+    console.warn("⚠️ getClients failed, fallback to local storage:", error);
     const local = localStorage.getItem('local_clients');
     if (local) {
       try {
@@ -796,11 +710,16 @@ export const createClient = async (data: NewClient): Promise<Client> => {
   }
 
   try {
-    await setDoc(doc(db, path, id), cleanDoc(newClient));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(newClient))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('clients');
     return newClient;
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
+    console.warn("⚠️ createClient failed on server:", error);
     invalidateCache('clients');
     return newClient;
   }
@@ -821,10 +740,11 @@ export const deleteClient = async (id: string): Promise<void> => {
   }
 
   try {
-    await deleteDoc(doc(db, path, id));
+    const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('clients');
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
+    console.warn("⚠️ deleteClient failed on server:", error);
     invalidateCache('clients');
   }
 };
@@ -849,30 +769,20 @@ export const updateClient = async (id: string, updates: Partial<Client>): Promis
   }
 
   try {
-    const ref = doc(db, path, id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      if (localUpdated) {
-        await setDoc(ref, cleanDoc(localUpdated));
-        invalidateCache('clients');
-        return localUpdated;
-      }
-      throw new Error("Client tidak ditemukan");
-    }
-    const current = snap.data() as Client;
-    const updated = { ...current, ...updates };
-    await updateDoc(ref, cleanDoc(updated));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(updates))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('clients');
-    return updated;
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `${path}/${id}`);
+    console.warn("⚠️ updateClient failed on server:", error);
     invalidateCache('clients');
-    if (localUpdated) return localUpdated;
-    throw error;
   }
-};
 
-// --- PROJECTS OPERATIONS ---
+  return localUpdated || { ...updates, id } as Client;
+};
 
 export const getProjects = async (): Promise<Project[]> => {
   const path = 'projects';
@@ -880,24 +790,15 @@ export const getProjects = async (): Promise<Project[]> => {
     console.log("⚡ [CACHE HIT] getProjects retrieved from memory cache.");
     return [...cache.projects.data];
   }
-
   try {
-    const snap = await getDocs(collection(db, path));
-    if (snap.empty) {
-      console.log("Projects empty in Firestore. Returning empty list.");
-      cache.projects = { data: [], timestamp: Date.now() };
-      localStorage.setItem('local_projects', JSON.stringify([]));
-      return [];
-    }
-    const projects: Project[] = [];
-    snap.forEach(doc => {
-      projects.push(doc.data() as Project);
-    });
-    cache.projects = { data: projects, timestamp: Date.now() };
-    localStorage.setItem('local_projects', JSON.stringify(projects));
-    return [...projects];
+    const res = await fetch(`/api/db/${path}`);
+    if (!res.ok) throw new Error("Gagal mengambil data proyek dari server");
+    const list = await res.json() as Project[];
+    cache.projects = { data: list, timestamp: Date.now() };
+    localStorage.setItem('local_projects', JSON.stringify(list));
+    return [...list];
   } catch (error) {
-    console.warn("⚠️ [FIRESTORE EXCEPTION] getProjects failed. Falling back to Local Storage/InMemory Database.", error);
+    console.warn("⚠️ getProjects failed, fallback to local storage:", error);
     const local = localStorage.getItem('local_projects');
     if (local) {
       try {
@@ -929,15 +830,20 @@ export const createProject = async (data: NewProject): Promise<Project> => {
     list.push(newProject);
     localStorage.setItem('local_projects', JSON.stringify(list));
   } catch (e) {
-    console.error("Local cache project creation error", e);
+    console.error("Local cache project sync error", e);
   }
 
   try {
-    await setDoc(doc(db, path, id), cleanDoc(newProject));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(newProject))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('projects');
     return newProject;
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
+    console.warn("⚠️ createProject failed on server:", error);
     invalidateCache('projects');
     return newProject;
   }
@@ -954,14 +860,15 @@ export const deleteProject = async (id: string): Promise<void> => {
       localStorage.setItem('local_projects', JSON.stringify(filtered));
     }
   } catch (e) {
-    console.error("Local cache project deletion error", e);
+    console.error("Local cache project delete error", e);
   }
 
   try {
-    await deleteDoc(doc(db, path, id));
+    const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('projects');
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
+    console.warn("⚠️ deleteProject failed on server:", error);
     invalidateCache('projects');
   }
 };
@@ -986,30 +893,20 @@ export const updateProject = async (id: string, updates: Partial<Project>): Prom
   }
 
   try {
-    const ref = doc(db, path, id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      if (localUpdated) {
-        await setDoc(ref, cleanDoc(localUpdated));
-        invalidateCache('projects');
-        return localUpdated;
-      }
-      throw new Error("Proyek tidak ditemukan");
-    }
-    const current = snap.data() as Project;
-    const updated = { ...current, ...updates };
-    await updateDoc(ref, cleanDoc(updated));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(updates))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('projects');
-    return updated;
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `${path}/${id}`);
+    console.warn("⚠️ updateProject failed on server:", error);
     invalidateCache('projects');
-    if (localUpdated) return localUpdated;
-    throw error;
   }
-};
 
-// --- JOBS OPERATIONS ---
+  return localUpdated || { ...updates, id } as Project;
+};
 
 export const getJobs = async (): Promise<JobVacancy[]> => {
   const path = 'jobs';
@@ -1017,24 +914,15 @@ export const getJobs = async (): Promise<JobVacancy[]> => {
     console.log("⚡ [CACHE HIT] getJobs retrieved from memory cache.");
     return [...cache.jobs.data];
   }
-
   try {
-    const snap = await getDocs(collection(db, path));
-    if (snap.empty) {
-      console.log("Jobs empty in Firestore. Returning empty list.");
-      cache.jobs = { data: [], timestamp: Date.now() };
-      localStorage.setItem('local_jobs', JSON.stringify([]));
-      return [];
-    }
-    const jobs: JobVacancy[] = [];
-    snap.forEach(doc => {
-      jobs.push(doc.data() as JobVacancy);
-    });
-    cache.jobs = { data: jobs, timestamp: Date.now() };
-    localStorage.setItem('local_jobs', JSON.stringify(jobs));
-    return [...jobs];
+    const res = await fetch(`/api/db/${path}`);
+    if (!res.ok) throw new Error("Gagal mengambil data lowongan pekerjaan dari server");
+    const list = await res.json() as JobVacancy[];
+    cache.jobs = { data: list, timestamp: Date.now() };
+    localStorage.setItem('local_jobs', JSON.stringify(list));
+    return [...list];
   } catch (error) {
-    console.warn("⚠️ [FIRESTORE EXCEPTION] getJobs failed. Falling back to Local Storage/InMemory Database.", error);
+    console.warn("⚠️ getJobs failed, fallback to local storage:", error);
     const local = localStorage.getItem('local_jobs');
     if (local) {
       try {
@@ -1066,15 +954,20 @@ export const createJob = async (data: NewJobVacancy): Promise<JobVacancy> => {
     list.push(newJob);
     localStorage.setItem('local_jobs', JSON.stringify(list));
   } catch (e) {
-    console.error("Local cache job addition error", e);
+    console.error("Local cache job sync error", e);
   }
 
   try {
-    await setDoc(doc(db, path, id), cleanDoc(newJob));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(newJob))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('jobs');
     return newJob;
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
+    console.warn("⚠️ createJob failed on server:", error);
     invalidateCache('jobs');
     return newJob;
   }
@@ -1090,7 +983,7 @@ export const updateJob = async (id: string, updates: Partial<JobVacancy>): Promi
       const list: JobVacancy[] = JSON.parse(local);
       const idx = list.findIndex(j => j.id === id);
       if (idx !== -1) {
-        list[idx] = { ...list[idx], ...updates } as JobVacancy;
+        list[idx] = { ...list[idx], ...updates };
         localUpdated = list[idx];
         localStorage.setItem('local_jobs', JSON.stringify(list));
       }
@@ -1100,26 +993,19 @@ export const updateJob = async (id: string, updates: Partial<JobVacancy>): Promi
   }
 
   try {
-    const ref = doc(db, path, id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      if (localUpdated) {
-        await setDoc(ref, cleanDoc(localUpdated));
-        invalidateCache('jobs');
-        return localUpdated;
-      }
-      throw new Error("Job empty");
-    }
-    const updated = { ...snap.data(), ...updates } as JobVacancy;
-    await updateDoc(ref, cleanDoc(updated));
+    const res = await fetch(`/api/db/${path}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc(updates))
+    });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('jobs');
-    return updated;
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `${path}/${id}`);
+    console.warn("⚠️ updateJob failed on server:", error);
     invalidateCache('jobs');
-    if (localUpdated) return localUpdated;
-    throw error;
   }
+
+  return localUpdated || { ...updates, id } as JobVacancy;
 };
 
 export const deleteJob = async (id: string): Promise<void> => {
@@ -1137,53 +1023,45 @@ export const deleteJob = async (id: string): Promise<void> => {
   }
 
   try {
-    await deleteDoc(doc(db, path, id));
+    const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('jobs');
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
+    console.warn("⚠️ deleteJob failed on server:", error);
     invalidateCache('jobs');
   }
 };
 
 export const clearDatabase = () => {
-  // Clear local storage and let Firestore reload
   localStorage.clear();
   clearAllCaches();
   window.location.reload();
 };
 
 export const seedAllDemoData = async (): Promise<void> => {
-  const batch = writeBatch(db);
-  
-  // 1. Clients
-  for (const cli of defaultClients) {
-    batch.set(doc(db, 'clients', cli.id), cleanDoc(cli));
-  }
-  
-  // 2. Projects
-  for (const prj of defaultProjects) {
-    batch.set(doc(db, 'projects', prj.id), cleanDoc(prj));
-  }
-  
-  // 3. Jobs
   const jobs = generateDummyJobs();
-  for (const j of jobs) {
-    batch.set(doc(db, 'jobs', j.id), cleanDoc(j));
-  }
-  
-  // 4. Employees
   const employees = generateDummyEmployees(35);
-  for (const emp of employees) {
-    batch.set(doc(db, 'employees', emp.id), cleanDoc(emp));
-  }
 
   try {
-    await batch.commit();
+    const res = await fetch("/api/db/seed/all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clients: defaultClients,
+        projects: defaultProjects,
+        jobs: jobs,
+        employees: employees
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error("Gagal inisialisasi seeder pada asisten backend");
+    }
+
     localStorage.clear();
     clearAllCaches();
     console.log("🚀 Firestore successfully seeded with 35 demo candidates, jobs, clients, and projects!");
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'seed-demo-data');
+    console.error("Gagal melakukan seeder database admin lewat server:", error);
   }
 };
-

@@ -3,6 +3,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import axios from "axios";
 import { GoogleGenAI } from "@google/genai";
+import admin from "firebase-admin";
+import fs from "fs";
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda yang profesional, efisien, dan ramah. Tugas Anda adalah memandu pelamar kerja mengisi formulir pendaftaran secara bertahap melalui percakapan natural.
@@ -74,6 +76,26 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Initialize server-side Firebase Admin SDK for bypass of security rules & direct robust access
+  let adminDb: admin.firestore.Firestore | null = null;
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      if (admin.apps.length === 0) {
+        admin.initializeApp({
+          projectId: config.projectId,
+        });
+      }
+      adminDb = admin.firestore(config.firestoreDatabaseId);
+      console.log("🚀 Server-Side Firestore Access Ready (Database ID: " + config.firestoreDatabaseId + ")");
+    } else {
+      console.warn("⚠️ firebase-applet-config.json not found on the server");
+    }
+  } catch (err) {
+    console.error("❌ Firebase Admin init error:", err);
+  }
+
   // Initialize server-side GoogleGenAI Client
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const ai = new GoogleGenAI({
@@ -135,6 +157,93 @@ async function startServer() {
     } catch (error) {
         console.error("Telegram error:", error);
         res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // REST API routes for robust server-side database CRUD operations
+  app.get("/api/db/:collection", async (req, res) => {
+    const { collection } = req.params;
+    if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
+    try {
+      const snap = await adminDb.collection(collection).get();
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json(list);
+    } catch (error: any) {
+      console.error(`Database admin get error for collection ${collection}:`, error);
+      res.status(500).json({ error: error.message || "Failed to fetch collection" });
+    }
+  });
+
+  app.post("/api/db/:collection/:id", async (req, res) => {
+    const { collection, id } = req.params;
+    const data = req.body;
+    if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
+    try {
+      await adminDb.collection(collection).doc(id).set(data);
+      res.json({ success: true, id });
+    } catch (error: any) {
+      console.error(`Database admin set error on collection ${collection}:`, error);
+      res.status(500).json({ error: error.message || "Failed to set document" });
+    }
+  });
+
+  app.put("/api/db/:collection/:id", async (req, res) => {
+    const { collection, id } = req.params;
+    const updates = req.body;
+    if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
+    try {
+      await adminDb.collection(collection).doc(id).update(updates);
+      res.json({ success: true, id });
+    } catch (error: any) {
+      console.error(`Database admin update error on collection ${collection}:`, error);
+      res.status(500).json({ error: error.message || "Failed to update document" });
+    }
+  });
+
+  app.delete("/api/db/:collection/:id", async (req, res) => {
+    const { collection, id } = req.params;
+    if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
+    try {
+      await adminDb.collection(collection).doc(id).delete();
+      res.json({ success: true, id });
+    } catch (error: any) {
+      console.error(`Database admin delete error on collection ${collection}:`, error);
+      res.status(500).json({ error: error.message || "Failed to delete document" });
+    }
+  });
+
+  app.post("/api/db/seed/all", async (req, res) => {
+    const { clients, projects, jobs, employees } = req.body;
+    if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
+    try {
+      const batch = adminDb.batch();
+      
+      if (Array.isArray(clients)) {
+        clients.forEach((cli: any) => {
+          batch.set(adminDb!.collection('clients').doc(cli.id), cli);
+        });
+      }
+      if (Array.isArray(projects)) {
+        projects.forEach((prj: any) => {
+          batch.set(adminDb!.collection('projects').doc(prj.id), prj);
+        });
+      }
+      if (Array.isArray(jobs)) {
+        jobs.forEach((j: any) => {
+          batch.set(adminDb!.collection('jobs').doc(j.id), j);
+        });
+      }
+      if (Array.isArray(employees)) {
+        employees.forEach((emp: any) => {
+          batch.set(adminDb!.collection('employees').doc(emp.id), emp);
+        });
+      }
+      
+      await batch.commit();
+      res.json({ success: true, message: "Database seeded successfully from server-side batch!" });
+    } catch (error: any) {
+      console.error("Failed to seed database server-side:", error);
+      res.status(500).json({ error: error.message || "Failed server-side seeding batch write" });
     }
   });
 
