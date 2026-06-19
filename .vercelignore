@@ -2,3 +2,7 @@
 server.ts
 dist/server.cjs
 dist/server.cjs.map
+
+# Use esbuild-compiled .js handlers (see scripts/build-vercel-api.mjs)
+api/**/*.ts
+api/tsconfig.json

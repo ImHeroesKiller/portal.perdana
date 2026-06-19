@@ -120,3 +120,7 @@ dist/
 dist-ssr/
 *.local
 .env.scpt
+
+# Vercel API build output (compiled from api/*.ts at deploy)
+api/**/*.js
+!api/send-telegram.js
