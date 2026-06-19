@@ -2,7 +2,7 @@
  * Vercel Serverless Function for Telegram messaging
  * Uses Node's native fetch API to remain dependency-free and lightning fast.
  */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS Headers support
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');

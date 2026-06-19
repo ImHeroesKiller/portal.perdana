@@ -1,3 +1,29 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// api/db/seed/all.ts
+var all_exports = {};
+__export(all_exports, {
+  default: () => handler
+});
+module.exports = __toCommonJS(all_exports);
+
 // lib/api-cache.ts
 var NO_STORE_CACHE_CONTROL = "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0";
 var NO_STORE_HEADERS = {
@@ -37,8 +63,8 @@ function handleOptions(req, res) {
 }
 
 // lib/firebase-admin.ts
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+var import_app = require("firebase-admin/app");
+var import_firestore = require("firebase-admin/firestore");
 
 // lib/firebase-env.ts
 function trimEnv(value) {
@@ -137,15 +163,15 @@ function getAdminEnv() {
 }
 function getOrInitApp() {
   if (cachedApp) return cachedApp;
-  const existing = getApps();
+  const existing = (0, import_app.getApps)();
   if (existing.length > 0) {
     cachedApp = existing[0];
     return cachedApp;
   }
   const env = getAdminEnv();
   try {
-    cachedApp = initializeApp({
-      credential: cert({
+    cachedApp = (0, import_app.initializeApp)({
+      credential: (0, import_app.cert)({
         projectId: env.projectId,
         clientEmail: env.clientEmail,
         privateKey: env.privateKey
@@ -165,7 +191,7 @@ function getAdminDb() {
   try {
     const app = getOrInitApp();
     const { databaseId } = getAdminEnv();
-    cachedDb = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+    cachedDb = databaseId ? (0, import_firestore.getFirestore)(app, databaseId) : (0, import_firestore.getFirestore)(app);
     return cachedDb;
   } catch (error) {
     if (error instanceof FirebaseConfigError) throw error;
@@ -231,6 +257,4 @@ async function handler(req, res) {
     });
   }
 }
-export {
-  handler as default
-};
+if (module.exports.default) module.exports = module.exports.default;

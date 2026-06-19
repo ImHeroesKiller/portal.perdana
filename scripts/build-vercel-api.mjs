@@ -43,8 +43,11 @@ for (const entry of entries) {
     bundle: true,
     platform: 'node',
     target: 'node20',
-    format: 'esm',
+    format: 'cjs',
     packages: 'external',
+    footer: {
+      js: 'if (module.exports.default) module.exports = module.exports.default;',
+    },
     logLevel: 'warning',
   });
 
