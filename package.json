@@ -9,7 +9,8 @@
     "start": "node dist/server.cjs",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "init-firestore": "tsx scripts/init-firestore.ts"
+    "init-firestore": "tsx scripts/init-firestore.ts",
+    "test:firestore": "tsx scripts/test-firestore-connection.ts"
   },
   "dependencies": {
     "@google/genai": "^2.7.0",

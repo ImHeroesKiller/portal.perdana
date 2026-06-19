@@ -60,6 +60,39 @@ export function getMissingAdminEnvKeys(): string[] {
   return missing;
 }
 
+const CLIENT_ENV_KEYS = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_APP_ID',
+] as const;
+
+export function getMissingClientEnvKeys(
+  source: Record<string, string | undefined> = process.env as Record<string, string | undefined>
+): string[] {
+  return CLIENT_ENV_KEYS.filter((key) => !trimEnv(source[key]));
+}
+
+/** Read client env from process.env (Node scripts / CI). */
+export function readFirebaseClientEnvFromProcess(): FirebaseClientEnv | null {
+  const env = process.env as Record<string, string | undefined>;
+  const config = {
+    apiKey: trimEnv(env.VITE_FIREBASE_API_KEY) ?? '',
+    authDomain: trimEnv(env.VITE_FIREBASE_AUTH_DOMAIN) ?? '',
+    projectId: trimEnv(env.VITE_FIREBASE_PROJECT_ID) ?? '',
+    storageBucket: trimEnv(env.VITE_FIREBASE_STORAGE_BUCKET) ?? '',
+    messagingSenderId: trimEnv(env.VITE_FIREBASE_MESSAGING_SENDER_ID) ?? '',
+    appId: trimEnv(env.VITE_FIREBASE_APP_ID) ?? '',
+    databaseId: trimEnv(env.VITE_FIREBASE_DATABASE_ID),
+  };
+
+  if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId) {
+    return null;
+  }
+
+  return config;
+}
+
 /** Read client env from Vite `import.meta.env` (browser/build time). */
 export function readFirebaseClientEnvFromMeta(meta: ImportMeta): FirebaseClientEnv | null {
   const env = meta.env as Record<string, string | undefined>;
