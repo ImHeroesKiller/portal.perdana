@@ -16,6 +16,10 @@ const HANDWRITTEN = new Set([
   'db/[collection]/[id].js',
 ]);
 
+function isHandwritten(relPath) {
+  return HANDWRITTEN.has(relPath) || relPath.startsWith('_helpers/');
+}
+
 function walkTsFiles(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
@@ -39,7 +43,12 @@ console.log(`build-vercel-api: compiling ${entries.length} handler(s)...`);
 
 for (const entry of entries) {
   const rel = relative(SRC_ROOT, entry);
-  const outfile = join(API_ROOT, rel.replace(/\.ts$/, '.js'));
+  const outRel = rel.replace(/\.ts$/, '.js');
+  if (isHandwritten(outRel)) {
+    console.log(`  ↷ skip hand-written api/${outRel}`);
+    continue;
+  }
+  const outfile = join(API_ROOT, outRel);
   mkdirSync(dirname(outfile), { recursive: true });
 
   await esbuild.build({
@@ -66,8 +75,9 @@ function walkJsFiles(dir) {
       walkJsFiles(full);
       continue;
     }
-    if (!name.endsWith('.js') || HANDWRITTEN.has(name)) continue;
+    if (!name.endsWith('.js')) continue;
     const rel = relative(API_ROOT, full);
+    if (isHandwritten(rel)) continue;
     const tsSource = join(SRC_ROOT, rel.replace(/\.js$/, '.ts'));
     if (!existsSync(tsSource)) {
       unlinkSync(full);
