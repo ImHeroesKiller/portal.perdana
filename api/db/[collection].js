@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// api/db/[collection].ts
+// serverless-src/db/[collection].ts
 var collection_exports = {};
 __export(collection_exports, {
   default: () => collection_default
@@ -390,7 +390,7 @@ function sendApiError(res, error) {
   res.status(status).json(toErrorPayload(error));
 }
 
-// api/db/[collection].ts
+// serverless-src/db/[collection].ts
 async function handler(req, res) {
   const collection = Array.isArray(req.query?.collection) ? req.query.collection[0] : req.query?.collection;
   if (req.method !== "GET") {

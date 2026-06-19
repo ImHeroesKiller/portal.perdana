@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// api/recruitment-chat.ts
+// serverless-src/recruitment-chat.ts
 var recruitment_chat_exports = {};
 __export(recruitment_chat_exports, {
   default: () => handler
@@ -412,7 +412,7 @@ async function trySaveCandidateFromReply(replyText) {
   }
 }
 
-// api/recruitment-chat.ts
+// serverless-src/recruitment-chat.ts
 var SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda. Anda memandu pelamar mengisi formulir melalui percakapan bertahap.
 

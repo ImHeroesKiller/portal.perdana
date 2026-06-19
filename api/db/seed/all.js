@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// api/db/seed/all.ts
+// serverless-src/db/seed/all.ts
 var all_exports = {};
 __export(all_exports, {
   default: () => handler
@@ -248,7 +248,7 @@ async function seedAllCollections(body) {
   await batch.commit();
 }
 
-// api/db/seed/all.ts
+// serverless-src/db/seed/all.ts
 async function handler(req, res) {
   applyCors(res);
   applyNoStoreHeaders(res);

@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// api/db/[collection]/[id].ts
+// serverless-src/db/[collection]/[id].ts
 var id_exports = {};
 __export(id_exports, {
   default: () => handler
@@ -237,7 +237,7 @@ async function deleteDocument(collection, id) {
   return { id };
 }
 
-// api/db/[collection]/[id].ts
+// serverless-src/db/[collection]/[id].ts
 async function handler(req, res) {
   applyCors(res);
   applyNoStoreHeaders(res);

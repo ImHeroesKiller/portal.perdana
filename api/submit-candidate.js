@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// api/submit-candidate.ts
+// serverless-src/submit-candidate.ts
 var submit_candidate_exports = {};
 __export(submit_candidate_exports, {
   default: () => handler
@@ -390,7 +390,7 @@ async function saveCandidateToFirestore(data, options) {
   }
 }
 
-// api/submit-candidate.ts
+// serverless-src/submit-candidate.ts
 async function handler(req, res) {
   applyCors(res);
   if (handleOptions(req, res)) return;
