@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { updateCandidate } from '../services/db';
-import { useCandidates } from '../hooks/useDbQueries';
+import { useCandidates, updateCandidate } from '../hooks/useDbQueries';
 import { getCurrentUser } from '../services/auth';
 import { Employee } from '../types';
 import { VideoCameraIcon, MicrophoneIcon, ClockIcon, CheckCircleIcon, PlayCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/react/24/outline';

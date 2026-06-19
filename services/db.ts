@@ -3,11 +3,6 @@ import { toTitleCase } from '../src/utils';
 import { FETCH_NO_STORE_INIT, withCacheBust } from '../lib/api-cache';
 import { invalidateDbQuery, invalidateAllDbQueries } from '../lib/invalidate-queries';
 import type { DbCollectionKey } from '../lib/queryKeys';
-import {
-  CANDIDATES_COLLECTION,
-  normalizeCandidateFromFirestore,
-  prepareCandidateForFirestore,
-} from '../lib/candidate-record';
 
 const MUTATION_HEADERS = {
   'Content-Type': 'application/json',
@@ -49,25 +44,8 @@ export const ensurePlus62 = (num: string | undefined): string => {
   return `+62${clean}`;
 };
 
-// Helper to recursively strip undefined properties from an object (as Firestore doesn't allow undefined values)
-export const cleanDoc = (obj: any): any => {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-  if (obj instanceof Date) {
-    return obj.toISOString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(cleanDoc);
-  }
-  const cleaned: any = {};
-  for (const [key, val] of Object.entries(obj)) {
-    if (val !== undefined) {
-      cleaned[key] = cleanDoc(val);
-    }
-  }
-  return cleaned;
-};
+import { cleanDoc } from '../src/lib/doc-utils';
+import { prepareCandidateForFirestore } from '../lib/candidate-record';
 
 // Helper to simulate file upload with high-efficiency thumbnailing and document receipt generation
 export const uploadFileMock = (file: File): Promise<string> => {
@@ -524,145 +502,38 @@ export const clearAllCaches = () => {
 };
 
 // --- CORE REST API AND PROXIED FIRESTORE OPERATIONS ---
+// Candidate CRUD → src/services/candidateService.ts (collection: candidates)
+// Permanent employees → src/services/employeeService.ts (collection: employees)
 
-export const getCandidates = async (): Promise<Employee[]> => {
-  const list = await fetchCollection<Record<string, unknown>>(CANDIDATES_COLLECTION);
-  const sorted = list.sort(
-    (a, b) =>
-      new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime()
-  );
-  return sorted.map((doc) => normalizeCandidateFromFirestore(doc));
+import {
+  getCandidates,
+  createCandidate,
+  updateCandidate,
+  deleteCandidate,
+  CANDIDATES_COLLECTION,
+} from '../src/services/candidateService';
+export {
+  getCandidates,
+  createCandidate,
+  updateCandidate,
+  deleteCandidate,
+  CANDIDATES_COLLECTION,
 };
+export {
+  getPermanentEmployees,
+  getActivePermanentEmployees,
+  updatePermanentEmployee,
+  deletePermanentEmployee,
+  EMPLOYEES_COLLECTION,
+} from '../src/services/employeeService';
+export { cleanDoc };
 
-/** @deprecated Use getCandidates() — reads from `candidates` collection */
+/** @deprecated Use getCandidates() — pelamar di collection `candidates` */
 export const getEmployees = getCandidates;
-
-export const createCandidate = async (data: NewEmployee, source = 'manual'): Promise<Employee> => {
-  const path = CANDIDATES_COLLECTION;
-  const id = Math.random().toString(36).substring(2, 11);
-  const standardized = standardizeEmployee({
-    ...data,
-    status: 'APPLIED',
-  }) as Partial<Employee>;
-
-  if (standardized.whatsappNumber) {
-    standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
-  }
-  if (standardized.emergencyPhone) {
-    standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
-  }
-
-  const prepared = prepareCandidateForFirestore(standardized as NewEmployee, { id, source });
-  let finalEmp = normalizeCandidateFromFirestore(prepared);
-
-  // Sync with Google Sheets & Drive if enabled in company settings
-  try {
-    const settings = getCompanySettings();
-    const gwSettings = settings.googleWorkspace;
-    if (gwSettings?.enabled && gwSettings.webAppUrl) {
-      console.log("Mengirim data pelamar ke Google Sheets & Drive...");
-      const payload = {
-        ...finalEmp,
-        applicationLetterFile: finalEmp.applicationLetterPath,
-        cvFile: finalEmp.cvPath,
-        ktpFile: finalEmp.ktpPath,
-        diplomaFile: finalEmp.diplomaPath,
-        photoFile: finalEmp.photoPath,
-        kkFile: finalEmp.kkPath,
-        certificateFile: finalEmp.certificatePath,
-        folderId: gwSettings.folderId
-      };
-
-      const res = await fetch(gwSettings.webAppUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        if (result && result.status === 'success') {
-          console.log('Google Workspace Sync Success:', result);
-          if (result.files) {
-            finalEmp.applicationLetterPath = result.files.applicationLetter || finalEmp.applicationLetterPath;
-            finalEmp.cvPath = result.files.cv || finalEmp.cvPath;
-            finalEmp.ktpPath = result.files.ktp || finalEmp.ktpPath;
-            finalEmp.diplomaPath = result.files.diploma || finalEmp.diplomaPath;
-            finalEmp.photoPath = result.files.photo || finalEmp.photoPath;
-            finalEmp.kkPath = result.files.kk || finalEmp.kkPath;
-            finalEmp.certificatePath = result.files.certificate || finalEmp.certificatePath;
-          }
-        }
-      }
-    }
-  } catch(err) {
-    console.error('Koneksi Google Workspace Gagal, lanjut ke backup lokal:', err);
-  }
-
-  try {
-    const res = await fetch(`/api/db/${path}/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanDoc(finalEmp))
-    });
-    if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('candidates');
-    return finalEmp;
-  } catch (error) {
-    console.warn("⚠️ createCandidate failed, caching offline:", error);
-    try {
-      const local = localStorage.getItem('local_candidates');
-      const list = local ? JSON.parse(local) : [];
-      list.push(finalEmp);
-      localStorage.setItem('local_candidates', JSON.stringify(list));
-    } catch (e) {
-      console.error("Local cache sync error", e);
-    }
-    invalidateCache('candidates');
-    return finalEmp;
-  }
-};
-
 /** @deprecated Use createCandidate() */
 export const createEmployee = (data: NewEmployee) => createCandidate(data, 'manual');
-
-export const updateCandidate = async (id: string, updates: Partial<Employee>): Promise<Employee> => {
-  const path = CANDIDATES_COLLECTION;
-  const standardized = standardizeEmployee(updates);
-  if (standardized.whatsappNumber) standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
-  if (standardized.emergencyPhone) standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
-
-  const payload = prepareCandidateForFirestore({ ...standardized, id } as Partial<Employee>, { id });
-
-  try {
-    const res = await fetch(`/api/db/${path}/${id}`, {
-      method: "PUT",
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanDoc(payload))
-    });
-    if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('candidates');
-  } catch (error) {
-    console.warn("⚠️ updateCandidate failed on server:", error);
-  }
-
-  return normalizeCandidateFromFirestore({ ...payload, id });
-};
-
 /** @deprecated Use updateCandidate() */
 export const updateEmployee = updateCandidate;
-
-export const deleteCandidate = async (id: string): Promise<void> => {
-  const path = CANDIDATES_COLLECTION;
-  try {
-    const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('candidates');
-  } catch (error) {
-    console.warn("⚠️ deleteCandidate failed on server:", error);
-  }
-};
-
 /** @deprecated Use deleteCandidate() */
 export const deleteEmployee = deleteCandidate;
 

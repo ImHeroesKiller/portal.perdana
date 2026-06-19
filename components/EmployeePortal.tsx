@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser, logout } from '../services/auth';
-import { updateCandidate, createCandidate } from '../services/db';
-import { useCandidates } from '../hooks/useDbQueries';
+import { useCandidates, createCandidate, updateCandidate } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { 
   getAttendance, clockIn, clockOut, ERPAbsensi,

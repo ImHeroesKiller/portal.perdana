@@ -2,19 +2,27 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useJobs, useCandidates, useClients, useProjects } from '../hooks/useDbQueries';
+import { DataFetchState } from '../src/components/DataFetchState';
 import { JobVacancy } from '../types';
 import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOfficeIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../services/i18n';
 import { MobileHomePage } from './MobileHomePage';
 
 export const HomePage: React.FC = () => {
-  const { data: jobs = [], isLoading: jobsLoading } = useJobs({ activeOnly: true });
+  const {
+    data: jobs = [],
+    isLoading: jobsLoading,
+    isError: jobsError,
+    error: jobsFetchError,
+    refetch: refetchJobs,
+  } = useJobs({ activeOnly: true });
   const { data: candidates = [], isLoading: candidatesLoading } = useCandidates();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const loading = jobsLoading || candidatesLoading || clientsLoading || projectsLoading;
+  const fetchError = jobsError ? jobsFetchError : null;
 
   const stats = useMemo(() => ({
     jobs: jobs.length,
@@ -183,19 +191,18 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {loading ? (
-             <div className="flex justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
-             </div>
-          ) : filteredJobs.length === 0 ? (
-             <div className="text-center p-12 bg-white rounded-lg shadow">
-                 <p className="text-gray-500 text-lg">
-                    {jobs.length === 0 
-                        ? "Saat ini belum ada lowongan yang tersedia." 
-                        : t('home_empty_search')}
-                 </p>
-             </div>
-          ) : (
+          <DataFetchState
+            isLoading={loading}
+            error={fetchError}
+            isEmpty={!loading && !fetchError && filteredJobs.length === 0}
+            emptyMessage={
+              jobs.length === 0
+                ? 'Saat ini belum ada lowongan yang tersedia.'
+                : t('home_empty_search')
+            }
+            onRetry={() => { void refetchJobs(); }}
+          >
+          {filteredJobs.length > 0 && (
             <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-2">
               {filteredJobs.map((job) => {
                 const isExpanded = expandedRequirements[job.id];
@@ -280,6 +287,7 @@ export const HomePage: React.FC = () => {
               )})}
             </div>
           )}
+          </DataFetchState>
         </div>
       </div>
       

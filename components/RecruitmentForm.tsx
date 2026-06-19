@@ -1,8 +1,8 @@
 
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { createCandidate, uploadFileMock } from '../services/db';
-import { useJobs } from '../hooks/useDbQueries';
+import { uploadFileMock } from '../services/db';
+import { useJobs, createCandidate } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { getCurrentUser, updateUserProfile, createCredentialsForCandidateSubmit } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';

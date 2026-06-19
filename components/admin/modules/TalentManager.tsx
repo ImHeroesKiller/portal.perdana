@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Employee, JobVacancy, ApplicationStatus, Client, Project } from '../../../types';
-import { updateCandidate, createJob, updateJob, deleteJob, deleteCandidate, createCandidate } from '../../../services/db';
-import { useCandidates, useJobs, useClients, useProjects, useRefreshDb } from '../../../hooks/useDbQueries';
+import { createJob, updateJob, deleteJob } from '../../../services/db';
+import {
+  useCandidates,
+  useJobs,
+  useClients,
+  useProjects,
+  useRefreshDb,
+  createCandidate,
+  updateCandidate,
+  deleteCandidate,
+} from '../../../hooks/useDbQueries';
+import { DataFetchState } from '../../../src/components/DataFetchState';
+import { CandidateTable } from '../../../src/components/CandidateTable';
 import { createCredentialsForCandidateSubmit } from '../../../services/auth';
 import { sendCandidateCredentialsNotification } from '../../../services/notifications';
 import { analyzeCandidate, ScoreBadge, StatusBadge, LoadingSpinner } from '../shared/Utils';
@@ -29,7 +40,15 @@ export const TalentManager: React.FC = () => {
         { id: 'talent-pool' as const, label: 'Pool', fullLabel: 'Pool Talent (Recycle)', icon: SparklesIcon },
         { id: 'jobs' as const, label: 'Lowongan', fullLabel: 'Kelola Lowongan', icon: BriefcaseIcon },
     ];
-    const { data: candidates = [], isFetching: loading, refetch: refetchCandidates } = useCandidates();
+    const {
+      data: candidates = [],
+      isLoading,
+      isFetching,
+      isError,
+      error,
+      refetch: refetchCandidates,
+    } = useCandidates();
+    const loading = isLoading;
     const { data: jobs = [], refetch: refetchJobs } = useJobs();
     const { data: clients = [] } = useClients();
     const { data: projects = [] } = useProjects();
@@ -764,52 +783,23 @@ export const TalentManager: React.FC = () => {
             )}
 
             {/* View 3: Data Table View of all Active Candidates */}
-            {!loading && view === 'candidates' && (
-                <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200 text-sm">
-                            <thead className="bg-slate-50 text-slate-600 font-semibold text-left">
-                                <tr>
-                                    <th className="px-6 py-4">Nama Pelamar</th>
-                                    <th className="px-6 py-4">Lowongan Kerja</th>
-                                    <th className="px-6 py-4">Domisili (Kota)</th>
-                                    <th className="px-6 py-4">Pendidikan Min</th>
-                                    <th className="px-6 py-4">Status Seleksi</th>
-                                    <th className="px-6 py-4 text-right">Tindakan</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {filteredEmp.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">Kandidat tidak ditemukan dengan kriteria filter tersebut.</td>
-                                    </tr>
-                                ) : (
-                                    filteredEmp.map(emp => (
-                                        <tr key={emp.id} className="hover:bg-slate-50/70 transition">
-                                            <td className="px-6 py-4 font-semibold text-slate-800">{emp.fullName}</td>
-                                            <td className="px-6 py-4 text-slate-600">{emp.positionApplied}</td>
-                                            <td className="px-6 py-4 text-slate-500">{emp.placeOfBirth}</td>
-                                            <td className="px-6 py-4 text-xs font-semibold text-slate-500">{emp.lastEducation}</td>
-                                            <td className="px-6 py-4"><StatusBadge status={emp.status} /></td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-3">
-                                                    {emp.status === 'REJECTED' && (
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); setRecycleEmp(emp); }} 
-                                                            className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-2 py-1 rounded"
-                                                        >
-                                                            Salurkan Ulang
-                                                        </button>
-                                                    )}
-                                                    <button onClick={() => setSelectedEmp(emp)} className="text-indigo-600 hover:text-indigo-800 font-bold">Detail</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+            {view === 'candidates' && (
+                <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden p-1">
+                    <DataFetchState
+                      isLoading={loading}
+                      isFetching={isFetching && !loading}
+                      error={isError ? error : null}
+                      isEmpty={!loading && !isError && filteredEmp.length === 0}
+                      emptyMessage="Kandidat tidak ditemukan dengan kriteria filter tersebut."
+                      onRetry={() => { void refetchCandidates(); }}
+                    >
+                      <CandidateTable
+                        candidates={filteredEmp}
+                        onSelect={setSelectedEmp}
+                        onRecycle={setRecycleEmp}
+                        showSource
+                      />
+                    </DataFetchState>
                 </div>
             )}
 

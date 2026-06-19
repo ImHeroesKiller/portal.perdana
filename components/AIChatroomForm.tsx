@@ -15,8 +15,8 @@ import {
   Inbox,
   Sparkles
 } from 'lucide-react';
-import { createCandidate, uploadFileMock } from '../services/db';
-import { useJobs } from '../hooks/useDbQueries';
+import { uploadFileMock } from '../services/db';
+import { useJobs, createCandidate } from '../hooks/useDbQueries';
 import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';

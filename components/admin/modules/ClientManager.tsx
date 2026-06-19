@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Client, NewClient } from '../../../types';
 import { createClient, deleteClient, updateClient, uploadFileMock } from '../../../services/db';
 import { useClients, useRefreshDb } from '../../../hooks/useDbQueries';
+import { DataFetchState } from '../../../src/components/DataFetchState';
 import { Input } from '../../ui/Input';
 import { 
     BuildingOfficeIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon, 
@@ -11,7 +12,14 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const ClientManager: React.FC = () => {
-    const { data: clients = [], isFetching: loading } = useClients();
+    const {
+      data: clients = [],
+      isLoading: loading,
+      isFetching,
+      isError,
+      error,
+      refetch,
+    } = useClients();
     const refreshDb = useRefreshDb();
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<'name' | 'industry'>('name');

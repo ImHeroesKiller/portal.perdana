@@ -1,10 +1,18 @@
 
 import React, { useMemo, useState } from 'react';
 import { useCandidates, useRefreshDb } from '../../../hooks/useDbQueries';
+import { DataFetchState } from '../../../src/components/DataFetchState';
 import { ArrowPathIcon, CloudArrowUpIcon, DocumentChartBarIcon, PrinterIcon } from '@heroicons/react/24/outline';
 
 export const ReportsManager: React.FC = () => {
-    const { data: candidates = [], isFetching } = useCandidates();
+    const {
+      data: candidates = [],
+      isLoading,
+      isFetching,
+      isError,
+      error,
+      refetch,
+    } = useCandidates();
     const refreshDb = useRefreshDb();
     const [syncStatus, setSyncStatus] = useState<'Synced'|'Syncing'|'Error'>('Synced');
     const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
@@ -32,6 +40,12 @@ export const ReportsManager: React.FC = () => {
     }
 
     return (
+        <DataFetchState
+          isLoading={isLoading}
+          isFetching={isFetching && !isLoading}
+          error={isError ? error : null}
+          onRetry={() => { void refetch(); }}
+        >
         <div className="space-y-6">
             <style>{`
                 @media print {
@@ -77,6 +91,7 @@ export const ReportsManager: React.FC = () => {
                 </div>
             </div>
         </div>
+        </DataFetchState>
     );
 };
 

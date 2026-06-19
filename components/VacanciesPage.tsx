@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
+import { DataFetchState } from '../src/components/DataFetchState';
 import { JobVacancy } from '../types';
 import { useLanguage } from '../services/i18n';
 import { 
@@ -19,7 +20,13 @@ import {
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const { data: jobs = [], isLoading: loading } = useJobs({ activeOnly: true });
+  const {
+    data: jobs = [],
+    isLoading: loading,
+    isError,
+    error,
+    refetch,
+  } = useJobs({ activeOnly: true });
   const { data: clients = [] } = useClients();
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -173,18 +180,13 @@ export const VacanciesPage: React.FC = () => {
         </div>
 
         {/* 4. Active Job Vacancies output */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-900 mb-3"></div>
-            <p className="text-[10px] text-slate-500 font-bold">Memuat daftar karir aktif...</p>
-          </div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="text-center p-10 bg-white rounded-2xl border border-slate-100 shadow-xs mt-4">
-            <p className="text-slate-500 text-xs font-semibold">
-              Tidak ada lowongan yang cocok dengan kata kunci atau filter Anda.
-            </p>
-          </div>
-        ) : (
+        <DataFetchState
+          isLoading={loading}
+          error={isError ? error : null}
+          isEmpty={!loading && !isError && filteredJobs.length === 0}
+          emptyMessage="Tidak ada lowongan yang cocok dengan kata kunci atau filter Anda."
+          onRetry={() => { void refetch(); }}
+        >
           <div className="space-y-4 mt-2">
             {filteredJobs.map((job) => {
               const isBookmarked = bookmarkedJobs.includes(job.id);
@@ -282,7 +284,7 @@ export const VacanciesPage: React.FC = () => {
               );
             })}
           </div>
-        )}
+        </DataFetchState>
 
         {/* 5. Bottom document notification callout */}
         <div className="mt-8 mb-6 p-4 bg-white border border-slate-100 rounded-3xl flex items-start gap-3 shadow-xs">
