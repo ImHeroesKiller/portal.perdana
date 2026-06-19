@@ -44,6 +44,8 @@ export async function seedAllCollections(body: {
   clients?: unknown[];
   projects?: unknown[];
   jobs?: unknown[];
+  candidates?: unknown[];
+  /** @deprecated Use candidates */
   employees?: unknown[];
 }): Promise<void> {
   const db = await getAdminDbOrThrow();
@@ -64,9 +66,10 @@ export async function seedAllCollections(body: {
       batch.set(db.collection('jobs').doc(job.id), job);
     }
   }
-  if (Array.isArray(body.employees)) {
-    for (const emp of body.employees as { id: string }[]) {
-      batch.set(db.collection('employees').doc(emp.id), emp);
+  const candidateRows = body.candidates ?? body.employees;
+  if (Array.isArray(candidateRows)) {
+    for (const row of candidateRows as { id: string }[]) {
+      batch.set(db.collection('candidates').doc(row.id), row);
     }
   }
 

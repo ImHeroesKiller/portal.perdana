@@ -1,7 +1,7 @@
 
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { createEmployee, uploadFileMock } from '../services/db';
+import { createCandidate, uploadFileMock } from '../services/db';
 import { useJobs } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { getCurrentUser, updateUserProfile, createCredentialsForCandidateSubmit } from '../services/auth';
@@ -259,7 +259,7 @@ export const RecruitmentForm: React.FC = () => {
         certificatePath: filePaths['certificatePath'],
       };
 
-      await createEmployee(payload);
+      await createCandidate(payload, 'manual');
       
       // Automatically generate access credentials for the new applicant
       const credentials = createCredentialsForCandidateSubmit(payload.email, payload.whatsappNumber);

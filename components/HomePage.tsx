@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useJobs, useEmployees, useClients, useProjects } from '../hooks/useDbQueries';
+import { useJobs, useCandidates, useClients, useProjects } from '../hooks/useDbQueries';
 import { JobVacancy } from '../types';
 import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOfficeIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../services/i18n';
@@ -9,19 +9,19 @@ import { MobileHomePage } from './MobileHomePage';
 
 export const HomePage: React.FC = () => {
   const { data: jobs = [], isLoading: jobsLoading } = useJobs({ activeOnly: true });
-  const { data: employees = [], isLoading: employeesLoading } = useEmployees();
+  const { data: candidates = [], isLoading: candidatesLoading } = useCandidates();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const loading = jobsLoading || employeesLoading || clientsLoading || projectsLoading;
+  const loading = jobsLoading || candidatesLoading || clientsLoading || projectsLoading;
 
   const stats = useMemo(() => ({
     jobs: jobs.length,
-    applicants: employees.length,
+    applicants: candidates.length,
     clients: clients.filter((c) => c.isActive !== false).length,
     projects: projects.filter((p) => p.isActive !== false).length,
-  }), [jobs, employees, clients, projects]);
+  }), [jobs, candidates, clients, projects]);
   const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);

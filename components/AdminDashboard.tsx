@@ -15,7 +15,7 @@ import { RBACManager } from './admin/modules/RBACManager';
 import { 
   getCurrentUser, logout 
 } from '../services/auth';
-import { useEmployees } from '../hooks/useDbQueries';
+import { useCandidates } from '../hooks/useDbQueries';
 import { Employee } from '../types';
 
 import { 
@@ -44,11 +44,11 @@ const ALL_MODULES = [
 export const AdminDashboard: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeModule, setActiveModule] = useState<string>('');
-  const { data: allEmployees = [], isLoading: loadingEmployees, refetch: refetchEmployees } = useEmployees();
+  const { data: allCandidates = [], isLoading: loadingEmployees, refetch: refetchCandidates } = useCandidates();
   const activeEmployees = React.useMemo(() => {
-    const hired = allEmployees.filter((e) => e.status === 'HIRED' || e.status === 'CONTRACT');
-    return hired.length > 0 ? hired : allEmployees.slice(0, 20);
-  }, [allEmployees]);
+    const hired = allCandidates.filter((e) => e.status === 'HIRED' || e.status === 'CONTRACT');
+    return hired.length > 0 ? hired : allCandidates.slice(0, 20);
+  }, [allCandidates]);
   const [moduleSearch, setModuleSearch] = useState('');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -235,7 +235,7 @@ export const AdminDashboard: React.FC = () => {
             {activeModule === 'employees' && (
               <EmployeesPanel 
                 activeEmployees={activeEmployees} 
-                onRefresh={() => { void refetchEmployees(); }}
+                onRefresh={() => { void refetchCandidates(); }}
               />
             )}
             {activeModule === 'attendance' && (

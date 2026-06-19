@@ -3,6 +3,11 @@ import { toTitleCase } from '../src/utils';
 import { FETCH_NO_STORE_INIT, withCacheBust } from '../lib/api-cache';
 import { invalidateDbQuery, invalidateAllDbQueries } from '../lib/invalidate-queries';
 import type { DbCollectionKey } from '../lib/queryKeys';
+import {
+  CANDIDATES_COLLECTION,
+  normalizeCandidateFromFirestore,
+  prepareCandidateForFirestore,
+} from '../lib/candidate-record';
 
 const MUTATION_HEADERS = {
   'Content-Type': 'application/json',
@@ -520,32 +525,35 @@ export const clearAllCaches = () => {
 
 // --- CORE REST API AND PROXIED FIRESTORE OPERATIONS ---
 
-export const getEmployees = async (): Promise<Employee[]> => {
-  const list = await fetchCollection<Employee>('employees');
-  const sorted = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const normalized = sorted.map((emp) => ({
-    ...emp,
-    whatsappNumber: ensurePlus62(emp.whatsappNumber),
-    emergencyPhone: ensurePlus62(emp.emergencyPhone),
-  }));
-  return [...normalized];
+export const getCandidates = async (): Promise<Employee[]> => {
+  const list = await fetchCollection<Record<string, unknown>>(CANDIDATES_COLLECTION);
+  const sorted = list.sort(
+    (a, b) =>
+      new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime()
+  );
+  return sorted.map((doc) => normalizeCandidateFromFirestore(doc));
 };
 
-export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
-  const path = 'employees';
+/** @deprecated Use getCandidates() — reads from `candidates` collection */
+export const getEmployees = getCandidates;
+
+export const createCandidate = async (data: NewEmployee, source = 'manual'): Promise<Employee> => {
+  const path = CANDIDATES_COLLECTION;
   const id = Math.random().toString(36).substring(2, 11);
-  const newEmp: Employee = {
+  const standardized = standardizeEmployee({
     ...data,
-    id,
     status: 'APPLIED',
-    createdAt: new Date().toISOString()
-  };
+  }) as Partial<Employee>;
 
-  const standardized = standardizeEmployee(newEmp) as Employee;
-  standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
-  standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
+  if (standardized.whatsappNumber) {
+    standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
+  }
+  if (standardized.emergencyPhone) {
+    standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
+  }
 
-  let finalEmp = { ...standardized };
+  const prepared = prepareCandidateForFirestore(standardized as NewEmployee, { id, source });
+  let finalEmp = normalizeCandidateFromFirestore(prepared);
 
   // Sync with Google Sheets & Drive if enabled in company settings
   try {
@@ -598,83 +606,65 @@ export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
       body: JSON.stringify(cleanDoc(finalEmp))
     });
     if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('employees');
+    invalidateCache('candidates');
     return finalEmp;
   } catch (error) {
-    console.warn("⚠️ createEmployee failed, caching offline:", error);
+    console.warn("⚠️ createCandidate failed, caching offline:", error);
     try {
-      const local = localStorage.getItem('local_employees');
+      const local = localStorage.getItem('local_candidates');
       const list = local ? JSON.parse(local) : [];
       list.push(finalEmp);
-      localStorage.setItem('local_employees', JSON.stringify(list));
+      localStorage.setItem('local_candidates', JSON.stringify(list));
     } catch (e) {
       console.error("Local cache sync error", e);
     }
-    invalidateCache('employees');
+    invalidateCache('candidates');
     return finalEmp;
   }
 };
 
-export const updateEmployee = async (id: string, updates: Partial<Employee>): Promise<Employee> => {
-  const path = 'employees';
+/** @deprecated Use createCandidate() */
+export const createEmployee = (data: NewEmployee) => createCandidate(data, 'manual');
+
+export const updateCandidate = async (id: string, updates: Partial<Employee>): Promise<Employee> => {
+  const path = CANDIDATES_COLLECTION;
   const standardized = standardizeEmployee(updates);
   if (standardized.whatsappNumber) standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
   if (standardized.emergencyPhone) standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
+
+  const payload = prepareCandidateForFirestore({ ...standardized, id } as Partial<Employee>, { id });
 
   try {
     const res = await fetch(`/api/db/${path}/${id}`, {
       method: "PUT",
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanDoc(standardized))
+      body: JSON.stringify(cleanDoc(payload))
     });
     if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('employees');
+    invalidateCache('candidates');
   } catch (error) {
-    console.warn("⚠️ updateEmployee failed on server:", error);
+    console.warn("⚠️ updateCandidate failed on server:", error);
   }
 
-  let updatedObj: Employee | null = null;
-  try {
-    const local = localStorage.getItem('local_employees');
-    if (local) {
-      const list: Employee[] = JSON.parse(local);
-      const idx = list.findIndex(e => e.id === id);
-      if (idx !== -1) {
-        list[idx] = { ...list[idx], ...standardized };
-        updatedObj = list[idx];
-        localStorage.setItem('local_employees', JSON.stringify(list));
-      }
-    }
-  } catch (e) {
-    console.error("Local cache update error", e);
-  }
-
-  invalidateCache('employees');
-  return updatedObj || { ...updates, id } as Employee;
+  return normalizeCandidateFromFirestore({ ...payload, id });
 };
 
-export const deleteEmployee = async (id: string): Promise<void> => {
-  const path = 'employees';
+/** @deprecated Use updateCandidate() */
+export const updateEmployee = updateCandidate;
+
+export const deleteCandidate = async (id: string): Promise<void> => {
+  const path = CANDIDATES_COLLECTION;
   try {
     const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('employees');
+    invalidateCache('candidates');
   } catch (error) {
-    console.warn("⚠️ deleteEmployee failed on server:", error);
+    console.warn("⚠️ deleteCandidate failed on server:", error);
   }
-
-  try {
-    const local = localStorage.getItem('local_employees');
-    if (local) {
-      const list: Employee[] = JSON.parse(local);
-      const filtered = list.filter(e => e.id !== id);
-      localStorage.setItem('local_employees', JSON.stringify(filtered));
-    }
-  } catch (e) {
-    console.error("Local cache delete error", e);
-  }
-  invalidateCache('employees');
 };
+
+/** @deprecated Use deleteCandidate() */
+export const deleteEmployee = deleteCandidate;
 
 export const getClients = async (): Promise<Client[]> => {
   const list = await fetchCollection<Client>('clients');
@@ -981,7 +971,9 @@ export const clearDatabase = () => {
 
 export const seedAllDemoData = async (): Promise<void> => {
   const jobs = generateDummyJobs();
-  const employees = generateDummyEmployees(35);
+  const candidates = generateDummyEmployees(35).map((emp) =>
+    prepareCandidateForFirestore(emp, { id: emp.id, source: 'manual' })
+  );
 
   try {
     const res = await fetch("/api/db/seed/all", {
@@ -991,7 +983,7 @@ export const seedAllDemoData = async (): Promise<void> => {
         clients: defaultClients,
         projects: defaultProjects,
         jobs: jobs,
-        employees: employees
+        candidates,
       })
     });
 
@@ -1001,7 +993,7 @@ export const seedAllDemoData = async (): Promise<void> => {
 
     localStorage.clear();
     clearAllCaches();
-    console.log("🚀 Firestore successfully seeded with 35 demo candidates, jobs, clients, and projects!");
+    console.log("🚀 Firestore seeded: 35 demo candidates, jobs, clients, projects!");
   } catch (error) {
     console.error("Gagal melakukan seeder database admin lewat server:", error);
   }

@@ -1,5 +1,5 @@
 import { Employee } from '../types';
-import { getEmployees } from './db';
+import { getCandidates } from './db';
 
 const ATTENDANCE_KEY = 'pt_perdana_erp_attendance';
 const PAYROLL_KEY = 'pt_perdana_erp_payroll';
@@ -223,7 +223,7 @@ export const getPayroll = async (): Promise<ERPPayroll[]> => {
   const data = localStorage.getItem(PAYROLL_KEY);
   if (!data) {
     // Generate dummy payrolls for active employees
-    const employees = await getEmployees();
+    const employees = await getCandidates();
     const hired = employees.filter(e => e.status === 'HIRED' || e.status === 'CONTRACT' || e.bankName);
     
     const mockPayroll: ERPPayroll[] = [];
@@ -283,7 +283,7 @@ export const savePayroll = (payrolls: ERPPayroll[]) => {
 
 export const processPayroll = async (period: string): Promise<ERPPayroll[]> => {
   const current = await getPayroll();
-  const employees = await getEmployees();
+  const employees = await getCandidates();
   const hired = employees.filter(e => e.status === 'HIRED' || e.status === 'CONTRACT' || e.bankName);
 
   // Check if period already exists
@@ -370,7 +370,7 @@ export const paySalary = async (payrollId: string): Promise<ERPPayroll> => {
   
   if (!finances.some(f => f.id === transactionId)) {
     // Determine dynamic GL code, Client & Project allocation by fetching active employees database
-    const employees = await getEmployees();
+    const employees = await getCandidates();
     const emp = employees.find(e => e.id === current[index].employeeId);
     
     const employeeType = emp?.employeeType || 'INTERNAL';

@@ -10,7 +10,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "init-firestore": "tsx scripts/init-firestore.ts",
-    "test:firestore": "tsx scripts/test-firestore-connection.ts"
+    "test:firestore": "tsx scripts/test-firestore-connection.ts",
+    "migrate:candidates": "tsx scripts/migrate-employees-to-candidates.ts"
   },
   "dependencies": {
     "@google/genai": "^2.7.0",

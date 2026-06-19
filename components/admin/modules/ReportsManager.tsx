@@ -1,20 +1,20 @@
 
 import React, { useMemo, useState } from 'react';
-import { useEmployees, useRefreshDb } from '../../../hooks/useDbQueries';
+import { useCandidates, useRefreshDb } from '../../../hooks/useDbQueries';
 import { ArrowPathIcon, CloudArrowUpIcon, DocumentChartBarIcon, PrinterIcon } from '@heroicons/react/24/outline';
 
 export const ReportsManager: React.FC = () => {
-    const { data: employees = [], isFetching } = useEmployees();
+    const { data: candidates = [], isFetching } = useCandidates();
     const refreshDb = useRefreshDb();
     const [syncStatus, setSyncStatus] = useState<'Synced'|'Syncing'|'Error'>('Synced');
     const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
 
     const stats = useMemo(() => ({
-        total: employees.length,
-        hired: employees.filter((e) => e.status === 'HIRED').length,
-        rejected: employees.filter((e) => e.status === 'REJECTED').length,
-        active: employees.filter((e) => ['APPLIED', 'SCREENING', 'INTERVIEW'].includes(e.status)).length,
-    }), [employees]);
+        total: candidates.length,
+        hired: candidates.filter((e) => e.status === 'HIRED').length,
+        rejected: candidates.filter((e) => e.status === 'REJECTED').length,
+        active: candidates.filter((e) => ['APPLIED', 'SCREENING', 'INTERVIEW'].includes(e.status)).length,
+    }), [candidates]);
 
     const handleSync = async () => {
         setSyncStatus('Syncing');

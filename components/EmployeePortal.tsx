@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser, logout } from '../services/auth';
-import { updateEmployee, createEmployee } from '../services/db';
-import { useEmployees } from '../hooks/useDbQueries';
+import { updateCandidate, createCandidate } from '../services/db';
+import { useCandidates } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { 
   getAttendance, clockIn, clockOut, ERPAbsensi,
@@ -30,7 +30,7 @@ const MAP_PRESET_LOCATIONS = [
 export const EmployeePortal: React.FC = () => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
-  const { data: employeesList = [], isLoading: employeesLoading, refetch: refetchEmployees } = useEmployees();
+  const { data: candidatesList = [], isLoading: candidatesLoading, refetch: refetchCandidates } = useCandidates();
 
   // Authentication & DB state
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ export const EmployeePortal: React.FC = () => {
   const [offeringSigned, setOfferingSigned] = useState(false);
   const [offeringSignature, setOfferingSignature] = useState('');
 
-  const loadAllData = async (userEmail: string, list = employeesList) => {
+  const loadAllData = async (userEmail: string, list = candidatesList) => {
     try {
       setLoading(true);
       let currentEmp = list.find(e => e.email.toLowerCase() === userEmail.toLowerCase());
@@ -126,7 +126,7 @@ export const EmployeePortal: React.FC = () => {
             status: 'SENT'
           }
         };
-        currentEmp = await createEmployee(seedEmp);
+        currentEmp = await createCandidate(seedEmp, 'manual');
       }
 
       if (currentEmp) {
@@ -175,9 +175,9 @@ export const EmployeePortal: React.FC = () => {
       setLoading(false);
       return;
     }
-    if (employeesLoading) return;
-    loadAllData(currentUser.username, employeesList);
-  }, [currentUser?.username, currentUser?.role, employeesList, employeesLoading]);
+    if (candidatesLoading) return;
+    loadAllData(currentUser.username, candidatesList);
+  }, [currentUser?.username, currentUser?.role, candidatesList, candidatesLoading]);
 
   // Handle Actions
   const handleClockIn = async () => {
@@ -278,7 +278,7 @@ export const EmployeePortal: React.FC = () => {
           fieldsToSend.whatsappNumber = `+62${cleanWA}`;
         }
       }
-      const updated = await updateEmployee(employee.id, fieldsToSend);
+      const updated = await updateCandidate(employee.id, fieldsToSend);
       setEmployee(updated);
       setIsEditMode(false);
       setFeedbackMsg({ type: 'success', text: 'Portal Data Mandiri Anda berhasil diperbarui di server!' });
@@ -301,7 +301,7 @@ export const EmployeePortal: React.FC = () => {
         ? { ...employee.offeringData, status: 'ACCEPTED' as const } 
         : { salary: 'UMR', allowance: 'Ada', benefits: 'BPJS', startDate: new Date().toLocaleDateString(), placementLocation: 'Morowali', picPerdana: 'HR', picClient: 'PT IMIP', contractDuration: '12 Bulan', sentAt: new Date().toISOString(), status: 'ACCEPTED' as const };
 
-      const updated = await updateEmployee(employee.id, {
+      const updated = await updateCandidate(employee.id, {
         status: 'HIRED', // Convert to HIRED immediately!
         offeringData: oDetails,
         hrNotes: `Kontrak penawaran disetujui pelamar secara digital. TTD: ${offeringSignature}`,
@@ -349,7 +349,7 @@ export const EmployeePortal: React.FC = () => {
     );
   }
 
-  // Not a candidate yet (no matched email in getEmployees())
+  // Not a candidate yet (no matched email in candidates collection)
   if (!employee) {
     return (
       <div className="max-w-4xl mx-auto my-12 bg-white rounded-xl shadow-lg border border-gray-150 overflow-hidden text-gray-800">
@@ -601,7 +601,7 @@ export const EmployeePortal: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   <button 
                     onClick={async () => {
-                      const upd = await updateEmployee(employee.id, { status: 'HIRED' });
+                      const upd = await updateCandidate(employee.id, { status: 'HIRED' });
                       setEmployee(upd);
                       setFeedbackMsg({ type: 'success', text: 'Simulasi: Status Akun Anda diubah ke HIRED (Pegawai Aktif)!' });
                     }}
@@ -611,7 +611,7 @@ export const EmployeePortal: React.FC = () => {
                   </button>
                   <button 
                     onClick={async () => {
-                      const upd = await updateEmployee(employee.id, { status: 'INTERVIEW' });
+                      const upd = await updateCandidate(employee.id, { status: 'INTERVIEW' });
                       setEmployee(upd);
                       setFeedbackMsg({ type: 'success', text: 'Simulasi: Status Akun Anda diubah ke INTERVIEW!' });
                     }}
@@ -621,7 +621,7 @@ export const EmployeePortal: React.FC = () => {
                   </button>
                   <button 
                     onClick={async () => {
-                      const upd = await updateEmployee(employee.id, { status: 'OFFERING' });
+                      const upd = await updateCandidate(employee.id, { status: 'OFFERING' });
                       setEmployee(upd);
                       setFeedbackMsg({ type: 'success', text: 'Simulasi: Status Akun Anda diubah ke OFFERING (Tanda Tangan Penawaran)!' });
                     }}

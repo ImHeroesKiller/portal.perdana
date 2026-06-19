@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getJobs,
-  getEmployees,
+  getCandidates,
   getClients,
   getProjects,
 } from '../services/db';
@@ -23,12 +23,17 @@ export function useJobs(options?: { activeOnly?: boolean }) {
   });
 }
 
-export function useEmployees() {
+export function useCandidates() {
   return useQuery<Employee[]>({
-    queryKey: queryKeys.employees,
-    queryFn: getEmployees,
+    queryKey: queryKeys.candidates,
+    queryFn: getCandidates,
     ...ADMIN_QUERY_OPTIONS,
   });
+}
+
+/** @deprecated Use useCandidates() */
+export function useEmployees() {
+  return useCandidates();
 }
 
 export function useClients() {
@@ -47,13 +52,13 @@ export function useProjects() {
   });
 }
 
-/** Invalidate and refetch all recruitment collections (jobs + candidates). */
+/** Invalidate and refetch recruitment collections (jobs + candidates). */
 export function useRefreshDb() {
   const qc = useQueryClient();
   return async () => {
     await Promise.all([
       qc.invalidateQueries({ queryKey: queryKeys.jobs }),
-      qc.invalidateQueries({ queryKey: queryKeys.employees }),
+      qc.invalidateQueries({ queryKey: queryKeys.candidates }),
       qc.invalidateQueries({ queryKey: queryKeys.clients }),
       qc.invalidateQueries({ queryKey: queryKeys.projects }),
     ]);

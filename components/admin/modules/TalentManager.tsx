@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Employee, JobVacancy, ApplicationStatus, Client, Project } from '../../../types';
-import { updateEmployee, createJob, updateJob, deleteJob, deleteEmployee, createEmployee } from '../../../services/db';
-import { useEmployees, useJobs, useClients, useProjects, useRefreshDb } from '../../../hooks/useDbQueries';
+import { updateCandidate, createJob, updateJob, deleteJob, deleteCandidate, createCandidate } from '../../../services/db';
+import { useCandidates, useJobs, useClients, useProjects, useRefreshDb } from '../../../hooks/useDbQueries';
 import { createCredentialsForCandidateSubmit } from '../../../services/auth';
 import { sendCandidateCredentialsNotification } from '../../../services/notifications';
 import { analyzeCandidate, ScoreBadge, StatusBadge, LoadingSpinner } from '../shared/Utils';
@@ -29,7 +29,7 @@ export const TalentManager: React.FC = () => {
         { id: 'talent-pool' as const, label: 'Pool', fullLabel: 'Pool Talent (Recycle)', icon: SparklesIcon },
         { id: 'jobs' as const, label: 'Lowongan', fullLabel: 'Kelola Lowongan', icon: BriefcaseIcon },
     ];
-    const { data: employees = [], isFetching: loading, refetch: refetchEmployees } = useEmployees();
+    const { data: candidates = [], isFetching: loading, refetch: refetchCandidates } = useCandidates();
     const { data: jobs = [], refetch: refetchJobs } = useJobs();
     const { data: clients = [] } = useClients();
     const { data: projects = [] } = useProjects();
@@ -119,28 +119,28 @@ export const TalentManager: React.FC = () => {
 
     // Derived statistics
     const stats = useMemo(() => {
-        const total = employees.length;
-        const interview = employees.filter(e => e.status === 'INTERVIEW').length;
-        const offering = employees.filter(e => e.status === 'OFFERING').length;
-        const hired = employees.filter(e => ['HIRED', 'CONTRACT'].includes(e.status)).length;
-        const rejected = employees.filter(e => e.status === 'REJECTED').length;
-        const talentPool = employees.filter(e => e.isInTalentPool || e.status === 'REJECTED').length;
-        const recycledCount = employees.filter(e => e.hrNotes?.includes('[Recycled]')).length;
+        const total = candidates.length;
+        const interview = candidates.filter(e => e.status === 'INTERVIEW').length;
+        const offering = candidates.filter(e => e.status === 'OFFERING').length;
+        const hired = candidates.filter(e => ['HIRED', 'CONTRACT'].includes(e.status)).length;
+        const rejected = candidates.filter(e => e.status === 'REJECTED').length;
+        const talentPool = candidates.filter(e => e.isInTalentPool || e.status === 'REJECTED').length;
+        const recycledCount = candidates.filter(e => e.hrNotes?.includes('[Recycled]')).length;
 
         return { total, interview, offering, hired, rejected, talentPool, recycledCount };
-    }, [employees]);
+    }, [candidates]);
 
     // Active Cities extracted from jobs & candidate locations
     const activeCities = useMemo(() => {
         const set = new Set<string>();
-        employees.forEach(e => { if (e.placeOfBirth) set.add(e.placeOfBirth); });
+        candidates.forEach(e => { if (e.placeOfBirth) set.add(e.placeOfBirth); });
         jobs.forEach(j => { if (j.location) set.add(j.location); });
         return Array.from(set);
-    }, [employees, jobs]);
+    }, [candidates, jobs]);
 
     // Optimized filtering using useMemo
     const filteredEmp = useMemo(() => {
-        let res = employees;
+        let res = candidates;
         
         // Don't show rejected/recycled candidates in the main 'candidates' list if they are in talent pool,
         // or let's keep them and filter by search.
@@ -177,12 +177,12 @@ export const TalentManager: React.FC = () => {
             const dateB = new Date(b.createdAt).getTime();
             return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
         });
-    }, [employees, search, filterStatus, filterCity, filterSkill, sortOrder]);
+    }, [candidates, search, filterStatus, filterCity, filterSkill, sortOrder]);
 
     // Candidates in Talent Pool
     const talentPoolCandidates = useMemo(() => {
         // Talent Pool: Candidates marked as isInTalentPool or status Rejected or containing recycled note
-        let res = employees.filter(e => e.isInTalentPool || e.status === 'REJECTED');
+        let res = candidates.filter(e => e.isInTalentPool || e.status === 'REJECTED');
 
         if (search) {
             const query = search.toLowerCase();
@@ -203,7 +203,7 @@ export const TalentManager: React.FC = () => {
         }
 
         return res.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }, [employees, search, filterCity, filterSkill]);
+    }, [candidates, search, filterCity, filterSkill]);
 
     const handleStatusUpdate = async (id: string, status: ApplicationStatus, notes?: string, date?: string, extraData?: any) => {
         try {
@@ -211,9 +211,9 @@ export const TalentManager: React.FC = () => {
             if (status === 'REJECTED') {
                 extra.isInTalentPool = true;
             }
-            await updateEmployee(id, { status, hrNotes: notes, interviewDate: date, ...extra });
+            await updateCandidate(id, { status, hrNotes: notes, interviewDate: date, ...extra });
             
-            const { data: updatedList = [] } = await refetchEmployees();
+            const { data: updatedList = [] } = await refetchCandidates();
             
             // Notify Telegram (wrapped in a try-catch to prevent offline or unconfigured server errors from stopping the application)
             try {
@@ -241,8 +241,8 @@ export const TalentManager: React.FC = () => {
 
     const handleDeleteEmployee = async (id: string) => {
         try {
-            await deleteEmployee(id);
-            await refetchEmployees();
+            await deleteCandidate(id);
+            await refetchCandidates();
             setSelectedEmp(null);
         } catch (error) {
             console.error("Gagal menghapus data pelamar:", error);
@@ -285,7 +285,7 @@ export const TalentManager: React.FC = () => {
                 workExperience: '1 Tahun',
             };
 
-            await createEmployee(newCandidatePayload);
+            await createCandidate(newCandidatePayload, 'manual');
 
             // Generate Login Credentials
             const credentials = createCredentialsForCandidateSubmit(candidateForm.email, cleanPhone);
@@ -555,7 +555,7 @@ export const TalentManager: React.FC = () => {
                                         </tr>
                                     ) : (
                                         jobs.map(job => {
-                                            const jobCandidates = employees.filter(e => e.jobId === job.id || e.positionApplied.toLowerCase() === job.title.toLowerCase());
+                                            const jobCandidates = candidates.filter(e => e.jobId === job.id || e.positionApplied.toLowerCase() === job.title.toLowerCase());
                                             const interviewCount = jobCandidates.filter(e => e.status === 'INTERVIEW').length;
                                             const offeringCount = jobCandidates.filter(e => e.status === 'OFFERING').length;
                                             const hiredCount = jobCandidates.filter(e => ['HIRED', 'CONTRACT'].includes(e.status)).length;
@@ -651,7 +651,7 @@ export const TalentManager: React.FC = () => {
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Pilih Tahapan Pipeline:</label>
                         <div className="flex gap-1.5 overflow-x-auto pb-2 snap-x select-none">
                             {['APPLIED','INTERVIEW','OFFERING','CONTRACT','HIRED'].map(status => {
-                                const count = employees.filter(e => e.status === status).length;
+                                const count = candidates.filter(e => e.status === status).length;
                                 const isSelected = mobileActiveStage === status;
                                 return (
                                     <button
@@ -676,7 +676,7 @@ export const TalentManager: React.FC = () => {
                     {/* Desktop Pipeline Board (Flexible Column Grid) */}
                     <div className="hidden md:flex gap-4 overflow-x-auto pb-4 snap-x">
                         {['APPLIED','INTERVIEW','OFFERING','CONTRACT','HIRED'].map(status => {
-                            const stageEmps = employees.filter(e => e.status === status);
+                            const stageEmps = candidates.filter(e => e.status === status);
                             return (
                                 <div key={status} className="min-w-[250px] bg-slate-50 rounded-xl p-3 h-[600px] overflow-y-auto border border-slate-200/60 snap-start flex flex-col">
                                     <div className="sticky top-0 bg-slate-50 pb-2 border-b border-slate-200/80 mb-3 flex justify-between items-center z-10">
@@ -716,7 +716,7 @@ export const TalentManager: React.FC = () => {
                     {/* Mobile Selection Render: Only render the currently active stage column vertically */}
                     <div className="md:hidden space-y-3">
                         {(() => {
-                            const stageEmps = employees.filter(e => e.status === mobileActiveStage);
+                            const stageEmps = candidates.filter(e => e.status === mobileActiveStage);
                             if (stageEmps.length === 0) {
                                 return (
                                     <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-8 text-center text-slate-400 text-xs font-medium">
@@ -1305,7 +1305,7 @@ export const TalentManager: React.FC = () => {
                             {jobs.map(job => {
                                 const client = clients.find(c => c.id === job.clientId);
                                 const project = projects.find(p => p.id === job.projectId);
-                                const jobCandidates = employees.filter(e => e.jobId === job.id || e.positionApplied.toLowerCase() === job.title.toLowerCase());
+                                const jobCandidates = candidates.filter(e => e.jobId === job.id || e.positionApplied.toLowerCase() === job.title.toLowerCase());
 
                                 return (
                                     <div key={job.id} className="p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-xs transition bg-slate-50/50 flex flex-col justify-between space-y-4">

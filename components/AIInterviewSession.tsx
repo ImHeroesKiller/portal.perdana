@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { updateEmployee } from '../services/db';
-import { useEmployees } from '../hooks/useDbQueries';
+import { updateCandidate } from '../services/db';
+import { useCandidates } from '../hooks/useDbQueries';
 import { getCurrentUser } from '../services/auth';
 import { Employee } from '../types';
 import { VideoCameraIcon, MicrophoneIcon, ClockIcon, CheckCircleIcon, PlayCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -44,11 +44,11 @@ export const AIInterviewSession: React.FC = () => {
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const recognitionRef = useRef<any>(null);
-    const { data: employees = [], isLoading: employeesLoading } = useEmployees();
+    const { data: candidates = [], isLoading: candidatesLoading } = useCandidates();
 
     // 1. Authentication & Employee Validation
     useEffect(() => {
-        if (employeesLoading) return;
+        if (candidatesLoading) return;
 
         const validateSession = async () => {
             // A. Check Auth
@@ -60,7 +60,7 @@ export const AIInterviewSession: React.FC = () => {
             }
 
             // B. Load Employee
-            const emp = employees.find(e => e.id === employeeId);
+            const emp = candidates.find(e => e.id === employeeId);
             
             if (!emp) {
                 alert('Data kandidat tidak ditemukan');
@@ -89,7 +89,7 @@ export const AIInterviewSession: React.FC = () => {
             if (now > expirationDate) {
                 // EXPIRED LOGIC -> AUTO REJECT
                 if (emp.status !== 'REJECTED') {
-                     await updateEmployee(emp.id, { 
+                     await updateCandidate(emp.id, { 
                          status: 'REJECTED', 
                          hrNotes: (emp.hrNotes || '') + '\n[SYSTEM] Auto-Rejected: Tidak menghadiri Interview Online dalam batas waktu 24 jam.' 
                      });
@@ -104,7 +104,7 @@ export const AIInterviewSession: React.FC = () => {
         };
 
         validateSession();
-    }, [employeeId, navigate, employees, employeesLoading]);
+    }, [employeeId, navigate, candidates, candidatesLoading]);
 
     // Timer Logic
     useEffect(() => {
@@ -291,7 +291,7 @@ export const AIInterviewSession: React.FC = () => {
             summary: aiResult.summary,
             videoUrl: "#"
         };
-        await updateEmployee(employee.id, { aiInterview: result });
+        await updateCandidate(employee.id, { aiInterview: result });
         alert("Interview Selesai. Terima kasih.");
         navigate('/');
     };

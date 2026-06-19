@@ -7,7 +7,7 @@ export function invalidateDbQuery(collection: DbCollectionKey): void {
 
 export function invalidateAllDbQueries(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.jobs });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.employees });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.candidates });
   void queryClient.invalidateQueries({ queryKey: queryKeys.clients });
   void queryClient.invalidateQueries({ queryKey: queryKeys.projects });
 }

@@ -15,7 +15,7 @@ import {
   CHART_OF_ACCOUNTS, ERPGLAccount,
   ERPAbsensi, ERPPayroll, ERPAsset, ERPTransaksi 
 } from '../../../services/erp';
-import { getEmployees, getClients, getProjects, updateEmployee } from '../../../services/db';
+import { getCandidates, getClients, getProjects, updateCandidate } from '../../../services/db';
 import { Employee, Client, Project } from '../../../types';
 import { getCompanySettings } from '../../../services/companySettings';
 
@@ -38,7 +38,7 @@ export const ERPManager: React.FC = () => {
 
   const loadActiveEmployees = async () => {
     setLoading(true);
-    const emps = await getEmployees();
+    const emps = await getCandidates();
     // Filter hired or contract, fall back to any if none
     const hired = emps.filter(e => e.status === 'HIRED' || e.status === 'CONTRACT');
     setActiveEmployees(hired.length > 0 ? hired : emps.slice(0, 20));
@@ -176,7 +176,7 @@ export const FinancePanel: React.FC = () => {
       // Sort finances descending by date
       setFinances(getFinance().sort((a,b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()));
       
-      const [cList, pList, eList] = await Promise.all([getClients(), getProjects(), getEmployees()]);
+      const [cList, pList, eList] = await Promise.all([getClients(), getProjects(), getCandidates()]);
       setClients(cList);
       setProjects(pList);
       setEmployees(eList);
@@ -1998,9 +1998,9 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
     if (!confirm("Are you sure you want to standardize the formatting for all employees?")) return;
     setIsLoading(true);
     try {
-        const emps = await getEmployees();
+        const emps = await getCandidates();
         for (const emp of emps) {
-            await updateEmployee(emp.id, emp); // updateEmployee now handles standardization
+            await updateCandidate(emp.id, emp);
         }
         onRefresh();
         alert("Formatting standardized.");
@@ -2096,7 +2096,7 @@ export const EmployeesPanel: React.FC<EmployeesPanelProps> = ({ activeEmployees,
         terminationReason: formTerminationReason || undefined
       };
 
-      await updateEmployee(editingEmployee.id, updates);
+      await updateCandidate(editingEmployee.id, updates);
       alert(`Berhasil memperbarui data karyawan: ${editingEmployee.fullName}`);
       setEditingEmployee(null);
       onRefresh(); // Refresh parent list

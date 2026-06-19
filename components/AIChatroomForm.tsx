@@ -15,7 +15,7 @@ import {
   Inbox,
   Sparkles
 } from 'lucide-react';
-import { createEmployee, uploadFileMock } from '../services/db';
+import { createCandidate, uploadFileMock } from '../services/db';
 import { useJobs } from '../hooks/useDbQueries';
 import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
@@ -354,7 +354,7 @@ export const AIChatroomForm: React.FC = () => {
         certificatePath: filePaths['certificatePath'] || '',
       };
 
-      const result = await createEmployee(finalPayload);
+      const result = await createCandidate(finalPayload, 'ai-sara');
       const currentUser = getCurrentUser();
       if (currentUser) {
         updateUserProfile(finalPayload);
