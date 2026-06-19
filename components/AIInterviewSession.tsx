@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEmployees, updateEmployee } from '../services/db';
+import { updateEmployee } from '../services/db';
+import { useEmployees } from '../hooks/useDbQueries';
 import { getCurrentUser } from '../services/auth';
 import { Employee } from '../types';
 import { VideoCameraIcon, MicrophoneIcon, ClockIcon, CheckCircleIcon, PlayCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -43,9 +44,12 @@ export const AIInterviewSession: React.FC = () => {
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const recognitionRef = useRef<any>(null);
+    const { data: employees = [], isLoading: employeesLoading } = useEmployees();
 
     // 1. Authentication & Employee Validation
     useEffect(() => {
+        if (employeesLoading) return;
+
         const validateSession = async () => {
             // A. Check Auth
             const user = getCurrentUser();
@@ -56,8 +60,7 @@ export const AIInterviewSession: React.FC = () => {
             }
 
             // B. Load Employee
-            const emps = await getEmployees();
-            const emp = emps.find(e => e.id === employeeId);
+            const emp = employees.find(e => e.id === employeeId);
             
             if (!emp) {
                 alert('Data kandidat tidak ditemukan');
@@ -101,7 +104,7 @@ export const AIInterviewSession: React.FC = () => {
         };
 
         validateSession();
-    }, [employeeId, navigate]);
+    }, [employeeId, navigate, employees, employeesLoading]);
 
     // Timer Logic
     useEffect(() => {

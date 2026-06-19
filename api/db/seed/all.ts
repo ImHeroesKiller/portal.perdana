@@ -1,0 +1,27 @@
+import { applyCors, handleOptions } from '../../../lib/api-cors';
+import { applyNoStoreHeaders } from '../../../lib/api-cache';
+import { seedAllCollections } from '../../../lib/db-api';
+import { formatFirebaseError, toHttpStatus } from '../../../lib/firebase-errors';
+
+export default async function handler(req: any, res: any) {
+  applyCors(res);
+  applyNoStoreHeaders(res);
+  if (handleOptions(req, res)) return;
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  try {
+    await seedAllCollections(req.body ?? {});
+    return res.status(200).json({
+      success: true,
+      message: 'Database seeded successfully from server-side batch!',
+    });
+  } catch (error: unknown) {
+    console.error('POST /api/db/seed/all error:', error);
+    return res.status(toHttpStatus(error)).json({
+      error: formatFirebaseError(error) || 'Failed server-side seeding batch write',
+    });
+  }
+}

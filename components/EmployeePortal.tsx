@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser, logout } from '../services/auth';
-import { getEmployees, updateEmployee, createEmployee } from '../services/db';
+import { updateEmployee, createEmployee } from '../services/db';
+import { useEmployees } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { 
   getAttendance, clockIn, clockOut, ERPAbsensi,
@@ -29,6 +30,7 @@ const MAP_PRESET_LOCATIONS = [
 export const EmployeePortal: React.FC = () => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+  const { data: employeesList = [], isLoading: employeesLoading, refetch: refetchEmployees } = useEmployees();
 
   // Authentication & DB state
   const [loading, setLoading] = useState(true);
@@ -78,11 +80,10 @@ export const EmployeePortal: React.FC = () => {
   const [offeringSigned, setOfferingSigned] = useState(false);
   const [offeringSignature, setOfferingSignature] = useState('');
 
-  const loadAllData = async (userEmail: string) => {
+  const loadAllData = async (userEmail: string, list = employeesList) => {
     try {
       setLoading(true);
-      const employeesList = await getEmployees();
-      let currentEmp = employeesList.find(e => e.email.toLowerCase() === userEmail.toLowerCase());
+      let currentEmp = list.find(e => e.email.toLowerCase() === userEmail.toLowerCase());
       
       if (!currentEmp && currentUser && currentUser.role !== 'admin') {
         const generatedNik = '7201' + Math.floor(100000000000 + Math.random() * 900000000000);
@@ -170,12 +171,13 @@ export const EmployeePortal: React.FC = () => {
   };
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'admin') {
-      loadAllData(currentUser.username);
-    } else {
+    if (!currentUser || currentUser.role === 'admin') {
       setLoading(false);
+      return;
     }
-  }, [currentUser?.username, currentUser?.role]);
+    if (employeesLoading) return;
+    loadAllData(currentUser.username, employeesList);
+  }, [currentUser?.username, currentUser?.role, employeesList, employeesLoading]);
 
   // Handle Actions
   const handleClockIn = async () => {

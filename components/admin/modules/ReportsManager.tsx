@@ -1,30 +1,30 @@
 
-import React, { useEffect, useState } from 'react';
-import { getEmployees } from '../../../services/db';
+import React, { useMemo, useState } from 'react';
+import { useEmployees, useRefreshDb } from '../../../hooks/useDbQueries';
 import { ArrowPathIcon, CloudArrowUpIcon, DocumentChartBarIcon, PrinterIcon } from '@heroicons/react/24/outline';
 
 export const ReportsManager: React.FC = () => {
-    const [stats, setStats] = useState({ total: 0, hired: 0, rejected: 0, active: 0 });
+    const { data: employees = [], isFetching } = useEmployees();
+    const refreshDb = useRefreshDb();
     const [syncStatus, setSyncStatus] = useState<'Synced'|'Syncing'|'Error'>('Synced');
     const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
 
-    useEffect(() => {
-        getEmployees().then(emps => {
-            setStats({
-                total: emps.length,
-                hired: emps.filter(e => e.status === 'HIRED').length,
-                rejected: emps.filter(e => e.status === 'REJECTED').length,
-                active: emps.filter(e => ['APPLIED','SCREENING','INTERVIEW'].includes(e.status)).length
-            });
-        });
-    }, []);
+    const stats = useMemo(() => ({
+        total: employees.length,
+        hired: employees.filter((e) => e.status === 'HIRED').length,
+        rejected: employees.filter((e) => e.status === 'REJECTED').length,
+        active: employees.filter((e) => ['APPLIED', 'SCREENING', 'INTERVIEW'].includes(e.status)).length,
+    }), [employees]);
 
-    const handleSync = () => {
+    const handleSync = async () => {
         setSyncStatus('Syncing');
-        setTimeout(() => {
+        try {
+            await refreshDb();
             setSyncStatus('Synced');
             setLastSync(new Date().toLocaleTimeString());
-        }, 2000);
+        } catch {
+            setSyncStatus('Error');
+        }
     }
 
     const handlePrint = () => {

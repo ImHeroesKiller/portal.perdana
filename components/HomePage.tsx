@@ -1,20 +1,27 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getJobs, getEmployees, getClients, getProjects } from '../services/db';
-import { JobVacancy, Client, Project } from '../types';
+import { useJobs, useEmployees, useClients, useProjects } from '../hooks/useDbQueries';
+import { JobVacancy } from '../types';
 import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOfficeIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../services/i18n';
 import { MobileHomePage } from './MobileHomePage';
 
 export const HomePage: React.FC = () => {
-  const [jobs, setJobs] = useState<JobVacancy[]>([]);
+  const { data: jobs = [], isLoading: jobsLoading } = useJobs({ activeOnly: true });
+  const { data: employees = [], isLoading: employeesLoading } = useEmployees();
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [stats, setStats] = useState({ jobs: 0, applicants: 0, clients: 0, projects: 0 });
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const loading = jobsLoading || employeesLoading || clientsLoading || projectsLoading;
+
+  const stats = useMemo(() => ({
+    jobs: jobs.length,
+    applicants: employees.length,
+    clients: clients.filter((c) => c.isActive !== false).length,
+    projects: projects.filter((p) => p.isActive !== false).length,
+  }), [jobs, employees, clients, projects]);
   const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -30,31 +37,8 @@ export const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [jobsData, employeesData, clientsData, projectsData] = await Promise.all([
-        getJobs(), 
-        getEmployees(),
-        getClients(),
-        getProjects()
-      ]);
-      
-      const activeJobs = jobsData.filter(j => j.isActive);
-      setJobs(activeJobs);
-      setFilteredJobs(activeJobs);
-      setClients(clientsData);
-      setProjects(projectsData);
-      
-      setStats({
-          jobs: activeJobs.length,
-          applicants: employeesData.length,
-          clients: clientsData.filter(c => c.isActive !== false).length,
-          projects: projectsData.filter(p => p.isActive !== false).length
-      });
-
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+    setFilteredJobs(jobs);
+  }, [jobs]);
 
   useEffect(() => {
     const lowerQuery = searchQuery.toLowerCase();

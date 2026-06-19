@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Employee, JobVacancy, ApplicationStatus, Client, Project } from '../../../types';
-import { getEmployees, getJobs, getClients, getProjects, updateEmployee, createJob, updateJob, deleteJob, deleteEmployee, createEmployee } from '../../../services/db';
+import { updateEmployee, createJob, updateJob, deleteJob, deleteEmployee, createEmployee } from '../../../services/db';
+import { useEmployees, useJobs, useClients, useProjects, useRefreshDb } from '../../../hooks/useDbQueries';
 import { createCredentialsForCandidateSubmit } from '../../../services/auth';
 import { sendCandidateCredentialsNotification } from '../../../services/notifications';
 import { analyzeCandidate, ScoreBadge, StatusBadge, LoadingSpinner } from '../shared/Utils';
@@ -28,11 +29,11 @@ export const TalentManager: React.FC = () => {
         { id: 'talent-pool' as const, label: 'Pool', fullLabel: 'Pool Talent (Recycle)', icon: SparklesIcon },
         { id: 'jobs' as const, label: 'Lowongan', fullLabel: 'Kelola Lowongan', icon: BriefcaseIcon },
     ];
-    const [employees, setEmployees] = useState<Employee[]>([]);
-    const [jobs, setJobs] = useState<JobVacancy[]>([]);
-    const [clients, setClients] = useState<Client[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const { data: employees = [], isFetching: loading, refetch: refetchEmployees } = useEmployees();
+    const { data: jobs = [], refetch: refetchJobs } = useJobs();
+    const { data: clients = [] } = useClients();
+    const { data: projects = [] } = useProjects();
+    const refreshDb = useRefreshDb();
 
     // Job Vacancy Form State
     const [editingJobId, setEditingJobId] = useState<string | null>(null);
@@ -112,26 +113,8 @@ export const TalentManager: React.FC = () => {
         setTmConfirmConfig({ title, message, onConfirm, type, confirmText, cancelText });
     };
 
-    useEffect(() => { loadData(); }, []);
-
     const loadData = async () => {
-        setLoading(true);
-        try {
-            const [e, j, c, p] = await Promise.all([
-                getEmployees(), 
-                getJobs(),
-                getClients(),
-                getProjects()
-            ]);
-            setEmployees(e); 
-            setJobs(j);
-            setClients(c);
-            setProjects(p);
-        } catch (error) {
-            console.error("Gagal memuat data Talent Manager:", error);
-        } finally {
-            setLoading(false);
-        }
+        await refreshDb();
     };
 
     // Derived statistics
@@ -230,9 +213,7 @@ export const TalentManager: React.FC = () => {
             }
             await updateEmployee(id, { status, hrNotes: notes, interviewDate: date, ...extra });
             
-            // Reload all data from actual cloud Firestore DB
-            const updatedList = await getEmployees();
-            setEmployees(updatedList);
+            const { data: updatedList = [] } = await refetchEmployees();
             
             // Notify Telegram (wrapped in a try-catch to prevent offline or unconfigured server errors from stopping the application)
             try {
@@ -261,9 +242,7 @@ export const TalentManager: React.FC = () => {
     const handleDeleteEmployee = async (id: string) => {
         try {
             await deleteEmployee(id);
-            // Reload data from DB
-            const updatedList = await getEmployees();
-            setEmployees(updatedList);
+            await refetchEmployees();
             setSelectedEmp(null);
         } catch (error) {
             console.error("Gagal menghapus data pelamar:", error);
@@ -627,8 +606,7 @@ export const TalentManager: React.FC = () => {
                                                             onClick={async () => {
                                                                 try {
                                                                     await updateJob(job.id, { isActive: !job.isActive });
-                                                                    const updatedJobs = await getJobs();
-                                                                    setJobs(updatedJobs);
+                                                                    await refetchJobs();
                                                                 } catch (err) {
                                                                     console.error(err);
                                                                 }
@@ -1095,9 +1073,7 @@ export const TalentManager: React.FC = () => {
                                             alert('Berhasil menerbitkan Lowongan Lapangan baru!');
                                         }
                                         
-                                        // Refresh list
-                                        const freshJobs = await getJobs();
-                                        setJobs(freshJobs);
+                                        await refetchJobs();
 
                                         // Clear forms
                                         setNewJobTitle('');
@@ -1355,8 +1331,7 @@ export const TalentManager: React.FC = () => {
                                                         onClick={async () => {
                                                             try {
                                                                 await updateJob(job.id, { isActive: !job.isActive });
-                                                                const updatedJobs = await getJobs();
-                                                                setJobs(updatedJobs);
+                                                                await refetchJobs();
                                                             } catch (err) {
                                                                 console.error(err);
                                                             }
@@ -1401,8 +1376,7 @@ export const TalentManager: React.FC = () => {
                                                                 async () => {
                                                                     try {
                                                                         await deleteJob(job.id);
-                                                                        const updatedJobs = await getJobs();
-                                                                        setJobs(updatedJobs);
+                                                                        await refetchJobs();
                                                                     } catch (err) {
                                                                         console.error(err);
                                                                     }

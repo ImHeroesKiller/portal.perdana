@@ -15,7 +15,8 @@ import {
   Inbox,
   Sparkles
 } from 'lucide-react';
-import { createEmployee, uploadFileMock, getJobs } from '../services/db';
+import { createEmployee, uploadFileMock } from '../services/db';
+import { useJobs } from '../hooks/useDbQueries';
 import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
@@ -39,7 +40,7 @@ export const AIChatroomForm: React.FC = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [loadingChat, setLoadingChat] = useState(false);
-  const [jobs, setJobs] = useState<JobVacancy[]>([]);
+  const { data: jobs = [] } = useJobs({ activeOnly: true });
   
   // Stages: 'chat' | 'preview' | 'documents' | 'success'
   const [formStage, setFormStage] = useState<'chat' | 'preview' | 'documents' | 'success'>('chat');
@@ -75,14 +76,6 @@ export const AIChatroomForm: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      const activeJobs = await getJobs();
-      setJobs(activeJobs.filter(j => j.isActive));
-    };
-    fetchJobs();
-  }, []);
 
   useEffect(() => {
     // Scroll list on new messages

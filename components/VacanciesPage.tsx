@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getJobs, getClients } from '../services/db';
-import { JobVacancy, Client } from '../types';
+import { useJobs, useClients } from '../hooks/useDbQueries';
+import { JobVacancy } from '../types';
 import { useLanguage } from '../services/i18n';
 import { 
   ChevronLeft, 
@@ -19,10 +19,9 @@ import {
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [jobs, setJobs] = useState<JobVacancy[]>([]);
+  const { data: jobs = [], isLoading: loading } = useJobs({ activeOnly: true });
+  const { data: clients = [] } = useClients();
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'Semua' | 'Operasional' | 'Administrasi' | 'Teknis' | 'Lainnya'>('Semua');
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -53,24 +52,8 @@ export const VacanciesPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [jobsData, clientsData] = await Promise.all([
-          getJobs(),
-          getClients()
-        ]);
-        const activeJobs = jobsData.filter(j => j.isActive);
-        setJobs(activeJobs);
-        setFilteredJobs(activeJobs);
-        setClients(clientsData);
-      } catch (err) {
-        console.error("Gagal memuat lowongan:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+    setFilteredJobs(jobs);
+  }, [jobs]);
 
   // Filter jobs dynamically whenever search query, filter tab or jobs change
   useEffect(() => {

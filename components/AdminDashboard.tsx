@@ -15,7 +15,7 @@ import { RBACManager } from './admin/modules/RBACManager';
 import { 
   getCurrentUser, logout 
 } from '../services/auth';
-import { getEmployees } from '../services/db';
+import { useEmployees } from '../hooks/useDbQueries';
 import { Employee } from '../types';
 
 import { 
@@ -44,8 +44,11 @@ const ALL_MODULES = [
 export const AdminDashboard: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeModule, setActiveModule] = useState<string>('');
-  const [activeEmployees, setActiveEmployees] = useState<Employee[]>([]);
-  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const { data: allEmployees = [], isLoading: loadingEmployees, refetch: refetchEmployees } = useEmployees();
+  const activeEmployees = React.useMemo(() => {
+    const hired = allEmployees.filter((e) => e.status === 'HIRED' || e.status === 'CONTRACT');
+    return hired.length > 0 ? hired : allEmployees.slice(0, 20);
+  }, [allEmployees]);
   const [moduleSearch, setModuleSearch] = useState('');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -87,21 +90,7 @@ export const AdminDashboard: React.FC = () => {
       setCurrentUser(null);
     }
     
-    loadActiveEmployees();
   }, []);
-
-  const loadActiveEmployees = async () => {
-    setLoadingEmployees(true);
-    try {
-      const emps = await getEmployees();
-      const hired = emps.filter(e => e.status === 'HIRED' || e.status === 'CONTRACT');
-      setActiveEmployees(hired.length > 0 ? hired : emps.slice(0, 20));
-    } catch (err) {
-      console.error("Gagal memuat kandidat aktif untuk panel ERP:", err);
-    } finally {
-      setLoadingEmployees(false);
-    }
-  };
 
   const handleLogout = () => {
     if (confirm("Apakah Anda yakin ingin keluar dari Dashboard Admin?")) {
@@ -246,7 +235,7 @@ export const AdminDashboard: React.FC = () => {
             {activeModule === 'employees' && (
               <EmployeesPanel 
                 activeEmployees={activeEmployees} 
-                onRefresh={loadActiveEmployees} 
+                onRefresh={() => { void refetchEmployees(); }}
               />
             )}
             {activeModule === 'attendance' && (

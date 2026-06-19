@@ -1,5 +1,22 @@
 import { Employee, NewEmployee, JobVacancy, NewJobVacancy, Client, NewClient, Project, NewProject, ApplicationStatus } from '../types';
 import { toTitleCase } from '../src/utils';
+import { FETCH_NO_STORE_INIT, withCacheBust } from '../lib/api-cache';
+import { invalidateDbQuery, invalidateAllDbQueries } from '../lib/invalidate-queries';
+import type { DbCollectionKey } from '../lib/queryKeys';
+
+const MUTATION_HEADERS = {
+  'Content-Type': 'application/json',
+  'Cache-Control': 'no-cache',
+  Pragma: 'no-cache',
+};
+
+async function fetchCollection<T>(collection: string): Promise<T[]> {
+  const res = await fetch(withCacheBust(`/api/db/${collection}`), FETCH_NO_STORE_INIT);
+  if (!res.ok) {
+    throw new Error(`Gagal mengambil data ${collection} dari server (${res.status})`);
+  }
+  return res.json() as Promise<T[]>;
+}
 
 // Helper to standardize text fields
 const standardizeEmployee = (data: Partial<Employee>): Partial<Employee> => {
@@ -491,74 +508,27 @@ const defaultProjects: Project[] = [
   },
 ];
 
-// --- HIGH-EFFICIENCY MEMORY CACHING ENGINE (MINIMIZES FIRESTORE API READ BILLING) ---
-interface CacheStore {
-  employees: { data: Employee[]; timestamp: number } | null;
-  clients: { data: Client[]; timestamp: number } | null;
-  projects: { data: Project[]; timestamp: number } | null;
-  jobs: { data: JobVacancy[]; timestamp: number } | null;
-}
-
-const cache: CacheStore = {
-  employees: null,
-  clients: null,
-  projects: null,
-  jobs: null
+/** @deprecated Use React Query invalidation via invalidateDbQuery */
+export const invalidateCache = (collectionName: DbCollectionKey) => {
+  invalidateDbQuery(collectionName);
 };
 
-const CACHE_STALE_MS = 20000; 
-
-export const invalidateCache = (collectionName: keyof CacheStore) => {
-  cache[collectionName] = null;
-  console.log(`🧹 Cache invalidated for collection: ${collectionName}`);
-};
-
+/** @deprecated Use invalidateAllDbQueries */
 export const clearAllCaches = () => {
-  cache.employees = null;
-  cache.clients = null;
-  cache.projects = null;
-  cache.jobs = null;
-  console.log(`🧹 All database caches cleared.`);
+  invalidateAllDbQueries();
 };
 
 // --- CORE REST API AND PROXIED FIRESTORE OPERATIONS ---
 
 export const getEmployees = async (): Promise<Employee[]> => {
-  const path = 'employees';
-  if (cache.employees && (Date.now() - cache.employees.timestamp < CACHE_STALE_MS)) {
-    console.log("⚡ [CACHE HIT] getEmployees retrieved from memory cache.");
-    return [...cache.employees.data];
-  }
-  try {
-    const res = await fetch(`/api/db/${path}`);
-    if (!res.ok) throw new Error("Gagal mengambil data karyawan dari server");
-    const list = await res.json() as Employee[];
-    
-    const sorted = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const normalized = sorted.map(emp => ({
-      ...emp,
-      whatsappNumber: ensurePlus62(emp.whatsappNumber),
-      emergencyPhone: ensurePlus62(emp.emergencyPhone)
-    }));
-
-    cache.employees = { data: normalized, timestamp: Date.now() };
-    localStorage.setItem('local_employees', JSON.stringify(normalized));
-    return [...normalized];
-  } catch (error) {
-    console.warn("⚠️ [REST FAILING] getEmployees fallback to LocalStorage", error);
-    const local = localStorage.getItem('local_employees');
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        cache.employees = { data: parsed, timestamp: Date.now() };
-        return parsed;
-      } catch (e) {
-        console.error("Local JSON parse failed for employees:", e);
-      }
-    }
-    cache.employees = { data: [], timestamp: Date.now() };
-    return [];
-  }
+  const list = await fetchCollection<Employee>('employees');
+  const sorted = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const normalized = sorted.map((emp) => ({
+    ...emp,
+    whatsappNumber: ensurePlus62(emp.whatsappNumber),
+    emergencyPhone: ensurePlus62(emp.emergencyPhone),
+  }));
+  return [...normalized];
 };
 
 export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
@@ -707,33 +677,8 @@ export const deleteEmployee = async (id: string): Promise<void> => {
 };
 
 export const getClients = async (): Promise<Client[]> => {
-  const path = 'clients';
-  if (cache.clients && (Date.now() - cache.clients.timestamp < CACHE_STALE_MS)) {
-    console.log("⚡ [CACHE HIT] getClients retrieved from memory cache.");
-    return [...cache.clients.data];
-  }
-  try {
-    const res = await fetch(`/api/db/${path}`);
-    if (!res.ok) throw new Error("Gagal mengambil data klien dari server");
-    const list = await res.json() as Client[];
-    cache.clients = { data: list, timestamp: Date.now() };
-    localStorage.setItem('local_clients', JSON.stringify(list));
-    return [...list];
-  } catch (error) {
-    console.warn("⚠️ getClients failed, fallback to local storage:", error);
-    const local = localStorage.getItem('local_clients');
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        cache.clients = { data: parsed, timestamp: Date.now() };
-        return parsed;
-      } catch (e) {
-        console.error("Local JSON parse failed for clients:", e);
-      }
-    }
-    cache.clients = { data: [], timestamp: Date.now() };
-    return [];
-  }
+  const list = await fetchCollection<Client>('clients');
+  return [...list];
 };
 
 export const createClient = async (data: NewClient): Promise<Client> => {
@@ -831,33 +776,8 @@ export const updateClient = async (id: string, updates: Partial<Client>): Promis
 };
 
 export const getProjects = async (): Promise<Project[]> => {
-  const path = 'projects';
-  if (cache.projects && (Date.now() - cache.projects.timestamp < CACHE_STALE_MS)) {
-    console.log("⚡ [CACHE HIT] getProjects retrieved from memory cache.");
-    return [...cache.projects.data];
-  }
-  try {
-    const res = await fetch(`/api/db/${path}`);
-    if (!res.ok) throw new Error("Gagal mengambil data proyek dari server");
-    const list = await res.json() as Project[];
-    cache.projects = { data: list, timestamp: Date.now() };
-    localStorage.setItem('local_projects', JSON.stringify(list));
-    return [...list];
-  } catch (error) {
-    console.warn("⚠️ getProjects failed, fallback to local storage:", error);
-    const local = localStorage.getItem('local_projects');
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        cache.projects = { data: parsed, timestamp: Date.now() };
-        return parsed;
-      } catch (e) {
-        console.error("Local JSON parse failed for projects:", e);
-      }
-    }
-    cache.projects = { data: [], timestamp: Date.now() };
-    return [];
-  }
+  const list = await fetchCollection<Project>('projects');
+  return [...list];
 };
 
 export const createProject = async (data: NewProject): Promise<Project> => {
@@ -955,33 +875,8 @@ export const updateProject = async (id: string, updates: Partial<Project>): Prom
 };
 
 export const getJobs = async (): Promise<JobVacancy[]> => {
-  const path = 'jobs';
-  if (cache.jobs && (Date.now() - cache.jobs.timestamp < CACHE_STALE_MS)) {
-    console.log("⚡ [CACHE HIT] getJobs retrieved from memory cache.");
-    return [...cache.jobs.data];
-  }
-  try {
-    const res = await fetch(`/api/db/${path}`);
-    if (!res.ok) throw new Error("Gagal mengambil data lowongan pekerjaan dari server");
-    const list = await res.json() as JobVacancy[];
-    cache.jobs = { data: list, timestamp: Date.now() };
-    localStorage.setItem('local_jobs', JSON.stringify(list));
-    return [...list];
-  } catch (error) {
-    console.warn("⚠️ getJobs failed, fallback to local storage:", error);
-    const local = localStorage.getItem('local_jobs');
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        cache.jobs = { data: parsed, timestamp: Date.now() };
-        return parsed;
-      } catch (e) {
-        console.error("Local JSON parse failed for jobs:", e);
-      }
-    }
-    cache.jobs = { data: [], timestamp: Date.now() };
-    return [];
-  }
+  const list = await fetchCollection<JobVacancy>('jobs');
+  return [...list];
 };
 
 export const createJob = async (data: NewJobVacancy): Promise<JobVacancy> => {

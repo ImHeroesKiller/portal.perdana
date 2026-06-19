@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Project, NewProject, Client } from '../../../types';
-import { getProjects, createProject, deleteProject, updateProject, getClients, uploadFileMock } from '../../../services/db';
+import { createProject, deleteProject, updateProject, uploadFileMock } from '../../../services/db';
+import { useProjects, useClients, useRefreshDb } from '../../../hooks/useDbQueries';
 import { Input, Select, TextArea } from '../../ui/Input';
 import { 
     PlusIcon, TrashIcon, MagnifyingGlassIcon, CalendarDaysIcon,
@@ -9,11 +10,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const ProjectManager: React.FC = () => {
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [clients, setClients] = useState<Client[]>([]);
+    const { data: projects = [], isFetching: loading } = useProjects();
+    const { data: clients = [] } = useClients();
+    const refreshDb = useRefreshDb();
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-    const [loading, setLoading] = useState(false);
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,19 +41,8 @@ export const ProjectManager: React.FC = () => {
     const [previewDocTitle, setPreviewDocTitle] = useState<string | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-    useEffect(() => { loadData(); }, []);
-
     const loadData = async () => {
-        setLoading(true);
-        try {
-            const [p, c] = await Promise.all([getProjects(), getClients()]);
-            setProjects(p); 
-            setClients(c);
-        } catch (error) {
-            console.error("Gagal memuat data proyek alih daya:", error);
-        } finally {
-            setLoading(false);
-        }
+        await refreshDb();
     };
 
     // Calculate executive finance stats

@@ -1,7 +1,8 @@
 
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { createEmployee, uploadFileMock, getJobs } from '../services/db';
+import { createEmployee, uploadFileMock } from '../services/db';
+import { useJobs } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { getCurrentUser, updateUserProfile, createCredentialsForCandidateSubmit } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
@@ -71,7 +72,7 @@ export const RecruitmentForm: React.FC = () => {
   const [useAIChat, setUseAIChat] = useState(false);
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<FormDataState>(initialFormState);
-  const [availableJobs, setAvailableJobs] = useState<JobVacancy[]>([]);
+  const { data: availableJobs = [] } = useJobs({ activeOnly: true });
   const [files, setFiles] = useState<FileState>({
     applicationLetter: null, cv: null, ktp: null, diploma: null, photo: null, kk: null, certificate: null,
   });
@@ -96,26 +97,21 @@ export const RecruitmentForm: React.FC = () => {
   const currentUser = getCurrentUser();
 
   useEffect(() => {
-    const init = async () => {
-      const jobs = await getJobs();
-      setAvailableJobs(jobs.filter(j => j.isActive));
-      
-      const paramPosition = searchParams.get('position');
-      let userData = { ...initialFormState };
-      
-      if (currentUser && currentUser.profile) {
-        userData = { 
-            ...initialFormState, ...currentUser.profile,
-             graduationYear: currentUser.profile.graduationYear?.toString() || '',
-             latitude: currentUser.profile.latitude?.toString() || '',
-             longitude: currentUser.profile.longitude?.toString() || '',
-        } as FormDataState;
-      }
-      if (paramPosition) userData.positionApplied = paramPosition;
-      setFormData(userData);
-    };
-    init();
-  }, [searchParams]);
+    const paramPosition = searchParams.get('position');
+    let userData = { ...initialFormState };
+
+    if (currentUser && currentUser.profile) {
+      userData = {
+        ...initialFormState,
+        ...currentUser.profile,
+        graduationYear: currentUser.profile.graduationYear?.toString() || '',
+        latitude: currentUser.profile.latitude?.toString() || '',
+        longitude: currentUser.profile.longitude?.toString() || '',
+      } as FormDataState;
+    }
+    if (paramPosition) userData.positionApplied = paramPosition;
+    setFormData(userData);
+  }, [searchParams, currentUser]);
 
   const toTitleCase = (str: string) => {
     return str.replace(/\w\S*/g, (txt) => {

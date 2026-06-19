@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Client, NewClient } from '../../../types';
-import { getClients, createClient, deleteClient, updateClient, uploadFileMock } from '../../../services/db';
+import { createClient, deleteClient, updateClient, uploadFileMock } from '../../../services/db';
+import { useClients, useRefreshDb } from '../../../hooks/useDbQueries';
 import { Input } from '../../ui/Input';
 import { 
     BuildingOfficeIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon, 
@@ -10,11 +11,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const ClientManager: React.FC = () => {
-    const [clients, setClients] = useState<Client[]>([]);
+    const { data: clients = [], isFetching: loading } = useClients();
+    const refreshDb = useRefreshDb();
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<'name' | 'industry'>('name');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-    const [loading, setLoading] = useState(false);
     
     // Modal & Form States
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,17 +43,8 @@ export const ClientManager: React.FC = () => {
     const [previewDocTitle, setPreviewDocTitle] = useState<string | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-    useEffect(() => { loadData(); }, []);
-
     const loadData = async () => {
-        setLoading(true);
-        try {
-            setClients(await getClients());
-        } catch (error) {
-            console.error("Gagal memuat data klien:", error);
-        } finally {
-            setLoading(false);
-        }
+        await refreshDb();
     };
 
     // Derived stats for metrics panel
