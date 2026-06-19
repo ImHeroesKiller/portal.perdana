@@ -1,9 +1,12 @@
 /**
  * Firebase Admin SDK — server-only (API routes, scripts, Express).
  * Do NOT import from browser/client bundles.
+ *
+ * firebase-admin is lazy-loaded so Vercel cold starts do not crash when the
+ * package fails to initialize at module scope.
  */
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import type { App } from 'firebase-admin/app';
+import type { Firestore } from 'firebase-admin/firestore';
 import {
   getMissingAdminEnvKeys,
   readFirebaseAdminEnv,
@@ -16,8 +19,29 @@ import {
   formatFirebaseError,
 } from './firebase-errors';
 
+type AdminAppModule = typeof import('firebase-admin/app');
+type AdminFirestoreModule = typeof import('firebase-admin/firestore');
+
 let cachedApp: App | null = null;
 let cachedDb: Firestore | null = null;
+
+function loadAdminAppModule(): AdminAppModule {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('firebase-admin/app') as AdminAppModule;
+  } catch (error) {
+    throw new FirebaseConnectionError('Gagal memuat modul firebase-admin/app.', error);
+  }
+}
+
+function loadFirestoreModule(): AdminFirestoreModule {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('firebase-admin/firestore') as AdminFirestoreModule;
+  } catch (error) {
+    throw new FirebaseConnectionError('Gagal memuat modul firebase-admin/firestore.', error);
+  }
+}
 
 export function isAdminConfigured(): boolean {
   return readFirebaseAdminEnv() !== null;
@@ -37,6 +61,7 @@ export function getAdminEnv(): FirebaseAdminEnv {
 function getOrInitApp(): App {
   if (cachedApp) return cachedApp;
 
+  const { initializeApp, getApps, cert } = loadAdminAppModule();
   const existing = getApps();
   if (existing.length > 0) {
     cachedApp = existing[0]!;
@@ -67,6 +92,7 @@ export function getAdminDb(): Firestore {
   if (cachedDb) return cachedDb;
 
   try {
+    const { getFirestore } = loadFirestoreModule();
     const app = getOrInitApp();
     const { databaseId } = getAdminEnv();
     cachedDb = databaseId ? getFirestore(app, databaseId) : getFirestore(app);

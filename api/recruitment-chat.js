@@ -62,10 +62,6 @@ function handleOptions(req, res) {
   return false;
 }
 
-// lib/firebase-admin.ts
-var import_app = require("firebase-admin/app");
-var import_firestore = require("firebase-admin/firestore");
-
 // lib/firebase-env.ts
 function trimEnv(value) {
   const trimmed = value?.trim();
@@ -140,6 +136,20 @@ function formatFirebaseError(error) {
 // lib/firebase-admin.ts
 var cachedApp = null;
 var cachedDb = null;
+function loadAdminAppModule() {
+  try {
+    return require("firebase-admin/app");
+  } catch (error) {
+    throw new FirebaseConnectionError("Gagal memuat modul firebase-admin/app.", error);
+  }
+}
+function loadFirestoreModule() {
+  try {
+    return require("firebase-admin/firestore");
+  } catch (error) {
+    throw new FirebaseConnectionError("Gagal memuat modul firebase-admin/firestore.", error);
+  }
+}
 function isAdminConfigured() {
   return readFirebaseAdminEnv() !== null;
 }
@@ -155,15 +165,16 @@ function getAdminEnv() {
 }
 function getOrInitApp() {
   if (cachedApp) return cachedApp;
-  const existing = (0, import_app.getApps)();
+  const { initializeApp, getApps, cert } = loadAdminAppModule();
+  const existing = getApps();
   if (existing.length > 0) {
     cachedApp = existing[0];
     return cachedApp;
   }
   const env = getAdminEnv();
   try {
-    cachedApp = (0, import_app.initializeApp)({
-      credential: (0, import_app.cert)({
+    cachedApp = initializeApp({
+      credential: cert({
         projectId: env.projectId,
         clientEmail: env.clientEmail,
         privateKey: env.privateKey
@@ -181,9 +192,10 @@ function getOrInitApp() {
 function getAdminDb() {
   if (cachedDb) return cachedDb;
   try {
+    const { getFirestore } = loadFirestoreModule();
     const app = getOrInitApp();
     const { databaseId } = getAdminEnv();
-    cachedDb = databaseId ? (0, import_firestore.getFirestore)(app, databaseId) : (0, import_firestore.getFirestore)(app);
+    cachedDb = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
     return cachedDb;
   } catch (error) {
     if (error instanceof FirebaseConfigError) throw error;
