@@ -1,6 +1,5 @@
 import admin from 'firebase-admin';
 
-// Hindari inisialisasi berulang
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -17,5 +16,6 @@ if (!admin.apps.length) {
 }
 
 export const firestore = admin.firestore();
+export const db = firestore;           // ← alias untuk gmail.ts
 export const auth = admin.auth();
 export default admin;
