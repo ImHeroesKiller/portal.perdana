@@ -24,7 +24,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import admin from 'firebase-admin';
+import { Timestamp, type Firestore } from 'firebase-admin/firestore';
 import { getAdminDb } from '../lib/firebase-admin';
 
 // ─── Env loader (.env is optional) ───────────────────────────────────────────
@@ -52,23 +52,20 @@ function loadEnvFile(): void {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const ts = () => admin.firestore.Timestamp.now();
+const ts = () => Timestamp.now();
 const dryRun = process.argv.includes('--dry-run');
 
 function log(icon: string, message: string): void {
   console.log(`${icon}  ${message}`);
 }
 
-async function isCollectionEmpty(
-  db: admin.firestore.Firestore,
-  name: string
-): Promise<boolean> {
+async function isCollectionEmpty(db: Firestore, name: string): Promise<boolean> {
   const snap = await db.collection(name).limit(1).get();
   return snap.empty;
 }
 
 async function seedIfEmpty(
-  db: admin.firestore.Firestore,
+  db: Firestore,
   collection: string,
   documents: Array<{ id: string; data: Record<string, unknown> }>
 ): Promise<'seeded' | 'skipped' | 'dry-run'> {
@@ -402,7 +399,12 @@ main()
   .catch((err) => {
     console.error('');
     console.error('❌  Gagal menjalankan init-firestore:');
-    console.error(err instanceof Error ? err.message : err);
+    if (err instanceof Error) {
+      console.error(err.message);
+      if (err.stack) console.error(err.stack);
+    } else {
+      console.error(err);
+    }
     console.error('');
     process.exit(1);
   });

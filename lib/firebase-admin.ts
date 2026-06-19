@@ -1,6 +1,7 @@
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
-let adminDb: admin.firestore.Firestore | null = null;
+let adminDb: Firestore | null = null;
 
 function resolveProjectId(): string | undefined {
   return process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
@@ -10,29 +11,35 @@ function resolveDatabaseId(): string | undefined {
   return process.env.FIRESTORE_DATABASE_ID || process.env.VITE_FIREBASE_DATABASE_ID;
 }
 
-export function getAdminDb(): admin.firestore.Firestore {
-  if (adminDb) return adminDb;
+function getOrInitApp(): App {
+  const existing = getApps();
+  if (existing.length > 0) return existing[0]!;
 
-  if (!admin.apps.length) {
-    const projectId = resolveProjectId();
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const projectId = resolveProjectId();
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-    if (clientEmail && privateKey && projectId) {
-      admin.initializeApp({
-        credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
-        projectId,
-      });
-    } else if (projectId) {
-      admin.initializeApp({ projectId });
-    } else {
-      throw new Error(
-        'Firebase Admin belum dikonfigurasi. Set FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY di Vercel.'
-      );
-    }
+  if (clientEmail && privateKey && projectId) {
+    return initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
+      projectId,
+    });
   }
 
+  if (projectId) {
+    return initializeApp({ projectId });
+  }
+
+  throw new Error(
+    'Firebase Admin belum dikonfigurasi. Set FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY.'
+  );
+}
+
+export function getAdminDb(): Firestore {
+  if (adminDb) return adminDb;
+
+  const app = getOrInitApp();
   const databaseId = resolveDatabaseId();
-  adminDb = databaseId ? admin.firestore(databaseId) : admin.firestore();
+  adminDb = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
   return adminDb;
 }
