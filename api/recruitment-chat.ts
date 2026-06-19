@@ -68,7 +68,7 @@ export default async function handler(req: any, res: any) {
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",           // ← MODEL SUDAH DIUPDATE
+      model: "gemini-2.5-flash",
       contents,
       config: {
         systemInstruction: SARA_SYSTEM_INSTRUCTION,
@@ -83,15 +83,46 @@ export default async function handler(req: any, res: any) {
   } catch (error: any) {
     console.error("Gemini Error:", error);
 
-    // Handle quota / rate limit error dengan pesan yang lebih ramah
-    if (error.status === 429 || error.message?.includes("quota")) {
+    // Handle quota / rate limit error (429)
+    if (error.status === 429 || error.message?.includes("quota") || error.message?.includes("RESOURCE_EXHAUSTED")) {
+      
+      // Try to extract retryDelay from Google error details
+      let retryAfter = 30; // default 30 seconds
+      let retryMessage = "beberapa saat";
+
+      try {
+        const details = error.details || error.error?.details || [];
+        for (const detail of details) {
+          if (detail["@type"]?.includes("RetryInfo") && detail.retryDelay) {
+            const delayStr = detail.retryDelay;
+            // Parse "17s" or "17.254551841s"
+            const seconds = parseFloat(delayStr.replace('s', ''));
+            if (!isNaN(seconds)) {
+              retryAfter = Math.ceil(seconds);
+              retryMessage = `${retryAfter} detik`;
+            }
+          }
+        }
+      } catch (parseErr) {
+        console.log("Could not parse retry delay, using default");
+      }
+
       return res.status(429).json({ 
-        error: "Maaf, saat ini kuota AI sedang penuh. Silakan coba lagi dalam beberapa saat." 
+        error: `Maaf, kuota AI sedang penuh. Silakan coba lagi dalam ${retryMessage}.`,
+        retryAfter: retryAfter
       });
     }
 
+    // Handle permission denied (403)
+    if (error.status === 403 || error.message?.includes("PERMISSION_DENIED")) {
+      return res.status(403).json({ 
+        error: "Maaf, terjadi masalah pada konfigurasi AI. Tim kami sedang memperbaikinya." 
+      });
+    }
+
+    // Generic error
     res.status(500).json({ 
-      error: error.message || "Gagal memproses chat dengan AI Sara" 
+      error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti." 
     });
   }
 }
