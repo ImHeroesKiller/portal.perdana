@@ -27,7 +27,6 @@ Tugas & Batasan Operasional:
 `;
 
 export default async function handler(req: any, res: any) {
-  // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -62,13 +61,16 @@ export default async function handler(req: any, res: any) {
       apiKey: process.env.GEMINI_API_KEY 
     });
 
-    const contents = messages.map((m: any) => ({
+    // === TRIM HISTORY: hanya ambil 12 pesan terakhir ===
+    const trimmedMessages = messages.slice(-12);
+
+    const contents = trimmedMessages.map((m: any) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }]
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",     // ← SUDAH DIGANTI KE VERSI LITE
+      model: "gemini-2.5-flash-lite",
       contents,
       config: {
         systemInstruction: SARA_SYSTEM_INSTRUCTION,
@@ -81,11 +83,13 @@ export default async function handler(req: any, res: any) {
     res.status(200).json({ reply: replyText.trim() });
 
   } catch (error: any) {
-    console.error("Gemini Error:", error);
+    console.error("=== Gemini Error Detail ===");
+    console.error("Status:", error.status);
+    console.error("Message:", error.message);
+    console.error("Full Error:", JSON.stringify(error, null, 2));
 
-    // Handle quota / rate limit error (429)
+    // Quota / Rate Limit
     if (error.status === 429 || error.message?.includes("quota") || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      
       let retryAfter = 30;
       let retryMessage = "beberapa saat";
 
@@ -93,17 +97,14 @@ export default async function handler(req: any, res: any) {
         const details = error.details || error.error?.details || [];
         for (const detail of details) {
           if (detail["@type"]?.includes("RetryInfo") && detail.retryDelay) {
-            const delayStr = detail.retryDelay;
-            const seconds = parseFloat(delayStr.replace('s', ''));
+            const seconds = parseFloat(detail.retryDelay.replace('s', ''));
             if (!isNaN(seconds)) {
               retryAfter = Math.ceil(seconds);
               retryMessage = `${retryAfter} detik`;
             }
           }
         }
-      } catch (parseErr) {
-        console.log("Could not parse retry delay");
-      }
+      } catch (_) {}
 
       return res.status(429).json({ 
         error: `Maaf, kuota AI sedang penuh. Silakan coba lagi dalam ${retryMessage}.`,
@@ -111,7 +112,7 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // Handle permission denied (403)
+    // Permission Denied
     if (error.status === 403 || error.message?.includes("PERMISSION_DENIED")) {
       return res.status(403).json({ 
         error: "Maaf, terjadi masalah pada konfigurasi AI. Tim kami sedang memperbaikinya." 
