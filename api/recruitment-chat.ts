@@ -14,58 +14,20 @@ Tugas & Batasan Operasional:
    - NIK (harus 16 digit angka): Jika salah, berikan penjelasan sopan dan intruksikan untuk memperbaikinya sebelum lanjut.
    - No KK (harus 16 digit angka): Jika salah, berikan penjelasan sopan dan intruksikan untuk memperbaikinya sebelum lanjut.
    - No WA (harus berformat internasional diawali dengan +62 atau format internasional sejenis): Jika salah, beri tahu kesalahan format dan bimbing pendaftaran format WhatsApp internasional dengan ramah.
-   - Koordinat Peta: Arahkan pelamar untuk memberikan link Google Maps lokasi domisili mereka. (Ekstrak url tersebut menjadi koordinat latitude dan longitude jika bisa, atau simpan saja link tersebut).
+   - Koordinat Peta: Arahkan pelamar untuk memberikan link Google Maps lokasi domisili mereka.
 4. Alur Pengumpulan Data (Tahap 1 s.d. 3):
    - Tahap 1 (Identitas): Posisi yang dilamar, Nama Lengkap, NIK, No KK, NPWP, Tempat & Tanggal Lahir (YYYY-MM-DD), Gender, Status Nikah, Agama, kesediaan Relokasi, dan Sertifikasi-sertifikasi Anda.
    - Tahap 2 (Kontak): Email, No WhatsApp, Alamat Lengkap (Provinsi, Kabupaten/Kota, Kecamatan, Desa/Kelurahan, RT, RW), Koordinat Peta (Link Google Maps).
    - Tahap 3 (Profesional): Pendidikan Terakhir, Perbankan (Nama Bank, Nomor Rekening), Kontak Darurat (Nama, Hubungan, Nomor Telepon), Keahlian/Skill, dan Riwayat Kerja secara singkat.
-   - Tahap 4 (Dokumen): Instruksikan pelamar bahwa pengunggahan dokumen (Surat Lamaran, CV, KTP, KK, Ijazah, Foto Diri) akan diinstruksikan melalui portal setelah konfirmasi data pendaftaran ini selesai.
+   - Tahap 4 (Dokumen): Instruksikan pelamar bahwa pengunggahan dokumen akan diinstruksikan melalui portal setelah konfirmasi data pendaftaran ini selesai.
 
 5. Format Output Kritis:
    - Selama data belum lengkap, berikan balasan chat yang alami dan ramah.
-   - HANYA SETELAH seluruh data Tahap 1, Tahap 2, dan Tahap 3 sudah lengkap terkumpul dan divalidasi dengan baik, Anda wajib memberikan respon berupa SATU BLOCK JSON MURNI (tanpa teks pembuka atau kata penutup apapun, dan tanpa markdown block seperti \`\`\`json) agar server kami dapat langsung memproses datanya secara terstruktur.
-   
-Skema JSON yang harus Anda buat adalah sebagai berikut:
-{
-  "positionApplied": "...",
-  "fullName": "...",
-  "nik": "...",
-  "kkNumber": "...",
-  "npwp": "...",
-  "placeOfBirth": "...",
-  "dateOfBirth": "...",
-  "gender": "...",
-  "maritalStatus": "...",
-  "religion": "...",
-  "willingToRelocate": "...",
-  "certifications": "...",
-  "email": "...",
-  "whatsappNumber": "...",
-  "addressLine": "...",
-  "provinsi": "...",
-  "kabupaten": "...",
-  "kecamatan": "...",
-  "desa": "...",
-  "rt": "...",
-  "rw": "...",
-  "latitude": "...",
-  "longitude": "...",
-  "lastEducation": "...",
-  "institutionName": "...",
-  "major": "...",
-  "graduationYear": 2024,
-  "skills": "...",
-  "workExperience": "...",
-  "bankName": "...",
-  "accountNumber": "...",
-  "emergencyName": "...",
-  "emergencyRelation": "...",
-  "emergencyPhone": "..."
-}
+   - HANYA SETELAH seluruh data Tahap 1, Tahap 2, dan Tahap 3 sudah lengkap terkumpul dan divalidasi dengan baik, Anda wajib memberikan respon berupa SATU BLOCK JSON MURNI (tanpa teks pembuka atau kata penutup apapun, dan tanpa markdown block seperti \`\`\`json).
 `;
 
 export default async function handler(req: any, res: any) {
-  // CORS - penting untuk Vercel
+  // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -97,12 +59,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const ai = new GoogleGenAI({ 
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'portal-perdana-recruitment',
-        }
-      }
+      apiKey: process.env.GEMINI_API_KEY 
     });
 
     const contents = messages.map((m: any) => ({
@@ -111,7 +68,7 @@ export default async function handler(req: any, res: any) {
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",           // ← MODEL SUDAH DIUPDATE
       contents,
       config: {
         systemInstruction: SARA_SYSTEM_INSTRUCTION,
@@ -125,6 +82,14 @@ export default async function handler(req: any, res: any) {
 
   } catch (error: any) {
     console.error("Gemini Error:", error);
+
+    // Handle quota / rate limit error dengan pesan yang lebih ramah
+    if (error.status === 429 || error.message?.includes("quota")) {
+      return res.status(429).json({ 
+        error: "Maaf, saat ini kuota AI sedang penuh. Silakan coba lagi dalam beberapa saat." 
+      });
+    }
+
     res.status(500).json({ 
       error: error.message || "Gagal memproses chat dengan AI Sara" 
     });
