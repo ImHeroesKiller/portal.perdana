@@ -575,27 +575,73 @@ export const createEmployee = async (data: NewEmployee): Promise<Employee> => {
   standardized.whatsappNumber = ensurePlus62(standardized.whatsappNumber);
   standardized.emergencyPhone = ensurePlus62(standardized.emergencyPhone);
 
+  let finalEmp = { ...standardized };
+
+  // Sync with Google Sheets & Drive if enabled in company settings
+  try {
+    const settings = getCompanySettings();
+    const gwSettings = settings.googleWorkspace;
+    if (gwSettings?.enabled && gwSettings.webAppUrl) {
+      console.log("Mengirim data pelamar ke Google Sheets & Drive...");
+      const payload = {
+        ...finalEmp,
+        applicationLetterFile: finalEmp.applicationLetterPath,
+        cvFile: finalEmp.cvPath,
+        ktpFile: finalEmp.ktpPath,
+        diplomaFile: finalEmp.diplomaPath,
+        photoFile: finalEmp.photoPath,
+        kkFile: finalEmp.kkPath,
+        certificateFile: finalEmp.certificatePath,
+        folderId: gwSettings.folderId
+      };
+
+      const res = await fetch(gwSettings.webAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result && result.status === 'success') {
+          console.log('Google Workspace Sync Success:', result);
+          if (result.files) {
+            finalEmp.applicationLetterPath = result.files.applicationLetter || finalEmp.applicationLetterPath;
+            finalEmp.cvPath = result.files.cv || finalEmp.cvPath;
+            finalEmp.ktpPath = result.files.ktp || finalEmp.ktpPath;
+            finalEmp.diplomaPath = result.files.diploma || finalEmp.diplomaPath;
+            finalEmp.photoPath = result.files.photo || finalEmp.photoPath;
+            finalEmp.kkPath = result.files.kk || finalEmp.kkPath;
+            finalEmp.certificatePath = result.files.certificate || finalEmp.certificatePath;
+          }
+        }
+      }
+    }
+  } catch(err) {
+    console.error('Koneksi Google Workspace Gagal, lanjut ke backup lokal:', err);
+  }
+
   try {
     const res = await fetch(`/api/db/${path}/${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanDoc(standardized))
+      body: JSON.stringify(cleanDoc(finalEmp))
     });
     if (!res.ok) throw new Error("Server REST API return " + res.status);
     invalidateCache('employees');
-    return standardized;
+    return finalEmp;
   } catch (error) {
     console.warn("⚠️ createEmployee failed, caching offline:", error);
     try {
       const local = localStorage.getItem('local_employees');
       const list = local ? JSON.parse(local) : [];
-      list.push(standardized);
+      list.push(finalEmp);
       localStorage.setItem('local_employees', JSON.stringify(list));
     } catch (e) {
       console.error("Local cache sync error", e);
     }
     invalidateCache('employees');
-    return standardized;
+    return finalEmp;
   }
 };
 

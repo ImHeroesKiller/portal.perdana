@@ -6,6 +6,14 @@ export interface BranchOffice {
   lng: number;
 }
 
+export interface GoogleWorkspaceSettings {
+  enabled: boolean;
+  webAppUrl: string;
+  sheetId: string;
+  folderId: string;
+  formEmbedUrl: string;
+}
+
 export interface CompanySettings {
   companyName: string;
   email: string;
@@ -13,6 +21,7 @@ export interface CompanySettings {
   website: string;
   headOfficeAddress: string;
   branches: BranchOffice[];
+  googleWorkspace?: GoogleWorkspaceSettings;
 }
 
 const STORAGE_KEY = 'company_info_settings';
@@ -31,7 +40,14 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
       lat: -2.8227,
       lng: 122.1462
     }
-  ]
+  ],
+  googleWorkspace: {
+    enabled: false,
+    webAppUrl: "",
+    sheetId: "",
+    folderId: "",
+    formEmbedUrl: ""
+  }
 };
 
 export const getCompanySettings = (): CompanySettings => {
@@ -64,6 +80,7 @@ export const getCompanySettings = (): CompanySettings => {
           website: parsed.website || DEFAULT_COMPANY_SETTINGS.website,
           headOfficeAddress: parsed.headOfficeAddress || DEFAULT_COMPANY_SETTINGS.headOfficeAddress,
           branches: branches,
+          googleWorkspace: parsed.googleWorkspace || DEFAULT_COMPANY_SETTINGS.googleWorkspace,
         };
       }
     }

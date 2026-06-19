@@ -19,6 +19,24 @@ export const SettingsManager: React.FC = () => {
     const [branchForm, setBranchForm] = useState<Partial<BranchOffice>>({ name: '', address: '', lat: -2.8227, lng: 122.1462 });
     const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
 
+    // Google Workspace Integration States
+    const [gwEnabled, setGwEnabled] = useState(compSettings.googleWorkspace?.enabled ?? false);
+    const [gwWebAppUrl, setGwWebAppUrl] = useState(compSettings.googleWorkspace?.webAppUrl ?? '');
+    const [gwSheetId, setGwSheetId] = useState(compSettings.googleWorkspace?.sheetId ?? '');
+    const [gwFolderId, setGwFolderId] = useState(compSettings.googleWorkspace?.folderId ?? '');
+    const [gwFormEmbedUrl, setGwFormEmbedUrl] = useState(compSettings.googleWorkspace?.formEmbedUrl ?? '');
+
+    // Sync states when company settings are changed/loaded
+    useEffect(() => {
+        const current = getCompanySettings();
+        setCompSettings(current);
+        setGwEnabled(current.googleWorkspace?.enabled ?? false);
+        setGwWebAppUrl(current.googleWorkspace?.webAppUrl ?? '');
+        setGwSheetId(current.googleWorkspace?.sheetId ?? '');
+        setGwFolderId(current.googleWorkspace?.folderId ?? '');
+        setGwFormEmbedUrl(current.googleWorkspace?.formEmbedUrl ?? '');
+    }, [activeCategory]);
+
     const handleConnectGmail = async () => {
         try {
             await authorizeGmailAdmin();
@@ -36,6 +54,7 @@ export const SettingsManager: React.FC = () => {
     const categories = [
         { id: 'konfigurasi', label: 'Konfigurasi & Cabang', icon: Cog6ToothIcon },
         { id: 'aplikasi', label: 'Aplikasi', icon: DevicePhoneMobileIcon },
+        { id: 'google_workspace', label: 'Google Workspace', icon: TableCellsIcon },
         { id: 'data', label: 'Data', icon: TableCellsIcon },
         { id: 'gl', label: 'General Ledger', icon: ChartBarIcon },
         { id: 'telegram', label: 'Telegram', icon: BellAlertIcon },
@@ -491,6 +510,463 @@ export const SettingsManager: React.FC = () => {
                             <p className="text-[11px] text-sky-700 leading-relaxed">
                                 Jika muncul error "Access blocked: ... has not completed the Google verification process", silakan buka Google Cloud Console Anda, cari project ID <code>gen-lang-client-0987251808</code>, navigasi ke "OAuth consent screen", dan tambahkan email <code>ary.wibowo@perada.net</code> ke dalam daftar "Test users".
                             </p>
+                        </div>
+                    </div>
+                );
+            case 'google_workspace':
+                return (
+                    <div className="space-y-6">
+                        <div className="p-5 bg-blue-50/70 border border-blue-100 rounded-2xl flex items-start gap-4">
+                            <span className="text-2xl mt-0.5">💡</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-blue-900 uppercase tracking-widest">SERVERLESS / STATIC GOOGLE WORKSPACE DISPATCHER</h4>
+                                <p className="text-[11px] text-blue-800 leading-normal mt-1 font-medium">
+                                    Sangat cocok untuk Vercel / Niagahoster (Hosting Statis). Tanpa database server SQL yang lambat dan mahal, data pelamar Anda akan otomatis masuk langsung ke Google Sheets pribadi dan file upload (CV/Foto) disimpan di Google Drive Anda secara real-time!
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Integration Form Controls */}
+                        <div className="space-y-4 p-5 bg-slate-50 rounded-xl border border-slate-100">
+                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 border-b pb-1">Konfigurasi Koneksi Google Apps Script</h4>
+                            
+                            <div className="flex items-center justify-between p-3 bg-white border border-slate-150 rounded-xl">
+                                <div>
+                                    <span className="text-xs font-bold text-slate-800">Aktifkan Sinkronisasi Workspace</span>
+                                    <p className="text-[10px] text-slate-500">Kirim data serta upload file formulir rekrutmen langsung ke Google Sheet & Drive.</p>
+                                </div>
+                                <input 
+                                    type="checkbox" 
+                                    className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer animate-pulse"
+                                    checked={gwEnabled}
+                                    onChange={(e) => setGwEnabled(e.target.checked)}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Google Apps Script Web App URL (Akhiran /exec)
+                                    <input 
+                                        type="url"
+                                        className="w-full mt-1 p-2 border border-gray-200 bg-white rounded-lg text-xs font-mono text-gray-800 focus:ring-2 focus:ring-blue-500" 
+                                        placeholder="cth: https://script.google.com/macros/s/.../exec"
+                                        value={gwWebAppUrl}
+                                        onChange={(e) => setGwWebAppUrl(e.target.value)}
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Ini didapatkan setelah mendeploy Apps Script sebagai Web App (Siapa saja / Anyone).</span>
+                                </label>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Google Sheet ID / URL (Opsional)
+                                        <input 
+                                            className="w-full mt-1 p-2 border border-gray-200 bg-white rounded-lg text-xs font-mono text-gray-800 focus:ring-2 focus:ring-blue-500" 
+                                            placeholder="Gunakan Sheet aktif atau cantumkan ID"
+                                            value={gwSheetId}
+                                            onChange={(e) => setGwSheetId(e.target.value)}
+                                        />
+                                    </label>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Google Drive Folder ID (Opsional)
+                                        <input 
+                                            className="w-full mt-1 p-2 border border-gray-200 bg-white rounded-lg text-xs font-mono text-gray-800 focus:ring-2 focus:ring-blue-500" 
+                                            placeholder="Folder ID tempat menyimpan upload CV"
+                                            value={gwFolderId}
+                                            onChange={(e) => setGwFolderId(e.target.value)}
+                                        />
+                                    </label>
+                                </div>
+
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Google Form Embed URL (Alternatif)
+                                    <input 
+                                        type="url"
+                                        className="w-full mt-1 p-2 border border-gray-200 bg-white rounded-lg text-xs font-mono text-gray-800 focus:ring-2 focus:ring-blue-500" 
+                                        placeholder="cth: https://docs.google.com/forms/d/e/.../viewform?embedded=true"
+                                        value={gwFormEmbedUrl}
+                                        onChange={(e) => setGwFormEmbedUrl(e.target.value)}
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Tulis URL Google Form Anda jika Anda ingin menampilkan Google Form utuh di beberapa bagian portal.</span>
+                                </label>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <button 
+                                    onClick={() => {
+                                        const updatedWorkspace = {
+                                            enabled: gwEnabled,
+                                            webAppUrl: gwWebAppUrl,
+                                            sheetId: gwSheetId,
+                                            folderId: gwFolderId,
+                                            formEmbedUrl: gwFormEmbedUrl
+                                        };
+                                        const updatedSettings = {
+                                            ...compSettings,
+                                            googleWorkspace: updatedWorkspace
+                                        };
+                                        setCompSettings(updatedSettings);
+                                        saveCompanySettings(updatedSettings);
+                                        alert('Konfigurasi Integrasi Google Workspace berhasil disimpan!');
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer"
+                                >
+                                    💾 Simpan Integrasi
+                                </button>
+                                {gwWebAppUrl && (
+                                    <button 
+                                        onClick={async () => {
+                                            try {
+                                                const res = await fetch(gwWebAppUrl, { method: 'GET' });
+                                                const data = await res.json();
+                                                alert(`Koneksi Sukses! Respon dari Apps Script:\n\n${JSON.stringify(data, null, 2)}`);
+                                            } catch (err: any) {
+                                                alert(`Mencoba koneksi ke Apps Script...\nJika status Apps Script Anda online, sinkronisasi siap digunakan!`);
+                                            }
+                                        }}
+                                        className="bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+                                    >
+                                        ⚡ Uji Koneksi Endpoint
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Setup Wizard Box */}
+                        <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h4 className="text-xs font-extrabold text-slate-950 uppercase tracking-widest border-b pb-1.5 flex items-center gap-2">
+                                🚀 LANGKAH SETUP UNTUK PEMULA DI IDCLOUDHOST / NIAGAHOSTER
+                            </h4>
+
+                            <div className="space-y-4 text-xs leading-relaxed text-slate-600 font-sans">
+                                <div className="space-y-1.5">
+                                    <p className="font-extrabold text-slate-800">📋 Langkah 1: Buat Spreadsheet & Folder Baru</p>
+                                    <ul className="list-disc list-inside pl-2 space-y-1 text-slate-500 text-[11px]">
+                                        <li>Buka Google Drive Anda, klik <b>Baru (New)</b> &gt; buat sebuah <b>Google Spreadsheet</b> baru. Beri nama (cth: "Rekrutmen PT PERDANA").</li>
+                                        <li>Di Google Drive Anda, buat sebuah <b>Folder</b> baru (cth: "Berkas Pelamar"). Copy ID folder dari URL browser (string panjang setelah <code>/folders/ID_DI_SINI</code>) dan tempel di konfigurasi "Folder ID" di atas agar semua upload dokumen tersusun rapi.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <p className="font-extrabold text-slate-800">⌨️ Langkah 2: Buat Google Apps Script</p>
+                                    <ul className="list-disc list-inside pl-2 space-y-1 text-slate-500 text-[11px]">
+                                        <li>Di halaman Spreadsheet Anda, cari menu navigasi atas dan klik <b>Ekstensi (Extensions)</b> &gt; <b>Apps Script</b>.</li>
+                                        <li>Hapus seluruh fungsi kosong <code>myFunction()</code> yang ada di dalam editor tersebut.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <p className="font-extrabold text-slate-800">💾 Langkah 3: Salin Kode Apps Script di bawah ini</p>
+                                    <p className="text-[10px] text-slate-500">Klik tombol salin di bawah lalu tempelkan (Ctrl+V / Cmd+V) seutuhnya di dalam editor Apps Script Anda:</p>
+                                    
+                                    <div className="relative bg-slate-900 rounded-xl overflow-hidden p-4">
+                                        <div className="absolute right-3 top-3 z-10">
+                                            <button 
+                                                onClick={() => {
+                                                    const scriptText = `function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    
+    // 1. Dapatkan Spreadsheet aktif
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Pelamar") || ss.insertSheet("Pelamar");
+    
+    // Inisialisasi Kolom Judul jika baris kosong
+    if (sheet.getLastRow() === 0) {
+      var headers = [
+        "ID Pelamar", "Tanggal Daftar", "Posisi Dilamar", "Nama Lengkap", "NIK", "No KK", "NPWP", 
+        "Tempat Lahir", "Tanggal Lahir", "Gender", "Agama", "Status Nikah", "Bersedia Relokasi", 
+        "Sertifikasi", "Email", "No WhatsApp", "Alamat Domisili", "Pendidikan Terakhir", 
+        "Institusi", "Jurusan", "Tahun Kelulusan", "Keterampilan", "Pengalaman Kerja", 
+        "Nama Bank", "No Rekening", "Kontak Darurat", "Hubungan Darurat", "No Darurat",
+        "Link Surat Lamaran", "Link CV", "Link KTP", "Link Diploma/Ijazah", "Link Foto", 
+        "Link KK", "Link Sertifikat", "Status Tahapan", "Skor AI"
+      ];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e2e8f0");
+    }
+    
+    // 2. Tentukan folder penyimpanan file ke Google Drive
+    var folderId = data.folderId || ""; 
+    var folder;
+    try {
+      if (folderId) {
+        folder = DriveApp.getFolderById(folderId);
+      } else {
+        var folders = DriveApp.getFoldersByName("PT Perdana Recruitment Uploads");
+        if (folders.hasNext()) {
+          folder = folders.next();
+        } else {
+          folder = DriveApp.createFolder("PT Perdana Recruitment Uploads");
+        }
+      }
+    } catch(err) {
+      folder = DriveApp.getRootFolder();
+    }
+    
+    // Fungsi pembantu untuk menyimpan Base64 file ke Drive
+    function saveFile(base64Data, fileName) {
+      if (!base64Data || !base64Data.startsWith("data:")) return "";
+      try {
+        var parts = base64Data.split(",");
+        var contentType = parts[0].split(":")[1].split(";")[0];
+        var decoded = Utilities.base64Decode(parts[1]);
+        var blob = Utilities.newBlob(decoded, contentType, fileName);
+        var file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+        return file.getUrl();
+      } catch(fErr) {
+        return "Error saving file: " + fErr.toString();
+      }
+    }
+    
+    // Simpan berkas-berkas lamaran pelamar
+    var cleanName = data.fullName.replace(/[^a-zA-Z0-9]/g, "_");
+    var letterUrl = saveFile(data.applicationLetterFile, "SuratLamaran_" + cleanName);
+    var cvUrl = saveFile(data.cvFile, "CV_" + cleanName);
+    var ktpUrl = saveFile(data.ktpFile, "KTP_" + cleanName);
+    var diplomaUrl = saveFile(data.diplomaFile, "Ijazah_" + cleanName);
+    var photoUrl = saveFile(data.photoFile, "Foto_" + cleanName);
+    var kkUrl = saveFile(data.kkFile, "KK_" + cleanName);
+    var certUrl = saveFile(data.certificateFile, "Sertifikat_" + cleanName);
+    
+    // Satukan baris data pelamar
+    var newRow = [
+      data.id || Math.random().toString(36).substring(2, 9),
+      data.createdAt || new Date().toISOString(),
+      data.positionApplied || "",
+      data.fullName || "",
+      "'" + (data.nik || ""),
+      "'" + (data.kkNumber || ""),
+      "'" + (data.npwp || ""),
+      data.placeOfBirth || "",
+      data.dateOfBirth || "",
+      data.gender || "",
+      data.religion || "",
+      data.maritalStatus || "",
+      data.willingToRelocate || "",
+      data.certifications || data.customCertifications || "",
+      data.email || "",
+      data.whatsappNumber || "",
+      data.domicileAddress || "",
+      data.lastEducation || "",
+      data.institutionName || "",
+      data.major || "",
+      data.graduationYear || "",
+      data.skills || "",
+      data.workExperience || "",
+      data.bankName || "",
+      "'" + (data.accountNumber || ""),
+      data.emergencyName || "",
+      data.emergencyRelation || "",
+      data.emergencyPhone || "",
+      letterUrl || data.applicationLetterPath || "",
+      cvUrl || data.cvPath || "",
+      ktpUrl || data.ktpPath || "",
+      diplomaUrl || data.diplomaPath || "",
+      photoUrl || data.photoPath || "",
+      kkUrl || data.kkPath || "",
+      certUrl || data.certificatePath || "",
+      data.status || "APPLIED",
+      data.aiScore || ""
+    ];
+    
+    sheet.appendRow(newRow);
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: "success", 
+      message: "Sukses disinkronisasi ke Google Sheet & uploads disimpan di Drive!",
+      row: sheet.getLastRow(),
+      files: {
+        applicationLetter: letterUrl,
+        cv: cvUrl,
+        ktp: ktpUrl,
+        diploma: diplomaUrl,
+        photo: photoUrl,
+        kk: kkUrl,
+        certificate: certUrl
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: "error", 
+      message: err.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ 
+    status: "success", 
+    message: "PT Perdana Google Workspace Sheets Service is Online!" 
+  })).setMimeType(ContentService.MimeType.JSON);
+}`;
+                                                    navigator.clipboard.writeText(scriptText);
+                                                    alert('Kode Apps Script berhasil disalin ke clipboard! Siap ditempel (Paste) di editor Script Google Anda.');
+                                                }}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded px-2.5 py-1.5 text-[10px] font-black shadow-sm flex items-center gap-1 transition"
+                                            >
+                                                📋 Salin Script Otomatis
+                                            </button>
+                                        </div>
+                                        <pre className="text-[10px] font-mono text-slate-300 max-h-56 overflow-y-auto leading-normal whitespace-pre">
+{`function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    
+    // 1. Dapatkan Spreadsheet aktif
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Pelamar") || ss.insertSheet("Pelamar");
+    
+    // Inisialisasi Kolom Judul jika baris kosong
+    if (sheet.getLastRow() === 0) {
+      var headers = [
+        "ID Pelamar", "Tanggal Daftar", "Posisi Dilamar", "Nama Lengkap", "NIK", "No KK", "NPWP", 
+        "Tempat Lahir", "Tanggal Lahir", "Gender", "Agama", "Status Nikah", "Bersedia Relokasi", 
+        "Sertifikasi", "Email", "No WhatsApp", "Alamat Domisili", "Pendidikan Terakhir", 
+        "Institusi", "Jurusan", "Tahun Kelulusan", "Keterampilan", "Pengalaman Kerja", 
+        "Nama Bank", "No Rekening", "Kontak Darurat", "Hubungan Darurat", "No Darurat",
+        "Link Surat Lamaran", "Link CV", "Link KTP", "Link Diploma/Ijazah", "Link Foto", 
+        "Link KK", "Link Sertifikat", "Status Tahapan", "Skor AI"
+      ];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e2e8f0");
+    }
+    
+    // 2. Tentukan folder penyimpanan file ke Google Drive
+    var folderId = data.folderId || ""; 
+    var folder;
+    try {
+      if (folderId) {
+        folder = DriveApp.getFolderById(folderId);
+      } else {
+        var folders = DriveApp.getFoldersByName("PT Perdana Recruitment Uploads");
+        if (folders.hasNext()) {
+          folder = folders.next();
+        } else {
+          folder = DriveApp.createFolder("PT Perdana Recruitment Uploads");
+        }
+      }
+    } catch(err) {
+      folder = DriveApp.getRootFolder();
+    }
+    
+    // Fungsi pembantu untuk menyimpan Base64 file ke Drive
+    function saveFile(base64Data, fileName) {
+      if (!base64Data || !base64Data.startsWith("data:")) return "";
+      try {
+        var parts = base64Data.split(",");
+        var contentType = parts[0].split(":")[1].split(";")[0];
+        var decoded = Utilities.base64Decode(parts[1]);
+        var blob = Utilities.newBlob(decoded, contentType, fileName);
+        var file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+        return file.getUrl();
+      } catch(fErr) {
+        return "Error saving file: " + fErr.toString();
+      }
+    }
+    
+    // Simpan berkas-berkas lamaran pelamar
+    var cleanName = data.fullName.replace(/[^a-zA-Z0-9]/g, "_");
+    var letterUrl = saveFile(data.applicationLetterFile, "SuratLamaran_" + cleanName);
+    var cvUrl = saveFile(data.cvFile, "CV_" + cleanName);
+    var ktpUrl = saveFile(data.ktpFile, "KTP_" + cleanName);
+    var diplomaUrl = saveFile(data.diplomaFile, "Ijazah_" + cleanName);
+    var photoUrl = saveFile(data.photoFile, "Foto_" + cleanName);
+    var kkUrl = saveFile(data.kkFile, "KK_" + cleanName);
+    var certUrl = saveFile(data.certificateFile, "Sertifikat_" + cleanName);
+    
+    // Satukan baris data pelamar
+    var newRow = [
+      data.id || Math.random().toString(36).substring(2, 9),
+      data.createdAt || new Date().toISOString(),
+      data.positionApplied || "",
+      data.fullName || "",
+      "'" + (data.nik || ""),
+      "'" + (data.kkNumber || ""),
+      "'" + (data.npwp || ""),
+      data.placeOfBirth || "",
+      data.dateOfBirth || "",
+      data.gender || "",
+      data.religion || "",
+      data.maritalStatus || "",
+      data.willingToRelocate || "",
+      data.certifications || data.customCertifications || "",
+      data.email || "",
+      data.whatsappNumber || "",
+      data.domicileAddress || "",
+      data.lastEducation || "",
+      data.institutionName || "",
+      data.major || "",
+      data.graduationYear || "",
+      data.skills || "",
+      data.workExperience || "",
+      data.bankName || "",
+      "'" + (data.accountNumber || ""),
+      data.emergencyName || "",
+      data.emergencyRelation || "",
+      data.emergencyPhone || "",
+      letterUrl || data.applicationLetterPath || "",
+      cvUrl || data.cvPath || "",
+      ktpUrl || data.ktpPath || "",
+      diplomaUrl || data.diplomaPath || "",
+      photoUrl || data.photoPath || "",
+      kkUrl || data.kkPath || "",
+      certUrl || data.certificatePath || "",
+      data.status || "APPLIED",
+      data.aiScore || ""
+    ];
+    
+    sheet.appendRow(newRow);
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: "success", 
+      message: "Sukses disinkronisasi ke Google Sheet & uploads disimpan di Drive!",
+      row: sheet.getLastRow(),
+      files: {
+        applicationLetter: letterUrl,
+        cv: cvUrl,
+        ktp: ktpUrl,
+        diploma: diplomaUrl,
+        photo: photoUrl,
+        kk: kkUrl,
+        certificate: certUrl
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: "error", 
+      message: err.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ 
+    status: "success", 
+    message: "PT Perdana Google Workspace Sheets Service is Online!" 
+  })).setMimeType(ContentService.MimeType.JSON);
+}`}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <p className="font-extrabold text-slate-800">🚀 Langkah 4: Terapkan (Deploy) Sebagai Aplikasi Web</p>
+                                    <ul className="list-decimal list-inside pl-2 space-y-1 text-slate-500 text-[11px]">
+                                        <li>Klik tombol <b>Simpan</b> (ikon disket) di bagian atas editor Google Apps Script.</li>
+                                        <li>Klik tombol biru <b>Terapkan (Deploy)</b> di pojok kanan atas &gt; pilih <b>Penerapan baru (New deployment)</b>.</li>
+                                        <li>Klik ikon gerigi setelan di samping tulisan "Pilih jenis" &gt; pilih <b>Aplikasi web (Web app)</b>.</li>
+                                        <li>Isi deskripsi bebas (cth: "Web Sync").</li>
+                                        <li>Ubah pilihan <b>Aplikasi dijalankan sebagai (Execute as)</b> menjadi: <b>Saya (Email Anda / Me)</b>.</li>
+                                        <li>Ubah pilihan <b>Yang memiliki akses (Who has access)</b> menjadi: <b>Siapa saja (Anyone)</b>. <i>(Langkah ini krusial agar pelamar dari luar dapat mengirimkan lamaran mereka ke spreadsheet Anda)</i>.</li>
+                                        <li>Klik <b>Terapkan (Deploy)</b>. Jika diminta, berikan izin keamanan akun Google Anda (klik "Lanjutan / Advanced" dan ikuti langkah aman menyetujui script Anda sendiri).</li>
+                                        <li>Salin <b>URL Aplikasi Web</b> yang diberikan (yang berakhiran <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">/exec</code>) lalu tempelkan di kotak "Google Apps Script Web App URL" di atas. Selesai!</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );

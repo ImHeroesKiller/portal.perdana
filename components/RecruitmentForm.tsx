@@ -2,6 +2,7 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createEmployee, uploadFileMock, getJobs } from '../services/db';
+import { getCompanySettings } from '../services/companySettings';
 import { getCurrentUser, updateUserProfile, createCredentialsForCandidateSubmit } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { sendCandidateCredentialsNotification } from '../services/notifications';
@@ -66,6 +67,7 @@ const STEPS = [
 
 export const RecruitmentForm: React.FC = () => {
   const navigate = useNavigate();
+  const [formMode, setFormMode] = useState<'manual' | 'ai' | 'google_form'>('manual');
   const [useAIChat, setUseAIChat] = useState(false);
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<FormDataState>(initialFormState);
@@ -80,6 +82,16 @@ export const RecruitmentForm: React.FC = () => {
   const [submittedName, setSubmittedName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string; isNew: boolean } | null>(null);
+
+  // Read Google Form embed url from settings
+  const gwSettings = getCompanySettings().googleWorkspace;
+  const googleFormUrl = gwSettings?.formEmbedUrl || '';
+
+  // Handle switching modes cleanly
+  const changeMode = (mode: 'manual' | 'ai' | 'google_form') => {
+    setFormMode(mode);
+    setUseAIChat(mode === 'ai');
+  };
 
   const currentUser = getCurrentUser();
 
@@ -359,33 +371,74 @@ export const RecruitmentForm: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* Sticky Dual Mode Switcher Bar */}
+      {/* Sticky Dual/Triple Mode Switcher Bar */}
       <div className="max-w-7xl mx-auto px-4 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
         <span className="text-xs text-gray-500 font-medium font-sans">
           Mendaftar Pekerjaan di <b>PT Perdana Adi Yuda</b>: Pilih metode pengisian data pendaftaran Anda.
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             id="btn_mode_traditional"
-            onClick={() => setUseAIChat(false)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border ${!useAIChat ? 'bg-blue-900 border-blue-900 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            onClick={() => changeMode('manual')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border ${formMode === 'manual' ? 'bg-blue-900 border-blue-900 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
           >
             📝 Formulir Manual
           </button>
           <button
             type="button"
             id="btn_mode_ai"
-            onClick={() => setUseAIChat(true)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 ${useAIChat ? 'bg-blue-950 border-blue-950 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            onClick={() => changeMode('ai')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 ${formMode === 'ai' ? 'bg-blue-950 border-blue-950 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
           >
             💬 Virtual Assistant SARA
           </button>
+          {googleFormUrl && (
+            <button
+              type="button"
+              id="btn_mode_google_form"
+              onClick={() => changeMode('google_form')}
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 ${formMode === 'google_form' ? 'bg-emerald-700 border-emerald-700 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              📊 Google Form Sematan
+            </button>
+          )}
         </div>
       </div>
 
-      {useAIChat ? (
+      {formMode === 'ai' ? (
         <AIChatroomForm />
+      ) : formMode === 'google_form' ? (
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden my-8 relative">
+          <button 
+            type="button"
+            onClick={() => navigate(-1)} 
+            className="absolute top-4 left-4 text-white hover:text-blue-150 transition-colors flex items-center gap-1 bg-white/15 hover:bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold border border-white/25 active:scale-95"
+          >
+            <ChevronLeftIcon className="h-4 w-4 stroke-2" /> Kembali
+          </button>
+
+          <div className="bg-blue-900 text-white p-6 text-center">
+              <h1 className="text-2xl font-bold">Google Form Terintegrasi</h1>
+              <p className="text-blue-200 text-sm">PT Perdana Adi Yuda</p>
+          </div>
+
+          <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+              <span className="text-xs text-emerald-800 font-medium">Modul Form rekrutmen dialihkan ke Google Forms resmi PT Perdana Adi Yuda. Mohon selesaikan pendaftaran Anda secara langsung melalui media form di bawah ini.</span>
+          </div>
+
+          <div className="w-full overflow-hidden" style={{ height: '700px' }}>
+            <iframe 
+              src={googleFormUrl} 
+              width="100%" 
+              height="100%" 
+              className="border-none"
+              title="Google Form Rekrutmen"
+            >
+              Loading…
+            </iframe>
+          </div>
+        </div>
       ) : (
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden my-8 relative">
           {/* Absolute Header Back navigation */}
