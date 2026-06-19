@@ -1,0 +1,4 @@
+# Local dev Express server — production uses /api serverless functions
+server.ts
+dist/server.cjs
+dist/server.cjs.map

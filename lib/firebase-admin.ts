@@ -44,14 +44,21 @@ function getOrInitApp(): App {
   }
 
   const env = getAdminEnv();
-  cachedApp = initializeApp({
-    credential: cert({
+  try {
+    cachedApp = initializeApp({
+      credential: cert({
+        projectId: env.projectId,
+        clientEmail: env.clientEmail,
+        privateKey: env.privateKey,
+      }),
       projectId: env.projectId,
-      clientEmail: env.clientEmail,
-      privateKey: env.privateKey,
-    }),
-    projectId: env.projectId,
-  });
+    });
+  } catch (error) {
+    throw new FirebaseConfigError(
+      'Gagal memuat kredensial Firebase Admin. Periksa FIREBASE_PRIVATE_KEY (format PEM dengan newline) di Vercel.',
+      getMissingAdminEnvKeys()
+    );
+  }
 
   return cachedApp;
 }

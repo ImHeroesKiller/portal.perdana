@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getJobs, getClients, getProjects } from '../services/db';
+import { getClients, getProjects } from '../services/db';
+import { getJobs } from '../src/services/jobService';
 import {
   getCandidates,
   createCandidate,

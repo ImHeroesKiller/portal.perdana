@@ -8,11 +8,14 @@ import { getAdminDb, isAdminConfigured, testAdminConnection } from "./lib/fireba
 import { applyNoStoreHeaders } from "./lib/api-cache";
 import {
   listCollection,
+  listJobs,
   setDocument,
   updateDocument,
   deleteDocument,
   seedAllCollections,
 } from "./lib/db-api";
+import { formatFirebaseError, toHttpStatus } from "./lib/firebase-errors";
+import { JOBS_COLLECTION, normalizeJobFromFirestore } from "./lib/job-record";
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda yang profesional, efisien, dan ramah. Tugas Anda adalah memandu pelamar kerja mengisi formulir pendaftaran secara bertahap melalui percakapan natural.
@@ -184,13 +187,19 @@ async function startServer() {
   app.get("/api/db/:collection", async (req, res) => {
     applyNoStoreHeaders(res);
     const { collection } = req.params;
-    if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
     try {
+      if (collection === JOBS_COLLECTION) {
+        const list = await listJobs();
+        const jobs = list.map((doc) => normalizeJobFromFirestore(doc));
+        return res.status(200).json(jobs);
+      }
       const list = await listCollection(collection);
-      res.json(list);
-    } catch (error: any) {
+      res.status(200).json(list);
+    } catch (error: unknown) {
       console.error(`Database admin get error for collection ${collection}:`, error);
-      res.status(500).json({ error: error.message || "Failed to fetch collection" });
+      res.status(toHttpStatus(error)).json({
+        error: formatFirebaseError(error) || "Failed to fetch collection",
+      });
     }
   });
 

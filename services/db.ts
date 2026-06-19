@@ -735,104 +735,13 @@ export const updateProject = async (id: string, updates: Partial<Project>): Prom
   return localUpdated || { ...updates, id } as Project;
 };
 
-export const getJobs = async (): Promise<JobVacancy[]> => {
-  const list = await fetchCollection<JobVacancy>('jobs');
-  return [...list];
-};
-
-export const createJob = async (data: NewJobVacancy): Promise<JobVacancy> => {
-  const path = 'jobs';
-  const id = Math.random().toString(36).substring(2, 11);
-  const newJob: JobVacancy = {
-    ...data,
-    id,
-    isActive: true,
-    createdAt: new Date().toISOString()
-  };
-
-  try {
-    const local = localStorage.getItem('local_jobs');
-    const list = local ? JSON.parse(local) : [];
-    list.push(newJob);
-    localStorage.setItem('local_jobs', JSON.stringify(list));
-  } catch (e) {
-    console.error("Local cache job sync error", e);
-  }
-
-  try {
-    const res = await fetch(`/api/db/${path}/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanDoc(newJob))
-    });
-    if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('jobs');
-    return newJob;
-  } catch (error) {
-    console.warn("⚠️ createJob failed on server:", error);
-    invalidateCache('jobs');
-    return newJob;
-  }
-};
-
-export const updateJob = async (id: string, updates: Partial<JobVacancy>): Promise<JobVacancy> => {
-  const path = 'jobs';
-  
-  let localUpdated: JobVacancy | null = null;
-  try {
-    const local = localStorage.getItem('local_jobs');
-    if (local) {
-      const list: JobVacancy[] = JSON.parse(local);
-      const idx = list.findIndex(j => j.id === id);
-      if (idx !== -1) {
-        list[idx] = { ...list[idx], ...updates };
-        localUpdated = list[idx];
-        localStorage.setItem('local_jobs', JSON.stringify(list));
-      }
-    }
-  } catch (e) {
-    console.error("Local cache job update error", e);
-  }
-
-  try {
-    const res = await fetch(`/api/db/${path}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanDoc(updates))
-    });
-    if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('jobs');
-  } catch (error) {
-    console.warn("⚠️ updateJob failed on server:", error);
-    invalidateCache('jobs');
-  }
-
-  return localUpdated || { ...updates, id } as JobVacancy;
-};
-
-export const deleteJob = async (id: string): Promise<void> => {
-  const path = 'jobs';
-  
-  try {
-    const local = localStorage.getItem('local_jobs');
-    if (local) {
-      const list: JobVacancy[] = JSON.parse(local);
-      const filtered = list.filter(j => j.id !== id);
-      localStorage.setItem('local_jobs', JSON.stringify(filtered));
-    }
-  } catch (e) {
-    console.error("Local cache job delete error", e);
-  }
-
-  try {
-    const res = await fetch(`/api/db/${path}/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error("Server REST API return " + res.status);
-    invalidateCache('jobs');
-  } catch (error) {
-    console.warn("⚠️ deleteJob failed on server:", error);
-    invalidateCache('jobs');
-  }
-};
+export {
+  getJobs,
+  createJob,
+  updateJob,
+  deleteJob,
+  JOBS_COLLECTION,
+} from '../src/services/jobService';
 
 export const clearDatabase = () => {
   localStorage.clear();

@@ -1,17 +1,65 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { getAdminDb, isAdminConfigured } from './firebase-admin';
+import { FirebaseConfigError, FirebaseConnectionError } from './firebase-errors';
+import { docToPlainObject } from './firestore-serialize';
+import { JOBS_COLLECTION } from './job-record';
 
 export async function getAdminDbOrThrow(): Promise<Firestore> {
   if (!isAdminConfigured()) {
-    throw new Error('Firebase Admin belum dikonfigurasi di server.');
+    throw new FirebaseConfigError(
+      'Firebase Admin belum dikonfigurasi di server.',
+      ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']
+    );
   }
   return getAdminDb();
 }
 
+async function readCollectionDocs(
+  db: Firestore,
+  collection: string
+): Promise<Record<string, unknown>[]> {
+  const snap = await db.collection(collection).get();
+  return snap.docs.map((doc) => docToPlainObject(doc.id, doc.data() as Record<string, unknown>));
+}
+
 export async function listCollection(collection: string): Promise<Record<string, unknown>[]> {
   const db = await getAdminDbOrThrow();
-  const snap = await db.collection(collection).get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  try {
+    return await readCollectionDocs(db, collection);
+  } catch (error) {
+    if (error instanceof FirebaseConfigError || error instanceof FirebaseConnectionError) {
+      throw error;
+    }
+    throw new FirebaseConnectionError(
+      `Gagal membaca collection "${collection}" dari Firestore.`,
+      error
+    );
+  }
+}
+
+/** Read jobs from the `jobs` collection with stable ordering for the frontend. */
+export async function listJobs(): Promise<Record<string, unknown>[]> {
+  const db = await getAdminDbOrThrow();
+  try {
+    const snap = await db.collection(JOBS_COLLECTION).orderBy('createdAt', 'desc').get();
+    return snap.docs.map((doc) => docToPlainObject(doc.id, doc.data() as Record<string, unknown>));
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : '';
+    if (message.includes('index') || message.includes('order')) {
+      try {
+        return await readCollectionDocs(db, JOBS_COLLECTION);
+      } catch (fallbackError) {
+        throw new FirebaseConnectionError(
+          'Gagal membaca collection "jobs" dari Firestore.',
+          fallbackError
+        );
+      }
+    }
+    if (error instanceof FirebaseConfigError || error instanceof FirebaseConnectionError) {
+      throw error;
+    }
+    throw new FirebaseConnectionError('Gagal membaca collection "jobs" dari Firestore.', error);
+  }
 }
 
 export async function setDocument(
