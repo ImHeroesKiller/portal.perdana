@@ -170,13 +170,25 @@ export async function saveCandidateToFirestore(
   return employee;
 }
 
-export async function trySaveCandidateFromReply(replyText: string) {
-  const jsonStr = findJsonInText(replyText);
+export function extractPureJsonReply(text: string): string | null {
+  const jsonStr = findJsonInText(text);
   if (!jsonStr) return null;
 
   try {
     const parsed = JSON.parse(jsonStr) as CandidatePayload;
     if (!isCompleteCandidateData(parsed)) return null;
+    return JSON.stringify(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export async function trySaveCandidateFromReply(replyText: string) {
+  const pureJson = extractPureJsonReply(replyText);
+  if (!pureJson) return null;
+
+  try {
+    const parsed = JSON.parse(pureJson) as CandidatePayload;
     return await saveCandidateToFirestore(parsed, { merge: true });
   } catch {
     return null;
