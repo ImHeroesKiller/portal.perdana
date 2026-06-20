@@ -62,6 +62,10 @@ function handleOptions(req, res) {
   return false;
 }
 
+// lib/firebase-admin.ts
+var import_module = require("module");
+var import_path = require("path");
+
 // lib/firebase-env.ts
 function trimEnv(value) {
   const trimmed = value?.trim();
@@ -142,18 +146,21 @@ function toHttpStatus(error) {
 }
 
 // lib/firebase-admin.ts
+function nodeRequire(id) {
+  return (0, import_module.createRequire)((0, import_path.join)(process.cwd(), "package.json"))(id);
+}
 var cachedApp = null;
 var cachedDb = null;
 function loadAdminAppModule() {
   try {
-    return require("firebase-admin/app");
+    return nodeRequire("firebase-admin/app");
   } catch (error) {
     throw new FirebaseConnectionError("Gagal memuat modul firebase-admin/app.", error);
   }
 }
 function loadFirestoreModule() {
   try {
-    return require("firebase-admin/firestore");
+    return nodeRequire("firebase-admin/firestore");
   } catch (error) {
     throw new FirebaseConnectionError("Gagal memuat modul firebase-admin/firestore.", error);
   }

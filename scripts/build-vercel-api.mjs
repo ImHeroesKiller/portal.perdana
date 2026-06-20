@@ -4,9 +4,12 @@
 import * as esbuild from 'esbuild';
 import { readdirSync, statSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join, relative, dirname } from 'path';
+import { getNodeExternals } from './esbuild-externals.mjs';
 
 const SRC_ROOT = new URL('../serverless-src', import.meta.url).pathname;
 const API_ROOT = new URL('../api', import.meta.url).pathname;
+const NODE_EXTERNALS = getNodeExternals();
+
 const HANDWRITTEN = new Set([
   'send-telegram.js',
   'ping.js',
@@ -58,7 +61,7 @@ for (const entry of entries) {
     platform: 'node',
     target: 'node20',
     format: 'cjs',
-    packages: 'external',
+    external: NODE_EXTERNALS,
     footer: {
       js: 'if (module.exports.default) module.exports = module.exports.default;',
     },

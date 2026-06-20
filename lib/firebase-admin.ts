@@ -6,10 +6,13 @@
  * package fails to initialize at module scope.
  */
 import { createRequire } from 'module';
+import { join } from 'path';
 import type { App } from 'firebase-admin/app';
 import type { Firestore } from 'firebase-admin/firestore';
 
-const require = createRequire(import.meta.url);
+function nodeRequire(id: string): unknown {
+  return createRequire(join(process.cwd(), 'package.json'))(id);
+}
 import {
   getMissingAdminEnvKeys,
   readFirebaseAdminEnv,
@@ -30,8 +33,7 @@ let cachedDb: Firestore | null = null;
 
 function loadAdminAppModule(): AdminAppModule {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('firebase-admin/app') as AdminAppModule;
+    return nodeRequire('firebase-admin/app') as AdminAppModule;
   } catch (error) {
     throw new FirebaseConnectionError('Gagal memuat modul firebase-admin/app.', error);
   }
@@ -39,8 +41,7 @@ function loadAdminAppModule(): AdminAppModule {
 
 function loadFirestoreModule(): AdminFirestoreModule {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('firebase-admin/firestore') as AdminFirestoreModule;
+    return nodeRequire('firebase-admin/firestore') as AdminFirestoreModule;
   } catch (error) {
     throw new FirebaseConnectionError('Gagal memuat modul firebase-admin/firestore.', error);
   }
