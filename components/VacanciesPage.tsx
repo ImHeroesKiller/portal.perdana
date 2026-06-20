@@ -34,6 +34,7 @@ export const VacanciesPage: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
   const [mapModalData, setMapModalData] = useState<{ lat: number; lng: number; title: string } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const saved = localStorage.getItem('bookmarked_jobs');
@@ -102,6 +103,16 @@ export const VacanciesPage: React.FC = () => {
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedFilter('Semua');
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedFilter]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -238,11 +249,13 @@ export const VacanciesPage: React.FC = () => {
           minHeight="14rem"
         >
           {jobsToRender.length > 0 && (
+            <div className="mt-4">
             <JobList
               source="VacanciesPage"
               jobs={jobsToRender}
               showCount
-              className="mt-4 space-y-4"
+              className="space-y-4"
+              pagination={{ page: currentPage, onPageChange: handlePageChange }}
               renderItem={(job, display: JobDisplayFields) => {
                 const fields = resolveVacancyCardFields(job, display);
                 const clientName = getClientName(job.clientId);
@@ -264,6 +277,7 @@ export const VacanciesPage: React.FC = () => {
                 );
               }}
             />
+            </div>
           )}
         </DataFetchState>
 
