@@ -219,6 +219,9 @@ function HeroBackground({
               alt=""
               aria-hidden="true"
               priority={idx === 0}
+              width={1400}
+              height={933}
+              sizes="100vw"
               className={`absolute inset-0 z-0 h-full w-full object-cover object-center will-change-[opacity,transform] ${
                 isActive ? 'scale-100 opacity-100' : 'scale-[1.04] opacity-0'
               }`}

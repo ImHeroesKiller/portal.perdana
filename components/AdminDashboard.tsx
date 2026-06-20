@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TalentManager } from './admin/modules/TalentManager';
-import { ClientManager } from './admin/modules/ClientManager';
-import { ProjectManager } from './admin/modules/ProjectManager';
-import { ReportsManager } from './admin/modules/ReportsManager';
-import { 
-  EmployeesPanel, 
-  FinancePanel, 
-  AttendancePanel, 
-  PayrollPanel, 
-  AssetsPanel 
-} from './admin/modules/ERPManager';
-import { RBACManager } from './admin/modules/RBACManager';
+import { RouteFallback } from './layout/RouteFallback';
 import { 
   getCurrentUser, logout 
 } from '../services/auth';
@@ -25,7 +14,39 @@ import {
   ArrowRightOnRectangleIcon, LockClosedIcon, Cog6ToothIcon,
   Bars3Icon, XMarkIcon
 } from '@heroicons/react/24/outline';
-import { SettingsManager } from './admin/modules/SettingsManager';
+const TalentManager = lazy(() =>
+  import('./admin/modules/TalentManager').then((m) => ({ default: m.TalentManager }))
+);
+const ClientManager = lazy(() =>
+  import('./admin/modules/ClientManager').then((m) => ({ default: m.ClientManager }))
+);
+const ProjectManager = lazy(() =>
+  import('./admin/modules/ProjectManager').then((m) => ({ default: m.ProjectManager }))
+);
+const ReportsManager = lazy(() =>
+  import('./admin/modules/ReportsManager').then((m) => ({ default: m.ReportsManager }))
+);
+const SettingsManager = lazy(() =>
+  import('./admin/modules/SettingsManager').then((m) => ({ default: m.SettingsManager }))
+);
+const RBACManager = lazy(() =>
+  import('./admin/modules/RBACManager').then((m) => ({ default: m.RBACManager }))
+);
+const EmployeesPanel = lazy(() =>
+  import('./admin/modules/ERPManager').then((m) => ({ default: m.EmployeesPanel }))
+);
+const AttendancePanel = lazy(() =>
+  import('./admin/modules/ERPManager').then((m) => ({ default: m.AttendancePanel }))
+);
+const PayrollPanel = lazy(() =>
+  import('./admin/modules/ERPManager').then((m) => ({ default: m.PayrollPanel }))
+);
+const FinancePanel = lazy(() =>
+  import('./admin/modules/ERPManager').then((m) => ({ default: m.FinancePanel }))
+);
+const AssetsPanel = lazy(() =>
+  import('./admin/modules/ERPManager').then((m) => ({ default: m.AssetsPanel }))
+);
 
 const ALL_MODULES = [
   { id: 'talent', label: 'Talent', desc: 'ATS & Pipeline Rekrutmen', icon: UsersIcon, panel: 'talent' },
@@ -228,32 +249,34 @@ export const AdminDashboard: React.FC = () => {
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="animate-fade-in">
-            {activeModule === 'talent' && <TalentManager />}
-            {activeModule === 'client' && <ClientManager />}
-            {activeModule === 'project' && <ProjectManager />}
-            
-            {activeModule === 'employees' && (
-              <EmployeesPanel 
-                activeEmployees={activeEmployees} 
-                onRefresh={() => { void refetchPermanentEmployees(); }}
-              />
-            )}
-            {activeModule === 'attendance' && (
-              <AttendancePanel activeEmployees={activeEmployees} />
-            )}
-            {activeModule === 'payroll' && (
-              <PayrollPanel activeEmployees={activeEmployees} />
-            )}
-            {activeModule === 'finance' && <FinancePanel />}
-            {activeModule === 'assets' && (
-              <AssetsPanel activeEmployees={activeEmployees} />
-            )}
+          <Suspense fallback={<RouteFallback />}>
+            <div className="animate-fade-in">
+              {activeModule === 'talent' && <TalentManager />}
+              {activeModule === 'client' && <ClientManager />}
+              {activeModule === 'project' && <ProjectManager />}
 
-            {activeModule === 'reports' && <ReportsManager />}
-            {activeModule === 'settings' && <SettingsManager />}
-            {activeModule === 'rbac' && <RBACManager />}
-          </div>
+              {activeModule === 'employees' && (
+                <EmployeesPanel
+                  activeEmployees={activeEmployees}
+                  onRefresh={() => { void refetchPermanentEmployees(); }}
+                />
+              )}
+              {activeModule === 'attendance' && (
+                <AttendancePanel activeEmployees={activeEmployees} />
+              )}
+              {activeModule === 'payroll' && (
+                <PayrollPanel activeEmployees={activeEmployees} />
+              )}
+              {activeModule === 'finance' && <FinancePanel />}
+              {activeModule === 'assets' && (
+                <AssetsPanel activeEmployees={activeEmployees} />
+              )}
+
+              {activeModule === 'reports' && <ReportsManager />}
+              {activeModule === 'settings' && <SettingsManager />}
+              {activeModule === 'rbac' && <RBACManager />}
+            </div>
+          </Suspense>
         </main>
       </div>
     </div>

@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <!-- GA4 loaded once via lib/google-analytics.ts (HashRouter manual page_view) -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#003087" />
     <meta name="description" content="Portal resmi rekrutmen PT Perdana Adi Yuda. Temukan lowongan kerja konstruksi, smelter, dan industri. Lamar online dan pantau status lamaran Anda." />
@@ -43,8 +46,17 @@
     <link rel="apple-touch-startup-image" href="/icons/splash/splash-iphone-12.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
     <link rel="apple-touch-startup-image" href="/icons/splash/splash-iphone-12-pro-max.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
     <link rel="apple-touch-startup-image" href="/icons/splash/splash-ipad-pro.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
-    <link rel="preload" href="/icons/icon-192.png" as="image" type="image/png" />
-    <link rel="preload" href="/assets/hero/site_workers.jpg" as="image" type="image/jpeg" />
+    <link rel="preload" href="/icons/icon-192.png" as="image" type="image/png" fetchpriority="high" />
+    <link rel="preload" href="/assets/hero/site_workers.webp" as="image" type="image/webp" fetchpriority="high" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    </noscript>
     <title>ePortal — Rekrutmen &amp; Lowongan Kerja PT Perdana Adi Yuda</title>
     <script type="application/ld+json" id="org-jsonld-static">
       {
@@ -89,8 +101,6 @@
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
       :root {
         --pwa-brand: #003087;
         --pwa-bg: #ffffff;

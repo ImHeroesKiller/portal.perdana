@@ -2,12 +2,6 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { HomePage } from './components/HomePage';
-import { Login } from './components/Login';
-import { About } from './components/About';
-import { Contact } from './components/Contact';
-import { Services } from './components/Services';
-import { VacanciesPage } from './components/VacanciesPage';
-import { JobDetailPage } from './components/jobs/JobDetailPage';
 import { NavBar } from './components/NavBar';
 import { BottomNavigation } from './components/BottomNavigation';
 import { RouteFallback } from './components/layout/RouteFallback';
@@ -17,6 +11,16 @@ import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { RouteSeo } from './components/seo/RouteSeo';
 import { LanguageProvider } from './services/i18n';
 
+const VacanciesPage = lazy(() =>
+  import('./components/VacanciesPage').then((m) => ({ default: m.VacanciesPage }))
+);
+const JobDetailPage = lazy(() =>
+  import('./components/jobs/JobDetailPage').then((m) => ({ default: m.JobDetailPage }))
+);
+const About = lazy(() => import('./components/About').then((m) => ({ default: m.About })));
+const Contact = lazy(() => import('./components/Contact').then((m) => ({ default: m.Contact })));
+const Services = lazy(() => import('./components/Services').then((m) => ({ default: m.Services })));
+const Login = lazy(() => import('./components/Login').then((m) => ({ default: m.Login })));
 const RecruitmentForm = lazy(() =>
   import('./components/RecruitmentForm').then((m) => ({ default: m.RecruitmentForm }))
 );
