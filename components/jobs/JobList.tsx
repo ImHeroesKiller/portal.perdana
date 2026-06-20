@@ -1,6 +1,11 @@
 import React from 'react';
 import type { JobVacancy } from '../../types';
-import { getJobDisplayFields, resolveJobTitle, type JobDisplayFields } from '../../lib/job-display';
+import {
+  getJobDisplayFields,
+  inspectJobTitleSources,
+  resolveJobTitle,
+  type JobDisplayFields,
+} from '../../lib/job-display';
 
 export type { JobDisplayFields };
 
@@ -21,7 +26,7 @@ function resolveJobKey(display: JobDisplayFields, index: number): string {
   return `job-index-${index}`;
 }
 
-/** Render daftar lowongan — key = job.id, log di setiap render item */
+/** Render daftar lowongan — key = job.id, log sample job lengkap */
 export const JobList: React.FC<JobListProps> = ({
   jobs,
   source = 'JobList',
@@ -31,6 +36,12 @@ export const JobList: React.FC<JobListProps> = ({
   renderItem,
 }) => {
   const safeJobs = Array.isArray(jobs) ? jobs : [];
+
+  if (safeJobs.length > 0) {
+    const sample = safeJobs[0] as JobVacancy & Record<string, unknown>;
+    console.log(`[JobList:${source}] sampleJobFull`, JSON.parse(JSON.stringify(sample)));
+    console.log(`[JobList:${source}] titleSources`, inspectJobTitleSources(sample));
+  }
 
   console.log(`[JobList:${source}] render`, {
     count: safeJobs.length,
@@ -60,16 +71,18 @@ export const JobList: React.FC<JobListProps> = ({
         const displayForRender: JobDisplayFields = { ...display, title };
         const key = resolveJobKey(displayForRender, index);
 
-        console.log(`[JobList:${source}] renderItem`, {
-          index,
-          key,
-          id: displayForRender.id,
-          title,
-          jobTitle: job.title,
-          department: displayForRender.department,
-          location: displayForRender.location,
-          isActive: job.isActive,
-        });
+        if (index < 3) {
+          console.log(`[JobList:${source}] renderItem`, {
+            index,
+            key,
+            id: displayForRender.id,
+            title,
+            jobTitle: job.title,
+            department: displayForRender.department,
+            location: displayForRender.location,
+            isActive: job.isActive,
+          });
+        }
 
         return (
           <div key={key} data-job-id={displayForRender.id || undefined} data-job-index={index}>

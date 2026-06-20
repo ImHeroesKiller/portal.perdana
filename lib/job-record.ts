@@ -1,4 +1,5 @@
 import type { JobVacancy } from '../types';
+import { mergeJobNestedFields, resolveJobTitleFromRaw } from './job-title-resolve';
 
 export const JOBS_COLLECTION = 'jobs';
 
@@ -57,25 +58,6 @@ function parseJobType(value: unknown): JobVacancy['type'] {
   return JOB_TYPES.includes(raw as JobVacancy['type']) ? (raw as JobVacancy['type']) : 'Contract';
 }
 
-function mergeNestedFields(raw: Record<string, unknown>): Record<string, unknown> {
-  const nested = raw.data;
-  if (!nested || typeof nested !== 'object' || Array.isArray(nested)) {
-    return { ...raw };
-  }
-
-  const merged: Record<string, unknown> = { ...raw };
-  for (const [key, value] of Object.entries(nested as Record<string, unknown>)) {
-    const existing = merged[key];
-    const hasExisting =
-      existing != null && String(existing).trim() !== '' && String(existing).trim() !== 'Lowongan';
-    const hasIncoming = value != null && String(value).trim() !== '';
-    if (!hasExisting && hasIncoming) {
-      merged[key] = value;
-    }
-  }
-  return merged;
-}
-
 function pickField(raw: Record<string, unknown>, keys: string[], fallback = ''): string {
   const lowerMap = new Map<string, unknown>();
   for (const [key, value] of Object.entries(raw)) {
@@ -91,30 +73,15 @@ function pickField(raw: Record<string, unknown>, keys: string[], fallback = ''):
   return fallback;
 }
 
-/** Normalize Firestore job doc for frontend (JobVacancy type). */
+/** Normalize Firestore job doc — simpan field API mentah + field kanonis */
 export function normalizeJobFromFirestore(raw: Record<string, unknown>): JobVacancy {
-  const merged = mergeNestedFields(raw);
+  const merged = mergeJobNestedFields(raw);
   const id = String(merged.id ?? merged._id ?? raw.id ?? '');
+  const title = resolveJobTitleFromRaw(merged);
 
-  return {
+  const canonical: JobVacancy = {
     id,
-    title: pickField(merged, [
-      'title',
-      'jobTitle',
-      'job_title',
-      'name',
-      'position',
-      'positionName',
-      'positionApplied',
-      'nama',
-      'judul',
-      'namaLowongan',
-      'namaJabatan',
-      'jabatan',
-      'posisi',
-      'role',
-      'label',
-    ], 'Lowongan'),
+    title,
     department: pickField(merged, ['department', 'dept', 'sector', 'divisi', 'division', 'category'], 'Umum'),
     location: pickField(merged, ['location', 'lokasi', 'site', 'placement', 'workLocation', 'penempatan', 'city']),
     latitude: merged.latitude != null && merged.latitude !== '' ? Number(merged.latitude) : undefined,
@@ -132,4 +99,7 @@ export function normalizeJobFromFirestore(raw: Record<string, unknown>): JobVaca
     genderPreference: merged.genderPreference as JobVacancy['genderPreference'],
     requiredSkillsList: parseStringArray(merged.requiredSkillsList ?? merged.requiredSkills),
   };
+
+  // Pertahankan seluruh field JSON API agar resolver title tetap bisa membaca variasi nama field
+  return { ...merged, ...canonical };
 }

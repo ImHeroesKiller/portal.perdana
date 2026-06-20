@@ -17,14 +17,7 @@ export async function getJobs(options?: GetJobsOptions): Promise<JobVacancy[]> {
   });
 
   if (list.length > 0) {
-    const sample = list[0];
-    console.log('[jobService] sample raw API fields', {
-      keys: Object.keys(sample),
-      title: sample.title,
-      jobTitle: sample.jobTitle,
-      name: sample.name,
-      position: sample.position,
-    });
+    console.log('[jobService] sampleJobFull (raw API)', JSON.parse(JSON.stringify(list[0])));
   }
 
   const normalized = list.map((doc) => normalizeJobFromFirestore(doc));

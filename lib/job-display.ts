@@ -1,4 +1,12 @@
 import type { JobVacancy } from '../types';
+import {
+  inspectJobTitleSources,
+  mergeJobNestedFields,
+  resolveJobTitleFromRaw,
+  safeJobString,
+} from './job-title-resolve';
+
+export { inspectJobTitleSources, resolveJobTitleFromRaw };
 
 export type JobDisplayFields = {
   id: string;
@@ -9,37 +17,6 @@ export type JobDisplayFields = {
   description: string;
   requirements: string[];
 };
-
-const GENERIC_TITLE_VALUES = new Set([
-  'lowongan',
-  'job',
-  'vacancy',
-  'posisi',
-  'position',
-  '-',
-  'n/a',
-  'na',
-  'undefined',
-  'null',
-]);
-
-const TITLE_KEYS = [
-  'title',
-  'jobTitle',
-  'job_title',
-  'name',
-  'position',
-  'positionName',
-  'positionApplied',
-  'nama',
-  'judul',
-  'namaLowongan',
-  'namaJabatan',
-  'jabatan',
-  'posisi',
-  'role',
-  'label',
-] as const;
 
 const DEPT_KEYS = ['department', 'dept', 'sector', 'divisi', 'division', 'category'] as const;
 
@@ -53,104 +30,43 @@ const LOCATION_KEYS = [
   'city',
 ] as const;
 
-function safeString(value: unknown, fallback = ''): string {
-  if (value == null) return fallback;
-  if (typeof value === 'object') {
-    const obj = value as Record<string, unknown>;
-    for (const key of ['value', 'text', 'label', 'name', 'title']) {
-      const nested = safeString(obj[key]);
-      if (nested) return nested;
-    }
-    return fallback;
-  }
-  const text = String(value).trim();
-  return text || fallback;
-}
-
-function isMeaningfulTitle(value: unknown): boolean {
-  const text = safeString(value);
-  if (!text) return false;
-  return !GENERIC_TITLE_VALUES.has(text.toLowerCase());
-}
-
-/** Gabungkan field root + nested `data` — jangan timpa nilai root yang sudah ada */
-function unwrapJobRecord(job: JobVacancy): Record<string, unknown> {
-  const raw = job as JobVacancy & Record<string, unknown>;
-  const nested = raw.data;
-  if (!nested || typeof nested !== 'object' || Array.isArray(nested)) {
-    return { ...raw };
-  }
-
-  const merged: Record<string, unknown> = { ...raw };
-  for (const [key, value] of Object.entries(nested as Record<string, unknown>)) {
-    const existing = safeString(merged[key]);
-    const incoming = safeString(value);
-    if (!existing && incoming) {
-      merged[key] = value;
-    } else if (!merged[key] && value != null) {
-      merged[key] = value;
-    }
-  }
-  return merged;
-}
-
-function buildCaseInsensitiveMap(record: Record<string, unknown>): Map<string, unknown> {
-  const map = new Map<string, unknown>();
-  for (const [key, value] of Object.entries(record)) {
-    map.set(key.toLowerCase(), value);
-  }
-  return map;
-}
-
 function pickFromRecord(record: Record<string, unknown>, keys: readonly string[]): string {
-  const ci = buildCaseInsensitiveMap(record);
+  const lowerMap = new Map<string, unknown>();
+  for (const [key, value] of Object.entries(record)) {
+    lowerMap.set(key.toLowerCase(), value);
+  }
   for (const key of keys) {
-    const direct = record[key];
-    if (direct != null && safeString(direct)) return safeString(direct);
-    const insensitive = ci.get(key.toLowerCase());
-    if (insensitive != null && safeString(insensitive)) return safeString(insensitive);
+    const direct = safeJobString(record[key]);
+    if (direct) return direct;
+    const insensitive = safeJobString(lowerMap.get(key.toLowerCase()));
+    if (insensitive) return insensitive;
   }
   return '';
 }
 
 function pickFirstString(sources: unknown[], fallback: string): string {
   for (const value of sources) {
-    const text = safeString(value);
+    const text = safeJobString(value);
     if (text) return text;
   }
   return fallback;
 }
 
-/** Judul lowongan dari job + variasi field API (title, jobTitle, name, …) */
+/** Judul lowongan — delegasi ke resolver JSON mentah */
 export function resolveJobTitle(job: JobVacancy): string {
-  const raw = unwrapJobRecord(job);
-  const sources: unknown[] = [
-    job.title,
-    ...TITLE_KEYS.map((key) => raw[key]),
-  ];
-
-  for (const value of sources) {
-    if (isMeaningfulTitle(value)) {
-      return safeString(value);
-    }
-  }
-
-  const fromRecord = pickFromRecord(raw, TITLE_KEYS);
-  if (isMeaningfulTitle(fromRecord)) return fromRecord;
-
-  return 'Lowongan';
+  return resolveJobTitleFromRaw(job as JobVacancy & Record<string, unknown>);
 }
 
 /** Kunci stabil untuk React list */
 export function getJobKey(job: JobVacancy, index: number): string {
-  const id = safeString(job.id);
+  const id = safeJobString(job.id);
   if (id) return id;
   return `${resolveJobTitle(job)}-${index}`;
 }
 
 /** Field aman untuk render UI */
 export function getJobDisplayFields(job: JobVacancy): JobDisplayFields {
-  const raw = unwrapJobRecord(job);
+  const raw = mergeJobNestedFields(job as JobVacancy & Record<string, unknown>);
   const title = resolveJobTitle(job);
 
   const department = pickFirstString(
@@ -169,7 +85,7 @@ export function getJobDisplayFields(job: JobVacancy): JobDisplayFields {
 
   const requirementsRaw = raw.requirements ?? raw.kualifikasi ?? raw.qualifications;
   const requirements = Array.isArray(requirementsRaw)
-    ? requirementsRaw.map((r) => safeString(r)).filter(Boolean)
+    ? requirementsRaw.map((r) => safeJobString(r)).filter(Boolean)
     : typeof requirementsRaw === 'string'
       ? requirementsRaw
           .split(/[\n,;]/)
@@ -178,11 +94,11 @@ export function getJobDisplayFields(job: JobVacancy): JobDisplayFields {
       : [];
 
   return {
-    id: safeString(job.id ?? raw.id),
+    id: safeJobString(job.id ?? raw.id),
     title,
     department,
     location,
-    type: safeString(job.type ?? raw.type, 'Contract'),
+    type: safeJobString(job.type ?? raw.type, 'Contract'),
     description,
     requirements,
   };
