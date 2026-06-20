@@ -139,3 +139,25 @@ export function applyVacancyFilters(
 
   return { jobs: result, filterRelaxed: false };
 }
+
+export const HOME_PREVIEW_JOB_LIMIT = 3;
+
+function jobCreatedAtMs(job: JobVacancy): number {
+  const raw = (job as JobVacancy & { created_at?: string }).createdAt
+    ?? (job as JobVacancy & { created_at?: string }).created_at;
+  const ms = raw ? new Date(raw).getTime() : 0;
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+/** Urutkan lowongan terbaru dulu (createdAt descending) */
+export function sortJobsByCreatedAtDesc(jobs: JobVacancy[]): JobVacancy[] {
+  return [...jobs].sort((a, b) => jobCreatedAtMs(b) - jobCreatedAtMs(a));
+}
+
+/** Preview beranda — maks. N lowongan terbaru */
+export function getLatestJobsForHome(
+  jobs: JobVacancy[],
+  limit = HOME_PREVIEW_JOB_LIMIT
+): JobVacancy[] {
+  return sortJobsByCreatedAtDesc(jobs).slice(0, limit);
+}

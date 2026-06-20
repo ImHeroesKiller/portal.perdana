@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useHomePageData } from '../hooks/useDbQueries';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { filterJobsBySearch } from '../lib/job-filters';
+import { filterJobsBySearch, getLatestJobsForHome, HOME_PREVIEW_JOB_LIMIT } from '../lib/job-filters';
 import { resolveJobTitle, type JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
@@ -48,6 +48,11 @@ export const HomePage: React.FC = () => {
     [jobsForList, searchQuery]
   );
 
+  const homePreviewJobs = useMemo(
+    () => getLatestJobsForHome(filteredJobs),
+    [filteredJobs]
+  );
+
   const showJobsLoading = jobsLoading && allJobs.length === 0;
   const hasNoJobs = !showJobsLoading && !fetchError && allJobs.length === 0;
   const hasSearchMiss =
@@ -88,6 +93,8 @@ export const HomePage: React.FC = () => {
       <MobileHomePage
         jobs={jobsForList}
         filteredJobs={filteredJobs}
+        previewJobs={homePreviewJobs}
+        totalFilteredJobs={filteredJobs.length}
         clients={clients}
         projects={projects}
         stats={stats}
@@ -169,8 +176,17 @@ export const HomePage: React.FC = () => {
           >
             <JobList
               source="HomePage"
-              jobs={filteredJobs}
+              jobs={homePreviewJobs}
               showCount
+              countLabel={(count) =>
+                filteredJobs.length > HOME_PREVIEW_JOB_LIMIT
+                  ? t('home_vac_preview_count')
+                      .replace('{shown}', String(count))
+                      .replace('{total}', String(filteredJobs.length))
+                  : count === 1
+                    ? '1 lowongan ditemukan'
+                    : `${count} lowongan ditemukan`
+              }
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {
                 const title = resolveJobTitle(job);
@@ -260,6 +276,17 @@ export const HomePage: React.FC = () => {
                 </div>
               )}}
             />
+
+            {filteredJobs.length > 0 && (
+              <div className="mt-10 text-center">
+                <Link
+                  to="/vacancies"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#003087] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
+                >
+                  {t('home_cta_button')}
+                </Link>
+              </div>
+            )}
           </DataFetchState>
         </div>
       </div>

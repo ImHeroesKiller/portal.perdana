@@ -59,6 +59,10 @@ const dictionary: Translations = {
   home_hero_search_btn: { id: 'Cari', en: 'Search' },
   home_hero_apply_btn: { id: 'Daftar Sekarang', en: 'Apply Now' },
   home_cta_button: { id: 'Lihat Semua Lowongan', en: 'View All Vacancies' },
+  home_vac_preview_count: {
+    id: 'Menampilkan {shown} lowongan terbaru dari {total}',
+    en: 'Showing {shown} latest jobs of {total}',
+  },
   home_stat_pos: { id: 'Posisi Tersedia', en: 'Positions Available' },
   home_stat_pos_hint: { id: 'Lowongan aktif hari ini', en: 'Active openings today' },
   home_stat_app: { id: 'Pelamar', en: 'Applicants' },

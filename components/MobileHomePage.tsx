@@ -15,6 +15,8 @@ import { ArrowRight, Megaphone, Calendar, MapPin, Briefcase } from 'lucide-react
 interface MobileHomePageProps {
   jobs: any[];
   filteredJobs: any[];
+  previewJobs: any[];
+  totalFilteredJobs: number;
   clients: Client[];
   projects: Project[];
   stats: { jobs: number; applicants: number; clients: number; projects: number };
@@ -33,6 +35,8 @@ interface MobileHomePageProps {
 
 export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   filteredJobs,
+  previewJobs,
+  totalFilteredJobs,
   stats,
   loading,
   jobsLoading,
@@ -124,8 +128,17 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
           >
             <JobList
               source="MobileHomePage"
-              jobs={filteredJobs}
+              jobs={previewJobs}
               showCount
+              countLabel={(count) =>
+                totalFilteredJobs > count
+                  ? t('home_vac_preview_count')
+                      .replace('{shown}', String(count))
+                      .replace('{total}', String(totalFilteredJobs))
+                  : count === 1
+                    ? '1 lowongan ditemukan'
+                    : `${count} lowongan ditemukan`
+              }
               className="space-y-3"
               renderItem={(job, display: JobDisplayFields) => {
                 const title = resolveJobTitle(job);
@@ -167,6 +180,15 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
                 </div>
               )}}
             />
+
+            {totalFilteredJobs > 0 && (
+              <Link
+                to="/vacancies"
+                className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#003087] py-3 text-center text-sm font-bold text-white shadow-sm transition active:scale-[0.98]"
+              >
+                {t('home_cta_button')}
+              </Link>
+            )}
           </DataFetchState>
         </section>
 
