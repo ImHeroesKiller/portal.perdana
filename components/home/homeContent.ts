@@ -81,6 +81,9 @@ export type QuickAccessItem = {
   dynamicSubtitleKey?: 'home_quick_jobs_sub';
 };
 
+/** Navy brand accent — dipakai seragam di Quick Access cards */
+export const QUICK_ACCESS_NAVY = '#003087';
+
 export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
   {
     id: 'vacancies',
@@ -89,8 +92,8 @@ export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
     dynamicSubtitleKey: 'home_quick_jobs_sub',
     icon: Sparkles,
     iconBg: 'bg-blue-50',
-    iconColor: 'text-[#0056C6]',
-    accent: 'border-l-[#0056C6]',
+    iconColor: 'text-[#003087]',
+    accent: 'border-l-[#003087]',
     getPath: () => '/vacancies',
   },
   {
@@ -98,9 +101,9 @@ export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
     titleKey: 'home_quick_portal',
     subtitleKey: 'home_quick_portal_guest_sub',
     icon: LogIn,
-    iconBg: 'bg-indigo-50',
-    iconColor: 'text-indigo-600',
-    accent: 'border-l-indigo-500',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-[#003087]',
+    accent: 'border-l-[#003087]',
     getPath: (loggedIn, isAdmin) => (loggedIn ? (isAdmin ? '/admin' : '/portal') : '/login'),
   },
   {
@@ -108,9 +111,9 @@ export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
     titleKey: 'home_quick_about',
     subtitleKey: 'home_quick_about_sub',
     icon: Info,
-    iconBg: 'bg-pink-50',
-    iconColor: 'text-pink-600',
-    accent: 'border-l-pink-500',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-[#003087]',
+    accent: 'border-l-[#003087]',
     getPath: () => '/about',
   },
   {
@@ -118,9 +121,9 @@ export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
     titleKey: 'home_quick_contact',
     subtitleKey: 'home_quick_contact_sub',
     icon: Phone,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-    accent: 'border-l-amber-500',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-[#003087]',
+    accent: 'border-l-[#003087]',
     getPath: () => '/contact',
   },
 ];
