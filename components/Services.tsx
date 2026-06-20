@@ -16,6 +16,12 @@ import {
   PageTopBar,
 } from './layout/MarketingPageLayout';
 import { HOME_H_SCROLL } from './home/homeContent';
+import {
+  EnterpriseLifecycleTimeline,
+  PartnerExperienceSection,
+  RecruitmentFlowTimeline,
+  WorkScopeTimeline,
+} from './services/ServiceVisualSections';
 
 interface ServiceDetail {
   id: string;
@@ -95,27 +101,6 @@ const SERVICES_DATA: ServiceDetail[] = [
       { id: 'Penyelenggaraan Event Corporate & Public', en: 'Corporate & Public Event Organizing' },
     ],
   },
-];
-
-const RECRUIT_FLOW = [
-  { title: { id: 'Identifikasi kebutuhan posisi', en: 'Identify position needs' }, step: 'Step 1' },
-  { title: { id: 'Membuat strategi perekrutan', en: 'Create recruitment strategy' }, step: 'Step 2' },
-  { title: { id: 'Publikasi lowongan pekerjaan', en: 'Publish job vacancies' }, step: 'Step 3' },
-  { title: { id: 'Screening', en: 'Screening / Filtering' }, step: 'Step 4' },
-  { title: { id: 'Test & Interview', en: 'Test & Interview' }, step: 'Step 5' },
-  { title: { id: 'Asses, Reference check & Verify', en: 'Assess, Reference check & Verify' }, step: 'Step 6' },
-  { title: { id: 'Shortlist & offering', en: 'Shortlist & offering' }, step: 'Step 7' },
-  { title: { id: 'On boarding or client interview', en: 'Onboarding or client interview' }, step: 'Step 8' },
-];
-
-const PROCESS_STEPS = [
-  { num: '1', title: { id: 'Recruitment & Assessment', en: 'Recruitment & Assessment' }, detail: { id: 'Seleksi ketat dan evaluasi kompetensi calon tenaga kerja.', en: 'Strict selection and evaluation of prospective workers competency.' } },
-  { num: '2', title: { id: 'Training / Pelatihan', en: 'Training & Induction' }, detail: { id: 'Pembekalan keahlian kerja dan penyelarasan budaya kerja mitra.', en: 'Provision of work skills and alignment of partners work culture.' } },
-  { num: '3', title: { id: 'Placement & Delivery', en: 'Placement & Delivery' }, detail: { id: 'Penempatan serta koordinasi operasional awal di lokasi kerja.', en: 'Placement and coordination of initials operation on site.' } },
-  { num: '4', title: { id: 'Mentoring / Bimbingan', en: 'Ongoing Mentoring' }, detail: { id: 'Pendampingan berkelanjutan bagi karyawan untuk stabilitas kerja.', en: 'Continuous mentoring for employees to ensure work stability.' } },
-  { num: '5', title: { id: 'Development / Pengembangan', en: 'Talent Development' }, detail: { id: 'Up-skilling dan pengembangan karir karyawan di lapangan.', en: 'Up-skilling and career development of field employees.' } },
-  { num: '6', title: { id: 'Performance Evaluation', en: 'Performance Evaluation' }, detail: { id: 'Evaluasi kinerja berkala (KPI) bersama klien mitra resmi.', en: 'Periodic performance evaluation (KPI) with official partner client.' } },
-  { num: '7', title: { id: 'Termination or Renewal', en: 'Termination or Renewal' }, detail: { id: 'Manajemen akhir kontrak kerja atau perpanjangan masa tugas.', en: 'Management of contract termination or service term renewal.' } },
 ];
 
 export const Services: React.FC = () => {
@@ -206,19 +191,7 @@ export const Services: React.FC = () => {
                   <CheckCircleIcon className="h-5 w-5 text-[#003087]" aria-hidden />
                   {lang === 'id' ? 'Item Cakupan Kerja' : 'Work Scope Deliverables'}
                 </h4>
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  {activeService.items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3"
-                    >
-                      <span className="font-bold text-[#003087]">✓</span>
-                      <span className="text-xs leading-snug text-slate-700 sm:text-sm">
-                        {lang === 'id' ? item.id : item.en}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <WorkScopeTimeline items={activeService.items} lang={lang} />
               </div>
             </div>
 
@@ -270,24 +243,7 @@ export const Services: React.FC = () => {
                 : '8-step blueprint from identification to onboarding'
             }
           />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {RECRUIT_FLOW.map((flow, idx) => (
-              <div
-                key={idx}
-                className="rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:border-[#003087]/25 hover:shadow-sm"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#003087]">
-                    {flow.step}
-                  </span>
-                  <span className="text-xs font-bold text-slate-300">0{idx + 1}</span>
-                </div>
-                <h4 className="text-xs font-bold leading-snug text-slate-900 sm:text-sm">
-                  {lang === 'id' ? flow.title.id : flow.title.en}
-                </h4>
-              </div>
-            ))}
-          </div>
+          <RecruitmentFlowTimeline lang={lang} />
         </ContentCard>
 
         <ContentCard>
@@ -300,41 +256,20 @@ export const Services: React.FC = () => {
                 : 'Complete manpower lifecycle for constant performance'
             }
           />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
-            {PROCESS_STEPS.map((step) => (
-              <div
-                key={step.num}
-                className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center transition hover:border-[#003087]/25"
-              >
-                <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#003087] text-xs font-bold text-white">
-                  {step.num}
-                </div>
-                <h4 className="text-xs font-extrabold leading-snug text-slate-900">
-                  {lang === 'id' ? step.title.id : step.title.en}
-                </h4>
-                <p className="mt-2 text-[10px] leading-snug text-slate-500">
-                  {lang === 'id' ? step.detail.id : step.detail.en}
-                </p>
-              </div>
-            ))}
-          </div>
+          <EnterpriseLifecycleTimeline lang={lang} />
         </ContentCard>
 
-        <ContentCard className="text-center">
+        <ContentCard>
           <SectionHeader
             compact
             title={lang === 'id' ? 'Mitra & Pengalaman Operasional' : 'Partners & Experience'}
-            subtitle="Dipercaya berbagai perusahaan nasional"
+            subtitle={
+              lang === 'id'
+                ? 'Dipercaya perusahaan nasional — termasuk IMIP & mitra industri'
+                : 'Trusted by national enterprises — including IMIP & industry partners'
+            }
           />
-          <div className="flex flex-wrap items-center justify-center gap-4 opacity-70 sm:gap-8">
-            {['INDOSAT OOREDOO', 'LINTASARTA', 'TRANSVISION', 'TVS SUPPLY CHAIN', 'HKTI SULTENG', 'DYANDRA'].map(
-              (brand) => (
-                <span key={brand} className="text-xs font-extrabold tracking-wider text-slate-700 sm:text-sm">
-                  {brand}
-                </span>
-              )
-            )}
-          </div>
+          <PartnerExperienceSection lang={lang} />
         </ContentCard>
       </MarketingPageShell>
     </div>
