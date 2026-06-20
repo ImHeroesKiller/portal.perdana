@@ -74,9 +74,11 @@ export const VacanciesPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  const jobsForList = allJobs.length > 0 ? allJobs : jobs;
+
   const { jobs: filteredJobs, filterRelaxed } = useMemo(
-    () => applyVacancyFilters(jobs, searchQuery, selectedFilter),
-    [jobs, searchQuery, selectedFilter]
+    () => applyVacancyFilters(jobsForList, searchQuery, selectedFilter),
+    [jobsForList, searchQuery, selectedFilter]
   );
 
   const showLoading = loading && allJobs.length === 0;

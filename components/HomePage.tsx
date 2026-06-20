@@ -31,20 +31,27 @@ export const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const stats = useMemo(() => ({
-    jobs: jobs.length,
+    jobs: allJobs.length > 0 ? allJobs.length : jobs.length,
     applicants: candidates.length,
     clients: clients.filter((c) => c.isActive !== false).length,
     projects: projects.filter((p) => p.isActive !== false).length,
-  }), [jobs, candidates, clients, projects]);
+  }), [allJobs.length, jobs.length, candidates, clients, projects]);
   const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
   const { t, language } = useLanguage();
 
+  const jobsForList = allJobs.length > 0 ? allJobs : jobs;
+
   const filteredJobs = useMemo(
-    () => filterJobsBySearch(jobs, searchQuery),
-    [jobs, searchQuery]
+    () => filterJobsBySearch(jobsForList, searchQuery),
+    [jobsForList, searchQuery]
   );
+
+  const showJobsLoading = jobsLoading && allJobs.length === 0;
+  const hasNoJobs = !showJobsLoading && !fetchError && allJobs.length === 0;
+  const hasSearchMiss =
+    !showJobsLoading && !fetchError && allJobs.length > 0 && filteredJobs.length === 0;
 
   useEffect(() => {
     console.log('[HomePage] jobs state', {
@@ -79,12 +86,17 @@ export const HomePage: React.FC = () => {
   if (isMobile) {
     return (
       <MobileHomePage
-        jobs={jobs}
+        jobs={jobsForList}
         filteredJobs={filteredJobs}
         clients={clients}
         projects={projects}
         stats={stats}
         loading={loading}
+        jobsLoading={showJobsLoading}
+        fetchError={fetchError}
+        refetchJobs={refetchJobs}
+        hasNoJobs={hasNoJobs}
+        hasSearchMiss={hasSearchMiss}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         openMap={openMap}
@@ -141,20 +153,24 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
+          {hasSearchMiss && (
+            <p className="mb-4 text-center text-sm font-medium text-slate-500">
+              {t('home_empty_search')}
+            </p>
+          )}
+
           <DataFetchState
-            isLoading={jobsLoading}
+            isLoading={showJobsLoading}
+            isFetching={jobsLoading && allJobs.length > 0}
             error={fetchError}
-            isEmpty={!jobsLoading && !fetchError && filteredJobs.length === 0}
-            emptyMessage={
-              jobs.length === 0
-                ? 'Saat ini belum ada lowongan yang tersedia.'
-                : t('home_empty_search')
-            }
+            isEmpty={hasNoJobs}
+            emptyMessage="Saat ini belum ada lowongan yang tersedia."
             onRetry={() => { void refetchJobs(); }}
           >
             <JobList
               source="HomePage"
               jobs={filteredJobs}
+              showCount
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {
                 const isExpanded = expandedRequirements[job.id];

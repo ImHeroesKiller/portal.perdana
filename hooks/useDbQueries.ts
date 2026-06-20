@@ -50,11 +50,20 @@ export function useJobs(options?: { activeOnly?: boolean }): JobsQueryResult {
     ...QUERY_OPTIONS,
   });
 
+  const data = useMemo(() => {
+    const all = query.data ?? [];
+    if (!activeOnly) return all;
+    const visible = filterPublicJobs(all);
+    if (visible.length === 0 && all.length > 0) {
+      console.warn('[useJobs] activeOnly menghapus semua job — tampilkan semua sebagai fallback', {
+        total: all.length,
+      });
+      return all;
+    }
+    return visible;
+  }, [query.data, activeOnly]);
+
   const allJobs = query.data ?? [];
-  const data = useMemo(
-    () => (activeOnly ? filterPublicJobs(allJobs) : allJobs),
-    [allJobs, activeOnly]
-  );
 
   useEffect(() => {
     if (query.data) {
@@ -127,7 +136,7 @@ export function useProjects() {
 
 export function useHomePageData() {
   const qc = useQueryClient();
-  const jobsQuery = useJobs({ activeOnly: true });
+  const jobsQuery = useJobs();
   const candidatesQuery = useCandidates();
   const clientsQuery = useClients();
   const projectsQuery = useProjects();

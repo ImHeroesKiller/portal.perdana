@@ -1,12 +1,15 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Client, Project } from '../types';
 import { HeroSection } from './home/HeroSection';
 import { StatsCards } from './home/StatsCards';
 import { QuickAccessGrid } from './home/QuickAccessGrid';
 import { JobSectorsGrid } from './home/JobSectorsGrid';
 import { SectionHeader } from './home/SectionHeader';
-import { ArrowRight, Megaphone, Calendar } from 'lucide-react';
+import { JobList } from './jobs/JobList';
+import { DataFetchState } from '../src/components/DataFetchState';
+import type { JobDisplayFields } from './jobs/JobList';
+import { ArrowRight, Megaphone, Calendar, MapPin, Briefcase } from 'lucide-react';
 
 interface MobileHomePageProps {
   jobs: any[];
@@ -15,6 +18,11 @@ interface MobileHomePageProps {
   projects: Project[];
   stats: { jobs: number; applicants: number; clients: number; projects: number };
   loading: boolean;
+  jobsLoading: boolean;
+  fetchError: Error | null;
+  refetchJobs: () => void;
+  hasNoJobs: boolean;
+  hasSearchMiss: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   openMap: (lat?: number, lng?: number, title?: string) => void;
@@ -23,10 +31,17 @@ interface MobileHomePageProps {
 }
 
 export const MobileHomePage: React.FC<MobileHomePageProps> = ({
+  filteredJobs,
   stats,
   loading,
+  jobsLoading,
+  fetchError,
+  refetchJobs,
+  hasNoJobs,
+  hasSearchMiss,
   searchQuery,
   setSearchQuery,
+  openMap,
   t,
   language,
 }) => {
@@ -70,6 +85,77 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
         <QuickAccessGrid variant="mobile" stats={stats} />
 
         <JobSectorsGrid variant="mobile" />
+
+        {/* Daftar lowongan — mobile HomePage */}
+        <div>
+          <SectionHeader
+            compact
+            title={t('home_vac_title')}
+            action={
+              <Link
+                to="/vacancies"
+                className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#0056C6]"
+              >
+                {language === 'id' ? 'Lihat semua' : 'See all'}
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            }
+          />
+
+          {hasSearchMiss && (
+            <p className="mb-3 text-center text-xs font-medium text-slate-500">
+              {t('home_empty_search')}
+            </p>
+          )}
+
+          <DataFetchState
+            isLoading={jobsLoading}
+            error={fetchError}
+            isEmpty={hasNoJobs}
+            emptyMessage="Saat ini belum ada lowongan yang tersedia."
+            onRetry={() => { void refetchJobs(); }}
+          >
+            <JobList
+              source="MobileHomePage"
+              jobs={filteredJobs}
+              showCount
+              className="space-y-3"
+              renderItem={(job, display: JobDisplayFields) => (
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <span className="inline-block rounded-lg bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-800">
+                    {display.department}
+                  </span>
+                  <h3 className="mt-2 text-sm font-extrabold text-slate-900">{display.title}</h3>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-500">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-blue-500" />
+                      {display.location}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Briefcase className="h-3 w-3 text-orange-500" />
+                      {display.type}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openMap(job.latitude, job.longitude, display.location)}
+                      className="flex-1 rounded-xl bg-slate-100 py-2 text-[10px] font-bold text-slate-700"
+                    >
+                      Peta
+                    </button>
+                    <Link
+                      to={`/apply?position=${encodeURIComponent(display.title)}`}
+                      className="flex-1 rounded-xl bg-[#0056C6] py-2 text-center text-[10px] font-bold text-white"
+                    >
+                      Lamar
+                    </Link>
+                  </div>
+                </div>
+              )}
+            />
+          </DataFetchState>
+        </div>
 
         {/* Informasi Terkini */}
         <div>

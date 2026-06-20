@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import type { JobVacancy } from '../../types';
-import { getJobDisplayFields, getJobKey } from '../../lib/job-display';
+import { getJobDisplayFields, type JobDisplayFields } from '../../lib/job-display';
+
+export type { JobDisplayFields };
 
 export interface JobListProps {
   jobs: JobVacancy[];
   source?: string;
   className?: string;
-  /** Tampilkan jumlah di atas list */
   showCount?: boolean;
   countLabel?: (count: number) => string;
   renderItem: (job: JobVacancy, display: JobDisplayFields, index: number) => React.ReactNode;
@@ -15,7 +16,12 @@ export interface JobListProps {
 const defaultCountLabel = (count: number) =>
   count === 1 ? '1 lowongan ditemukan' : `${count} lowongan ditemukan`;
 
-/** Render daftar lowongan dengan key stabil + debug log */
+function resolveJobKey(display: JobDisplayFields, index: number): string {
+  if (display.id) return display.id;
+  return `job-index-${index}`;
+}
+
+/** Render daftar lowongan — key = job.id, log di setiap render item */
 export const JobList: React.FC<JobListProps> = ({
   jobs,
   source = 'JobList',
@@ -24,17 +30,13 @@ export const JobList: React.FC<JobListProps> = ({
   countLabel = defaultCountLabel,
   renderItem,
 }) => {
-  useEffect(() => {
-    console.log(`[JobList:${source}]`, {
-      count: jobs.length,
-      sample: jobs.slice(0, 3).map((j, i) => {
-        const d = getJobDisplayFields(j);
-        return { key: getJobKey(j, i), id: d.id, title: d.title, department: d.department };
-      }),
-    });
-  }, [jobs, source]);
+  console.log(`[JobList:${source}] render`, {
+    count: jobs.length,
+    ids: jobs.slice(0, 8).map((j) => j.id),
+  });
 
-  if (jobs.length === 0) {
+  if (!Array.isArray(jobs) || jobs.length === 0) {
+    console.log(`[JobList:${source}] skip — jobs kosong`);
     return null;
   }
 
@@ -45,10 +47,22 @@ export const JobList: React.FC<JobListProps> = ({
       )}
       {jobs.map((job, index) => {
         const display = getJobDisplayFields(job);
+        const key = resolveJobKey(display, index);
+
+        console.log(`[JobList:${source}] renderItem`, {
+          index,
+          key,
+          id: display.id,
+          title: display.title,
+          department: display.department,
+          location: display.location,
+          isActive: job.isActive,
+        });
+
         return (
-          <React.Fragment key={getJobKey(job, index)}>
+          <div key={key} data-job-id={display.id || undefined} data-job-index={index}>
             {renderItem(job, display, index)}
-          </React.Fragment>
+          </div>
         );
       })}
     </div>
