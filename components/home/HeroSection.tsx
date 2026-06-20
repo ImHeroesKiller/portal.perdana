@@ -234,16 +234,14 @@ function HeroBackground({
         })}
       </div>
 
-      {/* Layer 1: gradient overlays — must sit above images */}
+      {/* Layer 1: semi-transparent scrim — satu layer ringan agar foto tetap terlihat */}
       <div
         className={`col-start-1 row-start-1 relative z-[1] pointer-events-none w-full ${minH}`}
         aria-hidden="true"
       >
-        <div className="absolute inset-0 bg-slate-950/45" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-950/80 to-blue-950/65" />
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/70 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_0%,rgba(15,23,42,0.55),transparent)]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+        <div className="absolute inset-0 bg-slate-950/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-slate-950/25 to-blue-950/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent" />
       </div>
     </>
   );
