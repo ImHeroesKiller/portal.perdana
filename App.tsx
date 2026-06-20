@@ -29,6 +29,9 @@ const Footer = () => {
     const isMobile = useIsMobile();
     const settings = useCompanySettings();
 
+    // Home: hanya Bottom Navigation — tanpa footer logo
+    if (location.pathname === '/') return null;
+
     // Hide Footer on Interview Session
     if (location.pathname.startsWith('/interview-session')) return null;
 
