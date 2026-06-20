@@ -1,4 +1,5 @@
 import { applyNoStoreHeaders } from './api-cache';
+import { applyCors, handleOptions } from '../../lib/api-cors';
 
 export function applyCors(res: any) {
   applyNoStoreHeaders(res);
