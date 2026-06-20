@@ -81,23 +81,33 @@ function serializeValue(value, depth = 0) {
     return value.toDate().toISOString();
   }
   if (Array.isArray(value)) return value.map((item) => serializeValue(item, depth + 1));
+
   if (typeof value === 'object') {
+    // === PERBAIKAN UTAMA ===
+    // Hanya return latitude + longitude jika object HANYA berisi 2 field itu saja.
+    // Jika ada field lain (title, department, dll), tetap proses semua field.
+    const keys = Object.keys(value);
+    const hasGeo = typeof value.latitude === 'number' && typeof value.longitude === 'number';
+
+    if (hasGeo && keys.length === 2) {
+      return { latitude: value.latitude, longitude: value.longitude };
+    }
+
     if ('_seconds' in value && '_nanoseconds' in value) {
       const ms = Number(value._seconds) * 1000 + Number(value._nanoseconds) / 1_000_000;
       return new Date(ms).toISOString();
     }
-    if (typeof value.latitude === 'number' && typeof value.longitude === 'number') {
-      return { latitude: value.latitude, longitude: value.longitude };
-    }
     if (typeof value.path === 'string' && typeof value.id === 'string' && value.firestore) {
       return value.path;
     }
+
     const out = {};
     for (const [k, v] of Object.entries(value)) {
       if (v !== undefined) out[k] = serializeValue(v, depth + 1);
     }
     return out;
   }
+
   return value;
 }
 
