@@ -26,11 +26,17 @@ export interface HeroSectionProps {
   compact?: boolean;
 }
 
-function HeroBrand({ compact }: { compact: boolean }) {
+function HeroBrand({
+  compact,
+  companyName,
+}: {
+  compact: boolean;
+  companyName: string;
+}) {
   return (
     <div
       className={`flex flex-col items-center text-center ${
-        compact ? 'mb-6' : 'mb-7 sm:mb-8'
+        compact ? 'mb-5' : 'mb-6 sm:mb-7'
       }`}
     >
       <div
@@ -42,19 +48,16 @@ function HeroBrand({ compact }: { compact: boolean }) {
       >
         <img
           src="/assets/logo.png"
-          alt="Logo PeRdana"
+          alt="Logo PT Perdana Adi Yuda"
           className="h-full w-full object-contain"
         />
       </div>
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-cyan-200 drop-shadow-md sm:text-xs">
-        PeRdana
-      </p>
       <p
-        className={`mt-1 font-black uppercase leading-tight tracking-[0.12em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)] ${
-          compact ? 'text-[0.95rem]' : 'text-base sm:text-lg md:text-xl'
+        className={`max-w-[18rem] font-bold leading-snug text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)] sm:max-w-md ${
+          compact ? 'text-sm' : 'text-base sm:text-lg md:text-xl'
         }`}
       >
-        PERDANA ADI YUDA
+        {companyName}
       </p>
     </div>
   );
@@ -100,7 +103,7 @@ function HeroContent({
             compact ? 'max-w-md' : 'max-w-2xl lg:mx-0'
           }`}
         >
-          <HeroBrand compact={compact} />
+          <HeroBrand compact={compact} companyName={t('home_hero_company_name')} />
 
           <div
             className={`flex flex-wrap gap-2 ${
@@ -129,10 +132,10 @@ function HeroContent({
           </h1>
 
           <p
-            className={`mt-3.5 max-w-prose font-medium text-slate-100/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
+            className={`mt-3.5 font-medium text-slate-100/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
               compact
-                ? 'text-[0.925rem] leading-relaxed'
-                : 'text-base leading-relaxed sm:text-lg'
+                ? 'max-w-[20rem] text-[0.9rem] leading-relaxed'
+                : 'max-w-xl text-base leading-relaxed sm:text-lg lg:max-w-2xl'
             }`}
           >
             {t('home_hero_tagline')}

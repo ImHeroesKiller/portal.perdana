@@ -43,10 +43,11 @@ const dictionary: Translations = {
   home_hero_subtitle: { id: 'Kami mencari talenta terbaik untuk tumbuh dan berkembang bersama. Temukan peluang karir yang sesuai dengan minat dan keahlian Anda.', en: 'We are looking for the best talents to grow and develop together. Find career opportunities that match your interests and skills.' },
   home_hero_aria: { id: 'Bagian utama beranda rekrutmen', en: 'Recruitment homepage hero' },
   home_hero_badge: { id: 'Konstruksi & Industri', en: 'Construction & Industry' },
+  home_hero_company_name: { id: 'PT Perdana Adi Yuda', en: 'PT Perdana Adi Yuda' },
   home_hero_headline: { id: 'Temukan Karier Terbaik', en: 'Find Your Best Career' },
   home_hero_tagline: {
-    id: 'Lowongan konstruksi, smelter & industri — langsung dari PT Perdana.',
-    en: 'Construction, smelter & factory jobs — from PT Perdana.',
+    id: 'Mitra Terpercaya Solusi Tenaga Kerja Konstruksi & Industri di Indonesia',
+    en: 'Your Trusted Partner for Construction & Industrial Workforce Solutions in Indonesia',
   },
   home_hero_jobs_count: { id: '{count} Lowongan Aktif', en: '{count} Active Jobs' },
   home_hero_coverage: { id: 'Seluruh Indonesia', en: 'Nationwide Coverage' },
