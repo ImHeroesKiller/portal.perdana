@@ -93,7 +93,7 @@ function HeroContent({
     : 'px-4 pb-12 pt-8 sm:px-6 sm:pb-14 sm:pt-10 lg:px-8 lg:py-16';
 
   return (
-    <div className={`relative z-10 flex w-full flex-col ${contentPad}`}>
+    <div className={`relative z-20 flex w-full flex-col ${contentPad}`}>
       <div className={`mx-auto w-full ${compact ? 'max-w-md' : 'max-w-7xl'}`}>
         <div
           className={`mx-auto flex w-full flex-col ${align} ${
@@ -207,7 +207,10 @@ function HeroBackground({
 
   return (
     <>
-      <div className={`col-start-1 row-start-1 relative w-full overflow-hidden ${minH}`}>
+      {/* Layer 0: slideshow images */}
+      <div
+        className={`col-start-1 row-start-1 relative z-0 w-full overflow-hidden ${minH}`}
+      >
         {HERO_IMAGES.map((src, idx) => {
           const isActive = activeImageIdx === idx;
           return (
@@ -216,7 +219,7 @@ function HeroBackground({
               src={src}
               alt=""
               aria-hidden="true"
-              className={`absolute inset-0 h-full w-full object-cover object-center will-change-[opacity,transform] ${
+              className={`absolute inset-0 z-0 h-full w-full object-cover object-center will-change-[opacity,transform] ${
                 isActive ? 'scale-100 opacity-100' : 'scale-[1.04] opacity-0'
               }`}
               style={{
@@ -231,29 +234,17 @@ function HeroBackground({
         })}
       </div>
 
-      {/* Base scrim */}
+      {/* Layer 1: gradient overlays — must sit above images */}
       <div
-        className={`col-start-1 row-start-1 w-full bg-slate-950/45 ${minH}`}
+        className={`col-start-1 row-start-1 relative z-[1] pointer-events-none w-full ${minH}`}
         aria-hidden="true"
-      />
-      {/* Gradient utama — teks & logo lebih jelas */}
-      <div
-        className={`col-start-1 row-start-1 w-full bg-gradient-to-b from-slate-950/95 via-slate-950/80 to-blue-950/65 ${minH}`}
-        aria-hidden="true"
-      />
-      <div
-        className={`col-start-1 row-start-1 w-full bg-gradient-to-br from-slate-950/90 via-blue-950/70 to-transparent ${minH}`}
-        aria-hidden="true"
-      />
-      {/* Vignette atas untuk area brand */}
-      <div
-        className={`col-start-1 row-start-1 w-full bg-[radial-gradient(ellipse_90%_70%_at_50%_0%,rgba(15,23,42,0.55),transparent)] ${minH}`}
-        aria-hidden="true"
-      />
-      <div
-        className={`col-start-1 row-start-1 w-full bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent ${minH}`}
-        aria-hidden="true"
-      />
+      >
+        <div className="absolute inset-0 bg-slate-950/45" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-950/80 to-blue-950/65" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/70 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_0%,rgba(15,23,42,0.55),transparent)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+      </div>
     </>
   );
 }
@@ -269,7 +260,7 @@ function SlideDots({
 }) {
   return (
     <div
-      className="relative z-10 flex justify-center pb-6 pt-2 sm:pb-8"
+      className="relative z-20 flex justify-center pb-6 pt-2 sm:pb-8"
       role="tablist"
       aria-label="Hero slideshow"
     >
@@ -318,7 +309,7 @@ function HeroSlideshow({
     <section className="grid w-full text-white" aria-label={t('home_hero_aria')}>
       <HeroBackground activeImageIdx={activeImageIdx} compact={compact} />
 
-      <div className="col-start-1 row-start-1 flex flex-col">
+      <div className="relative z-10 col-start-1 row-start-1 flex flex-col">
         <HeroContent
           {...rest}
           compact={compact}
