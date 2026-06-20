@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { ArrowPathIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { login } from '../services/auth';
-import { Input } from './ui/Input';
-import { ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { useLanguage } from '../services/i18n';
+import { useCompanySettings } from '../hooks/useCompanySettings';
+import { AuthPageShell } from './auth/AuthPageShell';
+import { BRAND_NAVY } from './home/homeContent';
+
+const inputClass =
+  'w-full min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-[#003087] focus:outline-none focus:ring-2 focus:ring-[#003087]/20';
 
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
+  const settings = useCompanySettings();
 
   useEffect(() => {
-    // Autoprefs for role query
     const roleParam = searchParams.get('role');
     if (roleParam === 'admin') {
       setUsername('admin');
@@ -37,98 +45,116 @@ export const Login: React.FC = () => {
       } else {
         navigate('/portal');
       }
-    } catch (err: any) {
-      setError(err.message || 'Username atau sandi Anda salah.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('login_error_default');
+      setError(message || t('login_error_default'));
     } finally {
       setLoading(false);
     }
   };
 
+  const forgotPasswordHref = `/help`;
+
   return (
-    <div className="min-h-screen flex items-center justify-center py-10 px-4 bg-[#F8FAFC] antialiased font-sans">
-      <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-10 rounded-3xl shadow-xs border border-slate-100 flex flex-col relative">
-        
-        {/* Elegant Back button at top left */}
-        <button 
-          onClick={() => navigate('/')} 
-          className="self-start text-[#0056C6] hover:text-blue-800 transition-colors flex items-center gap-1 text-[11px] font-black active:scale-95 cursor-pointer"
-          id="btn-back-login"
-        >
-          <ChevronLeftIcon className="h-4.5 w-4.5 stroke-[2.5]" />
-          Kembali ke Beranda
-        </button>
-
-        <div className="text-center pt-2">
-          {/* PT PAP Brand Icon placeholder */}
-          <div className="flex justify-center mb-3">
-            <img 
-              src="/assets/logo.png" 
-              alt="Perdana Logo" 
-              className="h-10 w-auto object-contain" 
-            />
-          </div>
-          <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-snug">
-            Masuk ke Portal
-          </h2>
-          <p className="mt-2.5 text-[10px] text-slate-400 font-bold leading-relaxed max-w-sm mx-auto">
-            Akses dashboard pelacakan lowongan kerja, riwayat absensi GPS, K3LH, slip gaji bulanan, dan tanda tangan kontrak digital.
-          </p>
-        </div>
-
-        {/* Form elements */}
-        <form className="mt-4 space-y-4 text-left" onSubmit={handleLogin}>
-          {error && (
-            <div className="bg-red-50 text-red-700 p-3 rounded-2xl text-[10px] font-bold text-center border border-red-150 animate-pulse">
-              {error}
-            </div>
-          )}
-          
-          <div className="space-y-3.5">
-            <div>
-              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 pl-1 tracking-wider">Username atau Email</label>
-              <input
-                type="text"
-                required
-                className="w-full text-xs p-3.5 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ketik email terdaftar atau 'admin'"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 pl-1 tracking-wider">Kata Sandi (Password)</label>
-              <input
-                type="password"
-                required
-                className="w-full text-xs p-3.5 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Ketik sandi akun Anda"
-              />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3.5 px-4 border border-transparent text-xs font-black rounded-2xl text-white bg-[#0056C6] hover:bg-blue-700 transition duration-150 shadow-sm flex justify-center items-center gap-2 cursor-pointer ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {loading && <ArrowPathIcon className="h-4 w-4 animate-spin text-white" />}
-              {loading ? 'Sedang Memproses...' : 'Masuk dengan Sandi'}
-            </button>
-          </div>
-        </form>
-
-        <p className="mt-6 text-center text-xs text-slate-500 font-bold leading-relaxed px-4">
-          Jika ingin mendaftar, silakan pilih daftar lowongan kerja yang tersedia pada beranda.
-        </p>
-
+    <AuthPageShell companyName={settings.companyName}>
+      <div className="text-center">
+        <h1 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+          {t('login_title')}
+        </h1>
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">{t('login_subtitle')}</p>
       </div>
 
-        {/* DETAILED GOOGLE AUTH CHOOSER MODAL REMOVED */}
+      <form className="mt-6 space-y-4" onSubmit={handleLogin} noValidate>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-center text-xs font-semibold text-red-700"
+          >
+            {error}
+          </div>
+        )}
 
-    </div>
+        <div className="space-y-1.5">
+          <label
+            htmlFor="login-username"
+            className="block pl-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500"
+          >
+            {t('login_username_label')}
+          </label>
+          <input
+            id="login-username"
+            type="text"
+            required
+            autoComplete="username"
+            className={inputClass}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={t('login_username_placeholder')}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2 pl-0.5">
+            <label
+              htmlFor="login-password"
+              className="text-[10px] font-black uppercase tracking-wider text-slate-500"
+            >
+              {t('login_password_label')}
+            </label>
+            <Link
+              to={forgotPasswordHref}
+              className="min-h-[44px] shrink-0 py-2 text-[10px] font-bold text-[#003087] transition hover:text-blue-900 hover:underline"
+            >
+              {t('login_forgot_password')}
+            </Link>
+          </div>
+          <div className="relative">
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              className={`${inputClass} pr-11`}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('login_password_placeholder')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 flex min-w-[44px] items-center justify-center text-slate-400 transition hover:text-slate-600"
+              aria-label={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+              tabIndex={-1}
+            >
+              {showPassword ? (
+                <EyeSlashIcon className="h-5 w-5" aria-hidden />
+              ) : (
+                <EyeIcon className="h-5 w-5" aria-hidden />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+          style={{ backgroundColor: BRAND_NAVY }}
+        >
+          {loading && <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden />}
+          {loading ? t('login_submitting') : t('login_submit')}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center text-xs text-slate-500">
+        {t('login_no_account')}{' '}
+        <Link
+          to="/register"
+          className="inline-flex min-h-[44px] items-center font-extrabold text-[#003087] transition hover:text-blue-900 hover:underline"
+        >
+          {t('login_register_link')}
+        </Link>
+      </p>
+    </AuthPageShell>
   );
 };

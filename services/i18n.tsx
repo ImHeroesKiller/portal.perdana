@@ -38,6 +38,20 @@ const dictionary: Translations = {
   bottom_nav_login: { id: 'Masuk', en: 'Sign In' },
   bottom_nav_account: { id: 'Akun', en: 'Account' },
 
+  // Login
+  login_title: { id: 'Masuk ke Portal', en: 'Sign In to Portal' },
+  login_subtitle: { id: 'Gunakan akun Anda untuk melacak lamaran dan portal karyawan.', en: 'Use your account to track applications and access the employee portal.' },
+  login_username_label: { id: 'Username atau Email', en: 'Username or Email' },
+  login_username_placeholder: { id: 'Email terdaftar atau username', en: 'Registered email or username' },
+  login_password_label: { id: 'Kata Sandi', en: 'Password' },
+  login_password_placeholder: { id: 'Masukkan kata sandi', en: 'Enter your password' },
+  login_submit: { id: 'Masuk', en: 'Sign In' },
+  login_submitting: { id: 'Memproses...', en: 'Signing in...' },
+  login_no_account: { id: 'Belum punya akun?', en: "Don't have an account?" },
+  login_register_link: { id: 'Daftar', en: 'Register' },
+  login_forgot_password: { id: 'Lupa Password?', en: 'Forgot Password?' },
+  login_error_default: { id: 'Username atau sandi Anda salah.', en: 'Incorrect username or password.' },
+
   // Home Page
   home_hero_title: { id: 'Bergabung Bersama Kami di', en: 'Join Us at' },
   home_hero_subtitle: { id: 'Kami mencari talenta terbaik untuk tumbuh dan berkembang bersama. Temukan peluang karir yang sesuai dengan minat dan keahlian Anda.', en: 'We are looking for the best talents to grow and develop together. Find career opportunities that match your interests and skills.' },

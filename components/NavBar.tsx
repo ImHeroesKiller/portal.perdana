@@ -73,6 +73,7 @@ export const NavBar: React.FC = () => {
   }, [location.pathname]);
 
   if (location.pathname.startsWith('/interview-session')) return null;
+  if (location.pathname === '/login' || location.pathname === '/register') return null;
 
   const handleLogout = () => {
     logout();
