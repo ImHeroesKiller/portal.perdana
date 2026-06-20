@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser, logout } from '../services/auth';
-import { useCandidates, createCandidate, updateCandidate } from '../hooks/useDbQueries';
+import { useCandidates, createCandidate, updateCandidate, useForceRefresh } from '../hooks/useDbQueries';
 import { getCompanySettings } from '../services/companySettings';
 import { 
   getAttendance, clockIn, clockOut, ERPAbsensi,
@@ -30,6 +30,12 @@ export const EmployeePortal: React.FC = () => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
   const { data: candidatesList = [], isLoading: candidatesLoading, refetch: refetchCandidates } = useCandidates();
+  const forceRefresh = useForceRefresh();
+
+  useEffect(() => {
+    console.log('[EmployeePortal] mount — force refresh candidates');
+    void forceRefresh.candidates();
+  }, []);
 
   // Authentication & DB state
   const [loading, setLoading] = useState(true);

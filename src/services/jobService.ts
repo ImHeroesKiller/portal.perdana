@@ -6,12 +6,23 @@ import { deleteDocument, fetchCollection, writeDocument } from './api-client';
 
 export { JOBS_COLLECTION };
 
-export async function getJobs(): Promise<JobVacancy[]> {
-  const list = await fetchCollection<Record<string, unknown>>(JOBS_COLLECTION);
+export type GetJobsOptions = {
+  forceRefresh?: boolean;
+};
+
+export async function getJobs(options?: GetJobsOptions): Promise<JobVacancy[]> {
+  console.log(`[jobService] getJobs → collection "${JOBS_COLLECTION}"`, options);
+  const list = await fetchCollection<Record<string, unknown>>(JOBS_COLLECTION, {
+    forceRefresh: options?.forceRefresh,
+  });
   const normalized = list.map((doc) => normalizeJobFromFirestore(doc));
-  return normalized.sort(
+  const sorted = normalized.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+  console.log(`[jobService] loaded ${sorted.length} jobs from "${JOBS_COLLECTION}"`, {
+    active: sorted.filter((j) => j.isActive).length,
+  });
+  return sorted;
 }
 
 export async function createJob(data: NewJobVacancy): Promise<JobVacancy> {

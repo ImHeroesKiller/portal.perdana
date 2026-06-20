@@ -1,6 +1,6 @@
 
-import React, { useMemo, useState } from 'react';
-import { useCandidates, useRefreshDb } from '../../../hooks/useDbQueries';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useCandidates, useRefreshDb, useForceRefresh } from '../../../hooks/useDbQueries';
 import { DataFetchState } from '../../../src/components/DataFetchState';
 import { ArrowPathIcon, CloudArrowUpIcon, DocumentChartBarIcon, PrinterIcon } from '@heroicons/react/24/outline';
 
@@ -14,6 +14,13 @@ export const ReportsManager: React.FC = () => {
       refetch,
     } = useCandidates();
     const refreshDb = useRefreshDb();
+    const forceRefresh = useForceRefresh();
+
+    useEffect(() => {
+        console.log('[ReportsManager] mount — force refresh candidates');
+        void forceRefresh.candidates();
+    }, []);
+
     const [syncStatus, setSyncStatus] = useState<'Synced'|'Syncing'|'Error'>('Synced');
     const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
 
@@ -27,7 +34,8 @@ export const ReportsManager: React.FC = () => {
     const handleSync = async () => {
         setSyncStatus('Syncing');
         try {
-            await refreshDb();
+            console.log('[ReportsManager] handleSync — force refresh');
+            await refreshDb({ force: true });
             setSyncStatus('Synced');
             setLastSync(new Date().toLocaleTimeString());
         } catch {

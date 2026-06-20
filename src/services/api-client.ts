@@ -18,16 +18,38 @@ function parseCollectionPayload<T>(body: unknown, collection: string): T[] {
   throw new Error(`Format respons ${collection} tidak valid dari server.`);
 }
 
-export async function fetchCollection<T>(collection: string): Promise<T[]> {
-  const res = await fetch(withCacheBust(`/api/db/${collection}`), FETCH_NO_STORE_INIT);
+export type FetchCollectionOptions = {
+  /** Tambah cache-bust ekstra — pakai saat force refresh dari UI */
+  forceRefresh?: boolean;
+};
+
+export async function fetchCollection<T>(
+  collection: string,
+  options?: FetchCollectionOptions
+): Promise<T[]> {
+  const base = `/api/db/${collection}`;
+  const url = options?.forceRefresh
+    ? withCacheBust(`${base}?_force=${Date.now()}`)
+    : withCacheBust(base);
+
+  const started = performance.now();
+  console.log(`[api-client] GET ${collection}`, { url, forceRefresh: Boolean(options?.forceRefresh) });
+
+  const res = await fetch(url, FETCH_NO_STORE_INIT);
   if (!res.ok) {
+    console.error(`[api-client] ${collection} failed`, { status: res.status, url });
     throw await parseApiError(
       res,
       `Gagal mengambil data ${collection} dari server (${res.status})`
     );
   }
   const body = await res.json();
-  return parseCollectionPayload<T>(body, collection);
+  const rows = parseCollectionPayload<T>(body, collection);
+  console.log(`[api-client] ${collection} ok`, {
+    count: rows.length,
+    ms: Math.round(performance.now() - started),
+  });
+  return rows;
 }
 
 export async function writeDocument(

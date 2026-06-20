@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Employee, JobVacancy, ApplicationStatus, Client, Project } from '../../../types';
-import { createJob, updateJob, deleteJob } from '../../../services/db';
 import {
   useCandidates,
   useJobs,
   useClients,
   useProjects,
   useRefreshDb,
+  useForceRefresh,
   createCandidate,
   updateCandidate,
   deleteCandidate,
+  createJob,
+  updateJob,
+  deleteJob,
 } from '../../../hooks/useDbQueries';
 import { DataFetchState } from '../../../src/components/DataFetchState';
 import { CandidateTable } from '../../../src/components/CandidateTable';
@@ -53,6 +56,12 @@ export const TalentManager: React.FC = () => {
     const { data: clients = [] } = useClients();
     const { data: projects = [] } = useProjects();
     const refreshDb = useRefreshDb();
+    const forceRefresh = useForceRefresh();
+
+    useEffect(() => {
+        console.log('[TalentManager] mount — force refresh jobs + candidates');
+        void forceRefresh.both();
+    }, []);
 
     // Job Vacancy Form State
     const [editingJobId, setEditingJobId] = useState<string | null>(null);
@@ -133,7 +142,8 @@ export const TalentManager: React.FC = () => {
     };
 
     const loadData = async () => {
-        await refreshDb();
+        console.log('[TalentManager] loadData — force refresh');
+        await refreshDb({ force: true });
     };
 
     // Derived statistics

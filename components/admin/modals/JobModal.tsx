@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { JobVacancy, NewJobVacancy, Client, Project } from '../../../types';
-import { createJob, updateJob } from '../../../services/db';
+import { createJob, updateJob } from '../../../hooks/useDbQueries';
 import { Input, Select, TextArea } from '../../ui/Input';
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 

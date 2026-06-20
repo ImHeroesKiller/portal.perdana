@@ -33,13 +33,22 @@ function standardizeCandidate(data: Partial<Employee>): Partial<Employee> {
   return standardized;
 }
 
-export async function getCandidates(): Promise<Employee[]> {
-  const list = await fetchCollection<Record<string, unknown>>(CANDIDATES_COLLECTION);
+export type GetCandidatesOptions = {
+  forceRefresh?: boolean;
+};
+
+export async function getCandidates(options?: GetCandidatesOptions): Promise<Employee[]> {
+  console.log(`[candidateService] getCandidates → collection "${CANDIDATES_COLLECTION}"`, options);
+  const list = await fetchCollection<Record<string, unknown>>(CANDIDATES_COLLECTION, {
+    forceRefresh: options?.forceRefresh,
+  });
   const sorted = list.sort(
     (a, b) =>
       new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime()
   );
-  return sorted.map((doc) => normalizeCandidateFromFirestore(doc));
+  const normalized = sorted.map((doc) => normalizeCandidateFromFirestore(doc));
+  console.log(`[candidateService] loaded ${normalized.length} candidates from "${CANDIDATES_COLLECTION}"`);
+  return normalized;
 }
 
 export async function createCandidate(
