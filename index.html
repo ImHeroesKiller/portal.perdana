@@ -2,47 +2,9 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <!-- Google Analytics GA4 — HashRouter uses manual page_view (send_page_view: false) -->
+    <!-- GA4 loaded once via lib/google-analytics.ts (HashRouter manual page_view) -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LB6K5S1D5T"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      (function () {
-        var GA_ID = 'G-LB6K5S1D5T';
-        var gaDebug = false;
-        try {
-          gaDebug =
-            window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            localStorage.getItem('ga_debug') === '1' ||
-            /(?:^|[?&#])ga_debug=1(?:&|$|#)/.test(
-              window.location.search + window.location.hash
-            );
-        } catch (e) {
-          gaDebug = false;
-        }
-
-        if (gaDebug) {
-          window.__GA_DEBUG__ = true;
-          console.info('[GA4] debug_mode enabled — events appear in GA4 DebugView');
-        }
-
-        gtag('config', GA_ID, {
-          send_page_view: false,
-          debug_mode: gaDebug,
-          allow_google_signals: true,
-          allow_ad_personalization_signals: false,
-          transport_type: 'beacon',
-          cookie_flags: 'SameSite=None;Secure',
-        });
-
-        window.__GA_READY__ = true;
-      })();
-    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#003087" />
     <meta name="description" content="Portal rekrutmen dan layanan tenaga kerja PT Perdana Adi Yuda" />

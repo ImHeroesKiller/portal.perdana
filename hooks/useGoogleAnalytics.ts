@@ -1,27 +1,59 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { buildGaPagePath, isGaDebugEnabled, isGtagAvailable, trackGaPageView } from '../lib/google-analytics';
+import {
+  buildGaPagePath,
+  detectAdBlocker,
+  getGaLoadState,
+  initGoogleAnalytics,
+  isGaDebugEnabled,
+  isGtagReady,
+  trackGaPageView,
+} from '../lib/google-analytics';
 
-/** Track HashRouter navigations in GA4 (send_page_view disabled in index.html). */
+/** Track HashRouter navigations in GA4 (send_page_view disabled; manual page_view). */
 export function useGoogleAnalytics() {
   const location = useLocation();
+  const lastSentRef = useRef('');
+  const rafRef = useRef(0);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    void (async () => {
+      const [state, adBlockLikely] = await Promise.all([initGoogleAnalytics(), detectAdBlocker()]);
+
+      if (!mountedRef.current) return;
+
+      if (state === 'blocked' || state === 'error' || adBlockLikely) {
+        if (isGaDebugEnabled()) {
+          console.warn(
+            '[GA4] Analytics unavailable. Disable ad blocker for this site or allow googletagmanager.com / google-analytics.com.'
+          );
+        }
+        return;
+      }
+
+      if (!isGtagReady() && isGaDebugEnabled()) {
+        console.warn(`[GA4] gtag not ready (state: ${getGaLoadState()})`);
+      }
+    })();
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const pagePath = buildGaPagePath(location.pathname, location.search);
-    trackGaPageView(pagePath);
-  }, [location.pathname, location.search]);
 
-  useEffect(() => {
-    if (!isGaDebugEnabled()) return;
+    window.cancelAnimationFrame(rafRef.current);
+    rafRef.current = window.requestAnimationFrame(() => {
+      if (lastSentRef.current === pagePath) return;
+      lastSentRef.current = pagePath;
+      trackGaPageView(pagePath);
+    });
 
-    const timer = window.setTimeout(() => {
-      if (!isGtagAvailable()) {
-        console.warn(
-          '[GA4] gtag.js tidak terdeteksi setelah 3s. Kemungkinan diblokir extension (uBlock, Privacy Badger) atau firewall.'
-        );
-      }
-    }, 3000);
-
-    return () => window.clearTimeout(timer);
-  }, []);
+    return () => window.cancelAnimationFrame(rafRef.current);
+  }, [location.pathname, location.search, location.key]);
 }
