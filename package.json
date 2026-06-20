@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && node scripts/build-vercel-api.mjs && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs --external:firebase-admin",
+    "build": "vite build && node scripts/build-vercel-api.mjs",
     "build:api": "node scripts/build-vercel-api.mjs",
     "build:server": "node scripts/build-server.mjs",
     "start": "node dist/server.cjs",
