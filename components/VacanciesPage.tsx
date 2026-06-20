@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
+import { filterJobsBySearch, filterJobsBySector } from '../lib/job-filters';
 import { DataFetchState } from '../src/components/DataFetchState';
-import { JobVacancy } from '../types';
+import { JobList } from './jobs/JobList';
 import { useLanguage } from '../services/i18n';
 import { 
   ChevronLeft, 
@@ -23,6 +24,7 @@ export const VacanciesPage: React.FC = () => {
   const { t, language } = useLanguage();
   const {
     data: jobs = [],
+    allJobs,
     isLoading: loading,
     isError,
     error,
@@ -30,7 +32,6 @@ export const VacanciesPage: React.FC = () => {
   } = useJobs({ activeOnly: true });
   const { data: clients = [] } = useClients();
 
-  const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'Semua' | 'Operasional' | 'Administrasi' | 'Teknis' | 'Lainnya'>('Semua');
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -72,47 +73,21 @@ export const VacanciesPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  const filteredJobs = useMemo(() => {
+    const searched = filterJobsBySearch(jobs, searchQuery);
+    return filterJobsBySector(searched, selectedFilter);
+  }, [jobs, searchQuery, selectedFilter]);
+
   useEffect(() => {
-    setFilteredJobs(jobs);
-  }, [jobs]);
-
-  // Filter jobs dynamically whenever search query, filter tab or jobs change
-  useEffect(() => {
-    const lowerQuery = searchQuery.toLowerCase();
-    
-    let result = jobs.filter(job => 
-      job.title.toLowerCase().includes(lowerQuery) || 
-      job.description.toLowerCase().includes(lowerQuery) ||
-      job.department.toLowerCase().includes(lowerQuery) ||
-      job.location.toLowerCase().includes(lowerQuery)
-    );
-
-    // Apply pill filter
-    if (selectedFilter !== 'Semua') {
-      result = result.filter(job => {
-        const dept = job.department.toLowerCase();
-        if (selectedFilter === 'Operasional') {
-          return dept.includes('oper') || dept.includes('pabrik') || dept.includes('lapangan') || dept.includes('crew');
-        }
-        if (selectedFilter === 'Administrasi') {
-          return dept.includes('admin') || dept.includes('kantor') || dept.includes('finance') || dept.includes('hr');
-        }
-        if (selectedFilter === 'Teknis') {
-          return dept.includes('teknis') || dept.includes('it') || dept.includes('system') || dept.includes('engineering') || dept.includes('mekanik');
-        }
-        if (selectedFilter === 'Lainnya') {
-          // returns ones that are not categorized in the above
-          const isOper = dept.includes('oper') || dept.includes('pabrik') || dept.includes('lapangan') || dept.includes('crew');
-          const isAdmin = dept.includes('admin') || dept.includes('kantor') || dept.includes('finance') || dept.includes('hr');
-          const isTeknis = dept.includes('teknis') || dept.includes('it') || dept.includes('system') || dept.includes('engineering') || dept.includes('mekanik');
-          return !isOper && !isAdmin && !isTeknis;
-        }
-        return true;
-      });
-    }
-
-    setFilteredJobs(result);
-  }, [searchQuery, selectedFilter, jobs]);
+    console.log('[VacanciesPage] jobs state', {
+      raw: allJobs.length,
+      visible: jobs.length,
+      filtered: filteredJobs.length,
+      loading,
+      searchQuery,
+      selectedFilter,
+    });
+  }, [allJobs.length, jobs.length, filteredJobs.length, loading, searchQuery, selectedFilter]);
 
   const getClientName = (clientId?: string) => {
     return clients.find(c => c.id === clientId)?.name || 'PT Indonesia Morowali Industrial Park (IMIP)';
@@ -201,14 +176,15 @@ export const VacanciesPage: React.FC = () => {
           emptyMessage="Tidak ada lowongan yang cocok dengan kata kunci atau filter Anda."
           onRetry={() => { void refetch(); }}
         >
-          <div className="space-y-4 mt-2">
-            {filteredJobs.map((job) => {
+          <div className="mt-2 space-y-4">
+            <JobList source="VacanciesPage" jobs={filteredJobs}>
+            {(job) => {
               const isBookmarked = bookmarkedJobs.includes(job.id);
               const tagLabel = job.department ? job.department.toUpperCase() : 'OPERATOR';
 
               return (
                 <div 
-                  key={job.id} 
+                  key={job.id || job.title} 
                   className="bg-white rounded-3xl border border-slate-100 shadow-xs p-5 hover:shadow-md transition duration-240 relative overflow-hidden"
                 >
                   
@@ -296,7 +272,8 @@ export const VacanciesPage: React.FC = () => {
 
                 </div>
               );
-            })}
+            }}
+            </JobList>
           </div>
         </DataFetchState>
 

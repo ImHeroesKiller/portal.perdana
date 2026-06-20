@@ -33,8 +33,22 @@ function parseStringArray(value: unknown): string[] {
 
 function parseBool(value: unknown, defaultValue = true): boolean {
   if (typeof value === 'boolean') return value;
-  if (value === 'true' || value === 1) return true;
-  if (value === 'false' || value === 0) return false;
+  if (value === 1 || value === '1') return true;
+  if (value === 0 || value === '0') return false;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === 'yes' || normalized === 'aktif' || normalized === 'active') {
+      return true;
+    }
+    if (
+      normalized === 'false' ||
+      normalized === 'no' ||
+      normalized === 'nonaktif' ||
+      normalized === 'inactive'
+    ) {
+      return false;
+    }
+  }
   return defaultValue;
 }
 

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient, type QueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { getClients, getProjects } from '../services/db';
 import {
   getJobs,
@@ -19,6 +19,7 @@ import {
   updatePermanentEmployee,
 } from '../src/services/employeeService';
 import { queryKeys } from '../lib/queryKeys';
+import { filterPublicJobs } from '../lib/job-filters';
 import type { JobVacancy, Employee, Client, Project } from '../types';
 
 const QUERY_OPTIONS = {
@@ -32,21 +33,52 @@ const QUERY_OPTIONS = {
 
 let homePageForceRefreshDone = false;
 
-export function useJobs(options?: { activeOnly?: boolean }) {
-  return useQuery<JobVacancy[], Error>({
+type JobsQueryResult = UseQueryResult<JobVacancy[], Error> & {
+  data: JobVacancy[];
+  allJobs: JobVacancy[];
+};
+
+/**
+ * Fetch jobs — filter di useMemo (bukan React Query `select`).
+ * activeOnly: true → sembunyikan hanya job dengan isActive === false
+ */
+export function useJobs(options?: { activeOnly?: boolean }): JobsQueryResult {
+  const activeOnly = Boolean(options?.activeOnly);
+  const query = useQuery<JobVacancy[], Error>({
     queryKey: queryKeys.jobs,
     queryFn: () => getJobs(),
     ...QUERY_OPTIONS,
-    select: (jobs) => {
-      const selected = options?.activeOnly ? jobs.filter((j) => j.isActive) : jobs;
-      console.log('[useJobs] select', {
-        total: jobs.length,
-        returned: selected.length,
-        activeOnly: Boolean(options?.activeOnly),
-      });
-      return selected;
-    },
   });
+
+  const allJobs = query.data ?? [];
+  const data = useMemo(
+    () => (activeOnly ? filterPublicJobs(allJobs) : allJobs),
+    [allJobs, activeOnly]
+  );
+
+  useEffect(() => {
+    if (query.data) {
+      console.log('[useJobs]', {
+        activeOnly,
+        raw: query.data.length,
+        returned: data.length,
+        isLoading: query.isLoading,
+        isFetching: query.isFetching,
+        isError: query.isError,
+      });
+    }
+  }, [query.data, data.length, activeOnly, query.isLoading, query.isFetching, query.isError]);
+
+  return {
+    ...query,
+    data,
+    allJobs,
+  };
+}
+
+/** Alias untuk halaman publik */
+export function usePublicJobs(): JobsQueryResult {
+  return useJobs({ activeOnly: true });
 }
 
 export function useCandidates() {
@@ -54,14 +86,9 @@ export function useCandidates() {
     queryKey: queryKeys.candidates,
     queryFn: () => getCandidates(),
     ...QUERY_OPTIONS,
-    select: (candidates) => {
-      console.log('[useCandidates] select', { total: candidates.length });
-      return candidates;
-    },
   });
 }
 
-/** Karyawan tetap — collection `employees` (ERP / payroll). */
 export function usePermanentEmployees() {
   return useQuery<Employee[], Error>({
     queryKey: queryKeys.permanentEmployees,
@@ -78,7 +105,6 @@ export function useActivePermanentEmployees() {
   });
 }
 
-/** @deprecated Use useCandidates() for pelamar, usePermanentEmployees() for karyawan tetap */
 export function useEmployees() {
   return useCandidates();
 }
@@ -99,7 +125,6 @@ export function useProjects() {
   });
 }
 
-/** Coordinated HomePage queries — one force-refresh per session, not per mount. */
 export function useHomePageData() {
   const qc = useQueryClient();
   const jobsQuery = useJobs({ activeOnly: true });
@@ -113,22 +138,45 @@ export function useHomePageData() {
     void Promise.all([forceRefreshJobs(qc), forceRefreshCandidates(qc)]);
   }, [qc]);
 
-  const jobs = jobsQuery.data ?? [];
+  const jobs = jobsQuery.data;
   const candidates = candidatesQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
   const projects = projectsQuery.data ?? [];
+
   const loading =
     jobsQuery.isLoading ||
     candidatesQuery.isLoading ||
     clientsQuery.isLoading ||
     projectsQuery.isLoading;
 
+  useEffect(() => {
+    console.log('[useHomePageData]', {
+      jobs: jobs.length,
+      jobsRaw: jobsQuery.allJobs.length,
+      jobsLoading: jobsQuery.isLoading,
+      aggregateLoading: loading,
+      candidates: candidates.length,
+      clients: clients.length,
+      projects: projects.length,
+    });
+  }, [
+    jobs.length,
+    jobsQuery.allJobs.length,
+    jobsQuery.isLoading,
+    loading,
+    candidates.length,
+    clients.length,
+    projects.length,
+  ]);
+
   return {
     jobs,
+    allJobs: jobsQuery.allJobs,
     candidates,
     clients,
     projects,
     loading,
+    jobsLoading: jobsQuery.isLoading || jobsQuery.isFetching,
     fetchError: jobsQuery.isError ? jobsQuery.error : null,
     refetchJobs: jobsQuery.refetch,
   };
@@ -136,11 +184,16 @@ export function useHomePageData() {
 
 export async function forceRefreshJobs(qc: QueryClient): Promise<JobVacancy[]> {
   console.log('[useDbQueries] forceRefreshJobs');
-  return qc.fetchQuery({
+  const jobs = await qc.fetchQuery({
     queryKey: queryKeys.jobs,
     queryFn: () => getJobs({ forceRefresh: true }),
     staleTime: 0,
   });
+  console.log('[useDbQueries] forceRefreshJobs done', {
+    total: jobs.length,
+    visible: filterPublicJobs(jobs).length,
+  });
+  return jobs;
 }
 
 export async function forceRefreshCandidates(qc: QueryClient): Promise<Employee[]> {

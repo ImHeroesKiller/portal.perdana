@@ -3,7 +3,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useHomePageData } from '../hooks/useDbQueries';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { filterJobsBySearch } from '../lib/job-filters';
 import { DataFetchState } from '../src/components/DataFetchState';
+import { JobList } from './jobs/JobList';
 import { JobVacancy } from '../types';
 import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOfficeIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../services/i18n';
@@ -20,10 +22,11 @@ export const HomePage: React.FC = () => {
     clients,
     projects,
     loading,
+    jobsLoading,
+    allJobs,
     fetchError,
     refetchJobs,
   } = useHomePageData();
-  const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const stats = useMemo(() => ({
@@ -37,18 +40,21 @@ export const HomePage: React.FC = () => {
   const isMobile = useIsMobile();
   const { t, language } = useLanguage();
 
-  useEffect(() => {
-    setFilteredJobs(jobs);
-  }, [jobs]);
+  const filteredJobs = useMemo(
+    () => filterJobsBySearch(jobs, searchQuery),
+    [jobs, searchQuery]
+  );
 
   useEffect(() => {
-    const lowerQuery = searchQuery.toLowerCase();
-    const filtered = jobs.filter(job => 
-      job.title.toLowerCase().includes(lowerQuery) || 
-      job.description.toLowerCase().includes(lowerQuery)
-    );
-    setFilteredJobs(filtered);
-  }, [searchQuery, jobs]);
+    console.log('[HomePage] jobs state', {
+      raw: allJobs.length,
+      visible: jobs.length,
+      filtered: filteredJobs.length,
+      jobsLoading,
+      loading,
+      searchQuery,
+    });
+  }, [allJobs.length, jobs.length, filteredJobs.length, jobsLoading, loading, searchQuery]);
 
   const getClientName = (clientId?: string) => {
       return clients.find(c => c.id === clientId)?.name || '';
@@ -135,9 +141,9 @@ export const HomePage: React.FC = () => {
           </div>
 
           <DataFetchState
-            isLoading={loading}
+            isLoading={jobsLoading}
             error={fetchError}
-            isEmpty={!loading && !fetchError && filteredJobs.length === 0}
+            isEmpty={!jobsLoading && !fetchError && filteredJobs.length === 0}
             emptyMessage={
               jobs.length === 0
                 ? 'Saat ini belum ada lowongan yang tersedia.'
@@ -145,15 +151,15 @@ export const HomePage: React.FC = () => {
             }
             onRetry={() => { void refetchJobs(); }}
           >
-          {filteredJobs.length > 0 && (
-            <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-2">
-              {filteredJobs.map((job) => {
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <JobList source="HomePage" jobs={filteredJobs}>
+              {(job) => {
                 const isExpanded = expandedRequirements[job.id];
                 const displayedRequirements = isExpanded ? job.requirements : job.requirements.slice(0, 3);
                 const hasMore = job.requirements.length > 3;
 
                 return (
-                <div key={job.id} className="flex flex-col bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden border border-gray-100">
+                <div key={job.id || job.title} className="flex flex-col bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden border border-gray-100">
                   <div className="p-6 flex-1">
                     <div className="flex justify-between items-start">
                         <div>
@@ -227,9 +233,9 @@ export const HomePage: React.FC = () => {
                     </Link>
                   </div>
                 </div>
-              )})}
+              )}}
+            </JobList>
             </div>
-          )}
           </DataFetchState>
         </div>
       </div>
