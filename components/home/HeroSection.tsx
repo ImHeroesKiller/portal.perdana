@@ -90,26 +90,21 @@ function HeroContent({
     navigate(q ? `/vacancies?q=${encodeURIComponent(q)}` : '/vacancies');
   };
 
-  const align = compact ? 'items-center text-center' : 'items-start text-left sm:items-center sm:text-center lg:items-start lg:text-left';
   const contentPad = compact
     ? 'px-4 pb-11 pt-8'
     : 'px-4 pb-12 pt-9 sm:px-6 sm:pb-14 sm:pt-11 lg:px-8 lg:py-16';
 
   return (
     <div className={`relative z-20 flex w-full flex-col ${contentPad}`}>
-      <div className={`mx-auto w-full ${compact ? 'max-w-md' : 'max-w-7xl'}`}>
+      <div className={`mx-auto w-full ${compact ? 'max-w-md' : 'max-w-3xl'}`}>
         <div
-          className={`mx-auto flex w-full flex-col ${align} ${
-            compact ? 'max-w-md' : 'max-w-2xl lg:mx-0'
+          className={`mx-auto flex w-full max-w-2xl flex-col items-center text-center ${
+            compact ? 'max-w-md' : ''
           }`}
         >
           <HeroBrand compact={compact} companyName={t('home_hero_company_name')} />
 
-          <div
-            className={`flex flex-wrap gap-2 ${
-              compact ? 'mb-5 justify-center' : 'mb-5 justify-center lg:justify-start'
-            }`}
-          >
+          <div className="mb-5 flex flex-wrap justify-center gap-2">
             <span className="inline-flex items-center rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-cyan-200 sm:text-xs">
               {t('home_hero_badge')}
             </span>
@@ -132,10 +127,10 @@ function HeroContent({
           </h1>
 
           <p
-            className={`mt-3.5 font-medium text-slate-100/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
+            className={`mx-auto mt-3.5 font-medium text-slate-100/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
               compact
                 ? 'max-w-[21rem] text-sm leading-relaxed'
-                : 'max-w-xl text-sm leading-relaxed sm:text-base lg:max-w-2xl'
+                : 'max-w-xl text-sm leading-relaxed sm:text-base'
             }`}
           >
             {t('home_hero_tagline')}
@@ -143,7 +138,7 @@ function HeroContent({
 
           <form
             onSubmit={handleSearchSubmit}
-            className={`mt-6 w-full sm:mt-7 ${compact ? '' : 'max-w-xl lg:mx-0'}`}
+            className="mx-auto mt-6 w-full max-w-xl sm:mt-7"
             role="search"
           >
             <div className="rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-white/60 sm:p-2">
@@ -172,11 +167,7 @@ function HeroContent({
             </div>
           </form>
 
-          <div
-            className={`mt-5 flex w-full flex-col gap-3 sm:mt-6 sm:flex-row sm:items-center sm:gap-2.5 ${
-              compact ? '' : 'max-w-xl lg:mx-0'
-            }`}
-          >
+          <div className="mx-auto mt-5 flex w-full max-w-xl flex-col items-center justify-center gap-3 sm:mt-6 sm:flex-row sm:gap-2.5">
             <Link
               to="/vacancies"
               className="inline-flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#003087] px-6 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-900 active:scale-[0.98] sm:w-auto sm:px-8"
