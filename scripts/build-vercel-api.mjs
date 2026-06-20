@@ -16,6 +16,7 @@ const HANDWRITTEN = new Set([
   'ping.js',
   'package.json',
   'firebase-health.js',
+  'db/projects.js',
   'db/[collection]/index.js',
   'db/[collection]/[id].js',
 ]);

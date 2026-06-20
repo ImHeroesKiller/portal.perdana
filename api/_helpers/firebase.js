@@ -72,27 +72,49 @@ function getDb() {
   return cachedDb;
 }
 
-function serializeValue(value) {
+function serializeValue(value, depth = 0) {
   if (value === null || value === undefined) return value;
+  if (depth > 14) return String(value);
   if (value instanceof Date) return value.toISOString();
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(value)) return value.toString('base64');
   if (typeof value === 'object' && typeof value.toDate === 'function') {
     return value.toDate().toISOString();
   }
-  if (Array.isArray(value)) return value.map(serializeValue);
+  if (Array.isArray(value)) return value.map((item) => serializeValue(item, depth + 1));
   if (typeof value === 'object') {
     if ('_seconds' in value && '_nanoseconds' in value) {
       const ms = Number(value._seconds) * 1000 + Number(value._nanoseconds) / 1_000_000;
       return new Date(ms).toISOString();
     }
+    if (typeof value.latitude === 'number' && typeof value.longitude === 'number') {
+      return { latitude: value.latitude, longitude: value.longitude };
+    }
+    if (typeof value.path === 'string' && typeof value.id === 'string' && value.firestore) {
+      return value.path;
+    }
     const out = {};
-    for (const [k, v] of Object.entries(value)) out[k] = serializeValue(v);
+    for (const [k, v] of Object.entries(value)) {
+      if (v !== undefined) out[k] = serializeValue(v, depth + 1);
+    }
     return out;
   }
   return value;
 }
 
 function docToPlain(id, data) {
-  return { id, ...serializeValue(data) };
+  const source = data && typeof data === 'object' ? data : {};
+  return { id, ...serializeValue(source) };
+}
+
+function safeDocToPlain(id, data) {
+  try {
+    return docToPlain(id, data);
+  } catch (error) {
+    const err = new Error(`Gagal serialisasi dokumen "${id}": ${error?.message || error}`);
+    err.code = 'DOC_SERIALIZE_ERROR';
+    err.docId = id;
+    throw err;
+  }
 }
 
 function applyCors(res) {
@@ -124,6 +146,7 @@ module.exports = {
   missingEnvKeys,
   getDb,
   docToPlain,
+  safeDocToPlain,
   applyCors,
   toStatus,
 };
