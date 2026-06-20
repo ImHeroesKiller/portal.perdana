@@ -15,23 +15,19 @@ import { AIInterviewSession } from './components/AIInterviewSession';
 import { EmployeePortal } from './components/EmployeePortal';
 import { VacanciesPage } from './components/VacanciesPage';
 import { NavBar } from './components/NavBar';
+import { BottomNavigation } from './components/BottomNavigation';
+import { useIsMobile } from './hooks/useMediaQuery';
 import { getCurrentUser, logout } from './services/auth';
 import { LanguageProvider, useLanguage } from './services/i18n';
 import { getCompanySettings } from './services/companySettings';
 
+const MOBILE_BOTTOM_PAD = 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]';
+
 const Footer = () => {
     const { t } = useLanguage();
     const location = useLocation();
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const isMobile = useIsMobile();
     const [settings, setSettings] = useState(() => getCompanySettings());
-
-    useEffect(() => {
-        const handleResize = () => {
-          setIsMobile(window.innerWidth < 768);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     useEffect(() => {
         const handleUpdate = () => {
@@ -46,7 +42,7 @@ const Footer = () => {
 
     if (isMobile) {
         return (
-          <div className="bg-transparent pt-2 pb-6 px-4">
+          <div className={`bg-transparent px-4 pt-2 ${MOBILE_BOTTOM_PAD}`}>
             <div className="rounded-3xl bg-[#00B5F1] text-white py-5 px-6 flex flex-col sm:flex-row items-center justify-between shadow-xs gap-3">
               <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity cursor-pointer">
                 <div className="bg-white px-2.5 py-1 rounded-xl flex items-center justify-center shadow-xs">
@@ -178,27 +174,42 @@ export default function App() {
 
   return (
     <LanguageProvider>
-        <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <NavBar />
-        <main className="min-h-screen pb-20 bg-gray-50">
-            <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/vacancies" element={<VacanciesPage />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/apply" element={<RecruitmentForm />} />
-            <Route path="/portal" element={<EmployeePortal />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/interview-session/:employeeId" element={<AIInterviewSession />} />
-            </Routes>
-        </main>
-        <Footer />
-        </HashRouter>
+      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AppShell />
+      </HashRouter>
     </LanguageProvider>
+  );
+}
+
+function AppShell() {
+  const isMobile = useIsMobile();
+
+  return (
+    <>
+      <NavBar />
+      <main
+        className={`min-h-screen bg-[#F1F5F9] md:bg-gray-50 ${
+          isMobile ? MOBILE_BOTTOM_PAD : ''
+        }`}
+      >
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/vacancies" element={<VacanciesPage />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/apply" element={<RecruitmentForm />} />
+          <Route path="/portal" element={<EmployeePortal />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/interview-session/:employeeId" element={<AIInterviewSession />} />
+        </Routes>
+      </main>
+      <BottomNavigation />
+      <Footer />
+    </>
   );
 }

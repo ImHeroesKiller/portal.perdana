@@ -26,8 +26,16 @@ const dictionary: Translations = {
   nav_vacancies_short: { id: 'Lowongan', en: 'Jobs' },
   nav_portal: { id: 'Portal Saya', en: 'My Portal' },
   nav_tagline: { id: 'Solusi SDM & Rekrutmen', en: 'HR & Recruitment Solutions' },
+  nav_more_menu: { id: 'Menu Lainnya', en: 'More' },
   nav_notifications: { id: 'Notifikasi', en: 'Notifications' },
   nav_mark_all_read: { id: 'Tandai dibaca', en: 'Mark all read' },
+  bottom_nav_aria: { id: 'Navigasi utama bawah', en: 'Main bottom navigation' },
+  bottom_nav_home: { id: 'Beranda', en: 'Home' },
+  bottom_nav_jobs: { id: 'Lowongan', en: 'Jobs' },
+  bottom_nav_services: { id: 'Layanan', en: 'Services' },
+  bottom_nav_about: { id: 'Tentang', en: 'About' },
+  bottom_nav_login: { id: 'Masuk', en: 'Sign In' },
+  bottom_nav_account: { id: 'Akun', en: 'Account' },
 
   // Home Page
   home_hero_title: { id: 'Bergabung Bersama Kami di', en: 'Join Us at' },

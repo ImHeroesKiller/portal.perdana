@@ -51,7 +51,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   });
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F1F5F9] pb-8 font-sans antialiased text-slate-800">
+    <div className="flex min-h-screen flex-col pb-4 font-sans antialiased text-slate-800">
       <HeroSection
         compact
         searchQuery={searchQuery}

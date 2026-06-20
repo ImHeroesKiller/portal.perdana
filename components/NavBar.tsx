@@ -19,7 +19,6 @@ import {
   markNotificationRead,
   formatNotificationDate,
 } from '../services/navNotifications';
-
 export const NavBar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -317,34 +316,24 @@ export const NavBar: React.FC = () => {
 
       {isMobileNavOpen && (
         <div className="border-t border-slate-100 bg-white md:hidden">
+          <p className="px-4 pt-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            {t('nav_more_menu')}
+          </p>
           <div className="space-y-1 px-3 py-3">
-            <Link to="/" className={mobileLinkClass('/')}>
-              {t('nav_home')}
-            </Link>
-            <Link to="/vacancies" className={mobileLinkClass('/vacancies')}>
-              {t('nav_vacancies')}
-            </Link>
-            {currentUser?.role === 'user' && (
-              <Link to="/portal" className={mobileLinkClass('/portal')}>
-                {t('nav_portal')}
-              </Link>
-            )}
-            <Link to="/services" className={mobileLinkClass('/services')}>
-              {t('nav_services')}
-            </Link>
-            <Link to="/about" className={mobileLinkClass('/about')}>
-              {t('nav_about')}
-            </Link>
             <Link to="/contact" className={mobileLinkClass('/contact')}>
               {t('nav_contact')}
             </Link>
             <Link to="/help" className={mobileLinkClass('/help')}>
               {t('nav_help')}
             </Link>
-            {!currentUser && (
-              <Link to="/login" className={mobileLinkClass('/login')}>
-                {t('nav_login')}
-              </Link>
+            {currentUser && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+              >
+                {t('nav_logout')}
+              </button>
             )}
           </div>
         </div>
