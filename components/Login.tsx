@@ -146,15 +146,15 @@ export const Login: React.FC = () => {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-slate-500">
-        {t('login_no_account')}{' '}
+      <div className="mt-6 rounded-xl border border-[#003087]/10 bg-blue-50/40 px-4 py-4 text-center">
+        <p className="text-[11px] leading-relaxed text-slate-600">{t('login_apply_hint')}</p>
         <Link
-          to="/register"
-          className="inline-flex min-h-[44px] items-center font-extrabold text-[#003087] transition hover:text-blue-900 hover:underline"
+          to="/vacancies"
+          className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#003087]/20 bg-white px-5 py-2.5 text-xs font-extrabold text-[#003087] shadow-sm transition hover:border-[#003087]/40 hover:bg-blue-50/80 active:scale-[0.98]"
         >
-          {t('login_register_link')}
+          {t('login_apply_link')}
         </Link>
-      </p>
+      </div>
     </AuthPageShell>
   );
 };

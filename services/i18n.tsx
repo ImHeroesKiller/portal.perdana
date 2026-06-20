@@ -47,8 +47,11 @@ const dictionary: Translations = {
   login_password_placeholder: { id: 'Masukkan kata sandi', en: 'Enter your password' },
   login_submit: { id: 'Masuk', en: 'Sign In' },
   login_submitting: { id: 'Memproses...', en: 'Signing in...' },
-  login_no_account: { id: 'Belum punya akun?', en: "Don't have an account?" },
-  login_register_link: { id: 'Daftar', en: 'Register' },
+  login_apply_hint: {
+    id: 'Belum punya akun? Lamar lowongan terlebih dahulu untuk mendapatkan akses.',
+    en: "Don't have an account? Apply to a vacancy first to get portal access.",
+  },
+  login_apply_link: { id: 'Lamar Lowongan Sekarang', en: 'Apply for a Job Now' },
   login_forgot_password: { id: 'Lupa Password?', en: 'Forgot Password?' },
   login_error_default: { id: 'Username atau sandi Anda salah.', en: 'Incorrect username or password.' },
 
