@@ -83,7 +83,7 @@ Skema JSON yang harus Anda buat adalah sebagai berikut:
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 5173;
 
   app.use(express.json());
 
@@ -273,6 +273,9 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`GA4 debug: http://localhost:${PORT}/#/?ga_debug=1`);
+    }
   });
 }
 
