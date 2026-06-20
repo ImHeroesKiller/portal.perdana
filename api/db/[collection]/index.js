@@ -5,7 +5,7 @@ const {
   toStatus,
   readAdminEnv,
   missingEnvKeys,
-} = require('../_helpers/firebase');
+} = require('../../_helpers/firebase');
 
 const JOBS_COLLECTION = 'jobs';
 const LOG_PREFIX = '[api/db/collection]';
