@@ -63,8 +63,8 @@ const dictionary: Translations = {
   home_hero_company_name: { id: 'PT Perdana Adi Yuda', en: 'PT Perdana Adi Yuda' },
   home_hero_headline: { id: 'Temukan Karier Terbaik', en: 'Find Your Best Career' },
   home_hero_tagline: {
-    id: 'Mitra Terpercaya Solusi Tenaga Kerja Konstruksi & Industri di Indonesia',
-    en: 'Your Trusted Partner for Construction & Industrial Workforce Solutions in Indonesia',
+    id: 'Solusi tenaga kerja profesional untuk konstruksi, smelter, dan operasional industri di Indonesia.',
+    en: 'Professional workforce solutions for construction, smelter, and industrial operations across Indonesia.',
   },
   home_hero_jobs_count: { id: '{count} Lowongan Aktif', en: '{count} Active Jobs' },
   home_hero_coverage: { id: 'Seluruh Indonesia', en: 'Nationwide Coverage' },

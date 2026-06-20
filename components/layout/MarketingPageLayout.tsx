@@ -21,7 +21,7 @@ export const PageTopBar: React.FC<PageTopBarProps> = ({
         <button
           type="button"
           onClick={() => navigate(backTo)}
-          className="flex min-h-[44px] items-center gap-2 text-[11px] font-extrabold text-[#003087] transition hover:text-blue-900 active:scale-95"
+          className="flex min-h-[48px] items-center gap-2 text-[11px] font-extrabold text-[#003087] transition hover:text-blue-900 active:scale-95"
         >
           <ArrowLeft className="h-4 w-4 stroke-[2.5]" aria-hidden />
           {backLabel}
@@ -107,7 +107,7 @@ export const MarketingPageShell: React.FC<MarketingPageShellProps> = ({
   className = '',
 }) => (
   <main
-    className={`mx-auto flex flex-col gap-8 px-4 pb-8 pt-6 ${
+    className={`mx-auto flex flex-col gap-6 px-4 pb-8 pt-6 sm:gap-8 ${
       wide ? 'max-w-7xl' : 'max-w-4xl'
     } ${className}`}
   >
@@ -140,7 +140,7 @@ export const NavyCtaBanner: React.FC<{
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl bg-white px-5 py-2.5 text-xs font-black text-[#003087] transition hover:bg-slate-50 active:scale-[0.98]"
+      className="flex min-h-[48px] shrink-0 items-center gap-1 rounded-xl bg-white px-5 text-xs font-black text-[#003087] transition hover:bg-slate-50 active:scale-[0.98]"
     >
       {buttonLabel}
     </button>

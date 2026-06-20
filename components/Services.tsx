@@ -223,7 +223,7 @@ export const Services: React.FC = () => {
               <div className="mt-6 border-t border-slate-200/60 pt-5 text-center">
                 <a
                   href="#/contact"
-                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[#003087] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-blue-900 active:scale-[0.98]"
+                  className="inline-flex min-h-[48px] items-center gap-1.5 rounded-xl bg-[#003087] px-5 text-xs font-bold text-white transition hover:bg-blue-900 active:scale-[0.98]"
                 >
                   {lang === 'id' ? 'Hubungi Admin' : 'Contact Admin'}
                   <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />

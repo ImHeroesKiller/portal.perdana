@@ -31,6 +31,10 @@ export const VACANCY_FILTER_OPTIONS: VacancyFilter[] = [
 /** Brand navy — accent utama halaman utama */
 export const BRAND_NAVY = '#003087';
 
+/** Tombol utama — touch target min 48px, tipografi konsisten */
+export const BTN_PRIMARY =
+  'inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[#003087] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]';
+
 /** Horizontal scroll row — stats & sektor */
 export const HOME_H_SCROLL =
   'overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';

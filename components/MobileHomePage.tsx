@@ -74,7 +74,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
     'flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg px-1 text-[11px] font-bold text-[#003087] transition active:scale-[0.98]';
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 pb-8 font-sans antialiased text-slate-800">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 pb-10 font-sans antialiased text-slate-800">
       <HeroSection
         compact
         searchQuery={searchQuery}
@@ -82,7 +82,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
         jobCount={stats.jobs}
       />
 
-      <main className="mt-6 flex flex-col gap-8 px-4">
+      <main className="mt-8 flex flex-col gap-8 px-4">
         <section aria-label="Statistik">
           <StatsCards
             variant="mobile"
@@ -166,13 +166,13 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
                     <button
                       type="button"
                       onClick={() => openMap(job.latitude, job.longitude, location)}
-                      className="flex-1 rounded-xl bg-slate-100 py-2.5 text-[11px] font-bold text-slate-700 transition active:scale-[0.98]"
+                      className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-bold text-slate-700 transition active:scale-[0.98]"
                     >
                       Peta
                     </button>
                     <Link
                       to={`/apply?position=${encodeURIComponent(title)}`}
-                      className="flex-1 rounded-xl bg-[#003087] py-2.5 text-center text-[11px] font-bold text-white transition active:scale-[0.98]"
+                      className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-[#003087] text-center text-[11px] font-bold text-white transition active:scale-[0.98]"
                     >
                       Lamar
                     </Link>
@@ -184,7 +184,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
             {totalFilteredJobs > 0 && (
               <Link
                 to="/vacancies"
-                className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#003087] py-3 text-center text-sm font-bold text-white shadow-sm transition active:scale-[0.98]"
+                className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#003087] text-center text-sm font-bold text-white shadow-sm transition active:scale-[0.98]"
               >
                 {t('home_cta_button')}
               </Link>

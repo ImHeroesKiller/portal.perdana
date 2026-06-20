@@ -197,7 +197,7 @@ export const Contact: React.FC = () => {
 
               <button
                 type="submit"
-                className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#003087] text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
+                className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#003087] text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
               >
                 {t('contact_btn_send')}
               </button>

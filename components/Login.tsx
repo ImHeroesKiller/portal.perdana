@@ -150,7 +150,7 @@ export const Login: React.FC = () => {
         <p className="text-[11px] leading-relaxed text-slate-600">{t('login_apply_hint')}</p>
         <Link
           to="/vacancies"
-          className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#003087]/20 bg-white px-5 py-2.5 text-xs font-extrabold text-[#003087] shadow-sm transition hover:border-[#003087]/40 hover:bg-blue-50/80 active:scale-[0.98]"
+          className="mt-3 inline-flex min-h-[48px] items-center justify-center rounded-xl border border-[#003087]/20 bg-white px-5 text-xs font-extrabold text-[#003087] shadow-sm transition hover:border-[#003087]/40 hover:bg-blue-50/80 active:scale-[0.98]"
         >
           {t('login_apply_link')}
         </Link>

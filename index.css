@@ -5,9 +5,10 @@
 /* Fallback teks kartu lowongan — tetap terbaca jika utility Tailwind gagal */
 .job-card-title {
   color: #0f172a;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 
 .job-card-dept {
@@ -15,7 +16,7 @@
   background-color: #eff6ff;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -23,10 +24,12 @@
   color: #475569;
   font-size: 10px;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .job-card-desc {
   color: #64748b;
   font-size: 12px;
-  line-height: 1.5;
+  font-weight: 500;
+  line-height: 1.55;
 }

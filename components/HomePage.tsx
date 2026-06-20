@@ -281,7 +281,7 @@ export const HomePage: React.FC = () => {
               <div className="mt-10 text-center">
                 <Link
                   to="/vacancies"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#003087] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[#003087] px-8 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
                 >
                   {t('home_cta_button')}
                 </Link>

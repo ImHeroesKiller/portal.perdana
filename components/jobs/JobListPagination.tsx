@@ -26,7 +26,7 @@ export const JobListPagination: React.FC<JobListPaginationProps> = ({
   const end = Math.min(page * pageSize, totalItems);
 
   const btnBase =
-    'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-[0.98]';
+    'inline-flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl px-4 text-xs font-bold transition active:scale-[0.98]';
   const btnEnabled = 'bg-[#003087] text-white shadow-sm hover:bg-blue-900';
   const btnDisabled = 'cursor-not-allowed bg-slate-100 text-slate-400';
 

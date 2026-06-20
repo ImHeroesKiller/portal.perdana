@@ -25,6 +25,8 @@ export interface VacancyJobCardProps {
   applyHref: string;
   detailHref?: string;
   maxRequirements?: number;
+  /** Tampilan ringkas untuk daftar VacanciesPage */
+  compact?: boolean;
 }
 
 export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
@@ -40,15 +42,21 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   onOpenMap,
   applyHref,
   detailHref,
-  maxRequirements = 3,
+  maxRequirements,
+  compact = false,
 }) => {
-  const shownRequirements = requirements.slice(0, maxRequirements);
-  const hasMoreRequirements = requirements.length > maxRequirements;
+  const reqLimit = maxRequirements ?? (compact ? 2 : 3);
+  const shownRequirements = requirements.slice(0, reqLimit);
+  const hasMoreRequirements = requirements.length > reqLimit;
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <span className="job-card-dept inline-block rounded-lg px-2.5 py-1">
+    <article
+      className={`relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md ${
+        compact ? 'p-3.5' : 'p-4 sm:p-5'
+      }`}
+    >
+      <div className={`flex items-start justify-between gap-2 ${compact ? 'mb-2' : 'mb-3'}`}>
+        <span className="job-card-dept inline-block rounded-lg px-2 py-0.5">
           {department}
         </span>
         {onToggleBookmark && (
@@ -56,95 +64,119 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
             type="button"
             onClick={onToggleBookmark}
             aria-label={isBookmarked ? 'Hapus bookmark' : 'Simpan lowongan'}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-50 active:scale-95"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-50 active:scale-95"
           >
             {isBookmarked ? (
-              <BookmarkCheck className="h-5 w-5 fill-[#003087] text-[#003087]" />
+              <BookmarkCheck className="h-4 w-4 fill-[#003087] text-[#003087]" />
             ) : (
-              <Bookmark className="h-5 w-5" />
+              <Bookmark className="h-4 w-4" />
             )}
           </button>
         )}
       </div>
 
       {detailHref ? (
-        <Link to={detailHref} className="job-card-title block text-base leading-snug transition hover:text-[#003087] sm:text-lg">
+        <Link
+          to={detailHref}
+          className={`job-card-title block leading-snug transition hover:text-[#003087] ${
+            compact ? 'text-sm' : 'text-base sm:text-lg'
+          }`}
+        >
           {title}
         </Link>
       ) : (
-        <h2 className="job-card-title text-base leading-snug sm:text-lg">{title}</h2>
+        <h2
+          className={`job-card-title leading-snug ${compact ? 'text-sm' : 'text-base sm:text-lg'}`}
+        >
+          {title}
+        </h2>
       )}
 
-      {clientName && (
-        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+      {clientName && !compact && (
+        <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
           <Building2 className="h-3.5 w-3.5 shrink-0 text-[#003087]" aria-hidden />
           <span className="line-clamp-1">{clientName}</span>
         </p>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <span className="job-card-meta inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-[#003087]" aria-hidden />
+      <div className={`flex flex-wrap gap-1.5 ${compact ? 'mt-2' : 'mt-2.5'}`}>
+        <span
+          className={`job-card-meta inline-flex items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 text-[10px] ${
+            compact ? 'px-2 py-1' : 'min-h-[32px] gap-1.5 rounded-xl px-2.5 py-1.5'
+          }`}
+        >
+          <MapPin className="h-3 w-3 shrink-0 text-[#003087]" aria-hidden />
           <span className="line-clamp-1">{location}</span>
         </span>
-        <span className="job-card-meta inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-          <Briefcase className="h-3.5 w-3.5 shrink-0 text-[#003087]" aria-hidden />
+        <span
+          className={`job-card-meta inline-flex items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 text-[10px] ${
+            compact ? 'px-2 py-1' : 'min-h-[32px] gap-1.5 rounded-xl px-2.5 py-1.5'
+          }`}
+        >
+          <Briefcase className="h-3 w-3 shrink-0 text-[#003087]" aria-hidden />
           <span>{jobType}</span>
         </span>
       </div>
 
-      {description && (
-        <p className="job-card-desc mt-3 line-clamp-2">{description}</p>
+      {!compact && description && (
+        <p className="job-card-desc mt-2.5 line-clamp-2">{description}</p>
       )}
 
       {shownRequirements.length > 0 && (
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-800">
-            Kualifikasi
-          </p>
-          <ul className="mt-1.5 space-y-1 pl-0.5">
+        <div className={`border-t border-slate-100 ${compact ? 'mt-2.5 pt-2.5' : 'mt-3 pt-3'}`}>
+          {!compact && (
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-800">
+              Kualifikasi
+            </p>
+          )}
+          <ul className={`${compact ? 'space-y-0.5' : 'mt-1.5 space-y-1'} pl-0.5`}>
             {shownRequirements.map((req, idx) => (
               <li
                 key={idx}
-                className="flex items-start gap-1.5 text-xs leading-relaxed text-slate-600"
+                className="flex items-start gap-1.5 text-[11px] leading-snug text-slate-600"
               >
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#003087]" aria-hidden />
-                <span>{req}</span>
+                <span
+                  className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#003087]"
+                  aria-hidden
+                />
+                <span className="line-clamp-1">{req}</span>
               </li>
             ))}
             {hasMoreRequirements && (
-              <li className="text-[11px] font-medium text-slate-400">
-                +{requirements.length - maxRequirements} lainnya
+              <li className="text-[10px] font-semibold text-[#003087]">
+                +{requirements.length - reqLimit} lainnya
               </li>
             )}
           </ul>
         </div>
       )}
 
-      <div className="mt-4 flex gap-2.5 border-t border-slate-50 pt-4">
+      <div
+        className={`flex gap-2 border-t border-slate-50 ${compact ? 'mt-2.5 pt-2.5' : 'mt-3.5 pt-3.5'}`}
+      >
         {detailHref && (
           <Link
             to={detailHref}
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 transition hover:border-[#003087]/25 hover:bg-slate-50 active:scale-[0.98] sm:text-xs"
+            className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 transition hover:border-[#003087]/25 hover:bg-slate-50 active:scale-[0.98]"
           >
             Detail
           </Link>
         )}
-        {onOpenMap && (
+        {onOpenMap && !compact && (
           <button
             type="button"
             onClick={onOpenMap}
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#003087]/15 bg-blue-50 text-[11px] font-bold text-[#003087] transition hover:bg-blue-100 active:scale-[0.98] sm:text-xs"
+            className="flex min-h-[48px] flex-1 items-center justify-center gap-1 rounded-xl border border-[#003087]/15 bg-blue-50 text-[11px] font-bold text-[#003087] transition hover:bg-blue-100 active:scale-[0.98]"
           >
-            <Map className="h-4 w-4" aria-hidden />
+            <Map className="h-3.5 w-3.5" aria-hidden />
             Peta
           </button>
         )}
         <Link
           to={applyHref}
-          className="flex min-h-[44px] flex-[1.2] items-center justify-center gap-1.5 rounded-xl bg-[#003087] text-center text-[11px] font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98] sm:text-xs"
+          className="flex min-h-[48px] flex-[1.15] items-center justify-center gap-1 rounded-xl bg-[#003087] text-[11px] font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
         >
-          <Send className="h-4 w-4" aria-hidden />
+          <Send className="h-3.5 w-3.5" aria-hidden />
           Lamar
         </Link>
       </div>

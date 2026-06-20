@@ -198,7 +198,7 @@ export const VacanciesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowFilterModal(true)}
-            className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-2xl border border-slate-100 bg-white px-3.5 py-3 text-xs font-bold text-[#003087] shadow-sm transition hover:bg-blue-50 active:scale-[0.98]"
+            className="flex min-h-[48px] shrink-0 items-center gap-1.5 rounded-2xl border border-slate-100 bg-white px-3.5 text-xs font-bold text-[#003087] shadow-sm transition hover:bg-blue-50 active:scale-[0.98]"
             aria-label="Buka filter sektor"
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
@@ -233,7 +233,7 @@ export const VacanciesPage: React.FC = () => {
             <button
               type="button"
               onClick={resetFilters}
-              className="mt-4 min-h-[44px] rounded-xl border border-[#003087]/20 bg-blue-50 px-5 py-2.5 text-xs font-bold text-[#003087] transition active:scale-[0.98]"
+              className="mt-4 min-h-[48px] rounded-xl border border-[#003087]/20 bg-blue-50 px-5 text-xs font-bold text-[#003087] transition active:scale-[0.98]"
             >
               Reset pencarian & filter
             </button>
@@ -255,7 +255,7 @@ export const VacanciesPage: React.FC = () => {
               source="VacanciesPage"
               jobs={jobsToRender}
               showCount
-              className="space-y-4"
+              className="space-y-3"
               pagination={{ page: currentPage, onPageChange: handlePageChange }}
               renderItem={(job, display: JobDisplayFields) => {
                 const fields = resolveVacancyCardFields(job, display);
@@ -263,6 +263,7 @@ export const VacanciesPage: React.FC = () => {
 
                 return (
                   <VacancyJobCard
+                    compact
                     title={fields.title}
                     department={fields.department}
                     location={fields.location}
@@ -275,6 +276,7 @@ export const VacanciesPage: React.FC = () => {
                     onOpenMap={() => handleOpenMap(job.latitude, job.longitude, fields.location)}
                     detailHref={buildJobDetailHref(job)}
                     applyHref={buildJobApplyHref(job, fields.title)}
+                    maxRequirements={2}
                   />
                 );
               }}
@@ -342,7 +344,7 @@ export const VacanciesPage: React.FC = () => {
                     setSelectedFilter(f);
                     setShowFilterModal(false);
                   }}
-                  className={`w-full min-h-[44px] rounded-xl border px-4 py-3 text-left text-xs font-bold transition active:scale-[0.98] ${
+                  className={`w-full min-h-[48px] rounded-xl border px-4 text-left text-xs font-bold transition active:scale-[0.98] ${
                     selectedFilter === f
                       ? 'border-[#003087] bg-blue-50 text-[#003087]'
                       : 'border-slate-100 bg-white text-slate-700 hover:bg-slate-50'

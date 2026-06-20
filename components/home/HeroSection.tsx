@@ -42,8 +42,8 @@ function HeroBrand({
       <div
         className={`flex shrink-0 items-center justify-center rounded-2xl bg-white shadow-2xl ring-2 ring-white/50 ${
           compact
-            ? 'mb-3 h-[4.5rem] w-[4.5rem] p-2.5'
-            : 'mb-3.5 h-[5rem] w-[5rem] p-3 sm:mb-4 sm:h-[5.5rem] sm:w-[5.5rem] sm:p-3.5'
+            ? 'mb-3.5 h-[5.75rem] w-[5.75rem] p-3'
+            : 'mb-4 h-[6.25rem] w-[6.25rem] p-3.5 sm:h-[7.25rem] sm:w-[7.25rem] sm:p-4'
         }`}
       >
         <img
@@ -132,10 +132,10 @@ function HeroContent({
           </h1>
 
           <p
-            className={`mt-3.5 font-medium text-slate-100/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
+            className={`mt-3.5 font-medium text-slate-100/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
               compact
-                ? 'max-w-[20rem] text-[0.9rem] leading-relaxed'
-                : 'max-w-xl text-base leading-relaxed sm:text-lg lg:max-w-2xl'
+                ? 'max-w-[21rem] text-sm leading-relaxed'
+                : 'max-w-xl text-sm leading-relaxed sm:text-base lg:max-w-2xl'
             }`}
           >
             {t('home_hero_tagline')}
@@ -164,7 +164,7 @@ function HeroContent({
                 </div>
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3.5 text-sm font-extrabold text-slate-900 shadow-md transition hover:bg-amber-400 active:scale-[0.98] sm:w-auto sm:min-w-[6.5rem] sm:text-base"
+                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 text-sm font-extrabold text-slate-900 shadow-md transition hover:bg-amber-400 active:scale-[0.98] sm:w-auto sm:min-w-[6.5rem]"
                 >
                   {t('home_hero_search_btn')}
                 </button>
@@ -179,14 +179,14 @@ function HeroContent({
           >
             <Link
               to="/vacancies"
-              className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-[#003087] px-6 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-900 active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+              className="inline-flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#003087] px-6 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-900 active:scale-[0.98] sm:w-auto sm:px-8"
             >
               {t('home_cta_button')}
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
             <Link
               to="/apply"
-              className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl border-2 border-white/90 bg-white/95 px-6 py-3.5 text-sm font-extrabold text-[#003087] shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+              className="inline-flex w-full min-h-[48px] items-center justify-center rounded-2xl border-2 border-white/90 bg-white/95 px-6 text-sm font-extrabold text-[#003087] shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8"
             >
               {t('home_hero_apply_btn')}
             </Link>
