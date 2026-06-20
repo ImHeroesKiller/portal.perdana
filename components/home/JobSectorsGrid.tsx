@@ -1,14 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import { useLanguage } from '../../services/i18n';
 import { SectionHeader } from './SectionHeader';
-import { JOB_SECTORS } from './homeContent';
+import { JOB_SECTORS, QUICK_ACCESS_NAVY } from './homeContent';
 
 interface JobSectorsGridProps {
   variant?: 'mobile' | 'desktop';
   showHeader?: boolean;
 }
+
+const SCROLL_ROW =
+  'overflow-x-auto overscroll-x-contain touch-pan-x snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 export const JobSectorsGrid: React.FC<JobSectorsGridProps> = ({
   variant = 'mobile',
@@ -17,6 +19,12 @@ export const JobSectorsGrid: React.FC<JobSectorsGridProps> = ({
   const navigate = useNavigate();
   const { t } = useLanguage();
   const isMobile = variant === 'mobile';
+
+  const handleSectorClick = (filter: string, title: string) => {
+    navigate(`/vacancies?filter=${encodeURIComponent(filter)}`, {
+      state: { sectorLabel: title },
+    });
+  };
 
   return (
     <div>
@@ -28,40 +36,46 @@ export const JobSectorsGrid: React.FC<JobSectorsGridProps> = ({
         />
       )}
 
-      <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
-        {JOB_SECTORS.map((sector) => {
-          const Icon = sector.icon;
-          return (
-            <button
-              key={sector.id}
-              type="button"
-              onClick={() =>
-                navigate(`/vacancies?filter=${encodeURIComponent(sector.filter)}`)
-              }
-              className={`group flex w-full flex-col rounded-2xl border border-slate-100 bg-white text-left shadow-sm transition hover:border-blue-200 hover:shadow-md active:scale-[0.98] ${
-                isMobile ? 'min-h-[108px] p-3.5' : 'min-h-[116px] p-4'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div
-                  className={`flex shrink-0 items-center justify-center rounded-xl ${sector.iconBg} ${
-                    isMobile ? 'h-10 w-10' : 'h-11 w-11'
+      <div className={`-mx-4 ${SCROLL_ROW} px-4 pb-0.5`}>
+        <div className={`flex w-max min-w-full ${isMobile ? 'gap-2.5' : 'gap-3'}`}>
+          {JOB_SECTORS.map((sector) => {
+            const Icon = sector.icon;
+            const label = t(sector.titleKey);
+
+            return (
+              <button
+                key={sector.id}
+                type="button"
+                onClick={() => handleSectorClick(sector.filter, label)}
+                aria-label={`${label} — ${t(sector.descKey)}`}
+                className={`group inline-flex shrink-0 snap-start items-center rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all duration-200 hover:border-[#003087]/35 hover:bg-[#003087]/[0.05] hover:shadow-md active:scale-[0.97] active:border-[#003087]/50 active:bg-[#003087]/10 ${
+                  isMobile
+                    ? 'min-h-[44px] gap-2 px-3 py-2.5'
+                    : 'min-h-[48px] gap-2.5 px-3.5 py-3'
+                }`}
+              >
+                <span
+                  className={`flex shrink-0 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-[#003087]/10 transition-colors group-hover:bg-[#003087]/10 group-hover:ring-[#003087]/25 ${
+                    isMobile ? 'h-8 w-8' : 'h-9 w-9'
                   }`}
                 >
-                  <Icon className={`${sector.iconColor} ${isMobile ? 'h-5 w-5' : 'h-5 w-5'}`} />
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#0056C6]" />
-              </div>
-
-              <p className={`mt-2.5 font-extrabold leading-tight text-slate-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {t(sector.titleKey)}
-              </p>
-              <p className={`mt-1 leading-snug text-slate-500 ${isMobile ? 'text-[10px] line-clamp-2' : 'text-xs line-clamp-2'}`}>
-                {t(sector.descKey)}
-              </p>
-            </button>
-          );
-        })}
+                  <Icon
+                    className={isMobile ? 'h-4 w-4' : 'h-[1.125rem] w-[1.125rem]'}
+                    style={{ color: QUICK_ACCESS_NAVY }}
+                    aria-hidden="true"
+                  />
+                </span>
+                <span
+                  className={`whitespace-nowrap font-bold leading-none text-slate-900 ${
+                    isMobile ? 'pr-0.5 text-xs' : 'text-sm'
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
