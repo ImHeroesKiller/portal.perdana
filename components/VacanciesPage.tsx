@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients, useForceRefresh } from '../hooks/useDbQueries';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobVacancy } from '../types';
@@ -19,6 +19,7 @@ import {
 
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
   const {
     data: jobs = [],
@@ -64,6 +65,11 @@ export const VacanciesPage: React.FC = () => {
     setBookmarkedJobs(updated);
     localStorage.setItem('bookmarked_jobs', JSON.stringify(updated));
   };
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) setSearchQuery(q);
+  }, [searchParams]);
 
   useEffect(() => {
     setFilteredJobs(jobs);

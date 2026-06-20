@@ -2,13 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Client, Project } from '../types';
 import { getCurrentUser } from '../services/auth';
+import { HeroSection } from './home/HeroSection';
 import { 
   Briefcase, 
   Users, 
   Handshake, 
   Folder, 
-  Search, 
-  ArrowRight, 
+  ArrowRight,
   Sparkles, 
   LogIn, 
   UserCheck, 
@@ -40,78 +40,20 @@ interface MobileHomePageProps {
 
 export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   stats,
-  language,
-  t
+  searchQuery,
+  setSearchQuery,
 }) => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
 
-  const slideshowImages = [
-    "/assets/site_workers.jpg",
-    "/assets/site_bricklaying.jpg",
-    "/assets/site_shoveling.jpg"
-  ];
-  const [activeImageIdx, setActiveImageIdx] = React.useState(0);
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveImageIdx((prev) => (prev + 1) % slideshowImages.length);
-    }, 3500);
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAFC] pb-6 font-sans antialiased text-slate-800">
-      
-      {/* 1. Hero / Header Area matching visual reference */}
-      <div className="px-4 pt-4">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-blue-900 to-blue-950 text-white min-h-[190px] p-5 flex items-center justify-between shadow-xs">
-          
-          {/* Background subtle light effects */}
-          <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
-          
-          {/* Left Text Column */}
-          <div className="flex-1 pr-4 z-10">
-            <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest block mb-1">
-              SELAMAT DATANG
-            </span>
-            <h2 className="text-xl font-extrabold text-white leading-tight">
-              {currentUser ? `Halo, ${currentUser.username}` : (language === 'id' ? 'Pengunjung' : 'Guest')}
-            </h2>
-            <h2 className="text-xl font-extrabold text-[#00E5FF] leading-tight">
-              Perdana Adi Yuda
-            </h2>
-            <p className="text-[10px] text-slate-300 mt-2 leading-relaxed max-w-[200px]">
-              Satu pintu rekrutmen profesional, pelatihan kerja, dan penempatan alih daya.
-            </p>
-            
-            {/* Search Trigger Button inside Hero */}
-            <button 
-              onClick={() => navigate('/vacancies')}
-              className="mt-4 inline-flex items-center gap-2 bg-[#0056C6] hover:bg-blue-700 text-white font-bold text-xs py-2 px-4 rounded-xl transition duration-150 active:scale-[0.98] shadow-sm cursor-pointer"
-            >
-              Cari Lowongan
-              <Search className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Right Building Image Column with smooth slide/fade transition */}
-          <div className="w-[120px] h-[140px] rounded-2xl overflow-hidden relative border border-white/10 shrink-0 shadow-sm bg-blue-950">
-            {slideshowImages.map((img, idx) => (
-              <img 
-                key={idx}
-                src={img} 
-                alt={`Office PT PAP ${idx + 1}`} 
-                className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ${
-                  activeImageIdx === idx ? 'opacity-100' : 'opacity-0'
-                }`}
-                referrerPolicy="no-referrer"
-              />
-            ))}
-          </div>
-
-        </div>
-      </div>
+      <HeroSection
+        compact
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        jobCount={stats.jobs}
+      />
 
       {/* 2. Balanced Simple Statistics Cards (Row layout) */}
       <div className="px-4 mt-4">

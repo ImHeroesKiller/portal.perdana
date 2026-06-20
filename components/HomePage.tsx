@@ -7,6 +7,7 @@ import { JobVacancy } from '../types';
 import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOfficeIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../services/i18n';
 import { MobileHomePage } from './MobileHomePage';
+import { HeroSection } from './home/HeroSection';
 
 export const HomePage: React.FC = () => {
   const {
@@ -82,14 +83,6 @@ export const HomePage: React.FC = () => {
     }));
   };
 
-  const scrollToVacancies = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    const element = document.getElementById('vacancies');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   if (isMobile) {
     return (
       <MobileHomePage
@@ -108,48 +101,21 @@ export const HomePage: React.FC = () => {
     );
   }
 
+  const handleHeroSearch = () => {
+    const element = document.getElementById('vacancies');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <div className="relative bg-gray-900 text-white">
-        <div className="absolute inset-0 overflow-hidden">
-          <img
-            src="/assets/site_scaffolding.jpg"
-            alt="Site project background"
-            className="w-full h-full object-cover object-center"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-slate-900 opacity-75"></div>
-        </div>
-        <div className="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <img 
-            src="/assets/logo.png" 
-            alt="Logo PT Perdana Adi Yuda" 
-            className="h-24 w-auto mb-8 bg-white p-4 rounded-xl shadow-2xl"
-          />
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl mb-6 drop-shadow-lg text-white">
-            {t('home_hero_title')} <br/> PT Perdana Adi Yuda
-          </h1>
-          <p className="mt-6 text-xl text-gray-300 max-w-3xl">
-            {t('home_hero_subtitle')}
-          </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
-             <a 
-               href="#vacancies" 
-               onClick={scrollToVacancies}
-               className="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10 transition-colors shadow-lg cursor-pointer"
-             >
-               {t('home_cta_button')}
-             </a>
-             <Link 
-               to="/services"
-               className="px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-white hover:text-gray-900 md:py-4 md:text-lg md:px-10 transition-colors shadow-lg"
-             >
-               {language === 'id' ? 'Layanan Kami' : 'Our Services'}
-             </Link>
-          </div>
-        </div>
-      </div>
+      <HeroSection
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={handleHeroSearch}
+        jobCount={stats.jobs}
+      />
 
       {/* Score Card Section */}
       <div className="relative -mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
