@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useHomePageData } from '../hooks/useDbQueries';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { filterJobsBySearch } from '../lib/job-filters';
+import type { JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
 import { JobVacancy } from '../types';
@@ -151,22 +152,26 @@ export const HomePage: React.FC = () => {
             }
             onRetry={() => { void refetchJobs(); }}
           >
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <JobList source="HomePage" jobs={filteredJobs}>
-              {(job) => {
+            <JobList
+              source="HomePage"
+              jobs={filteredJobs}
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              renderItem={(job, display: JobDisplayFields) => {
                 const isExpanded = expandedRequirements[job.id];
-                const displayedRequirements = isExpanded ? job.requirements : job.requirements.slice(0, 3);
-                const hasMore = job.requirements.length > 3;
+                const displayedRequirements = isExpanded
+                  ? display.requirements
+                  : display.requirements.slice(0, 3);
+                const hasMore = display.requirements.length > 3;
 
                 return (
-                <div key={job.id || job.title} className="flex flex-col bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden border border-gray-100">
-                  <div className="p-6 flex-1">
-                    <div className="flex justify-between items-start">
+                <div className="flex flex-col overflow-hidden rounded-lg border border-gray-100 bg-white shadow-md transition-shadow hover:shadow-xl">
+                  <div className="flex-1 p-6">
+                    <div className="flex items-start justify-between">
                         <div>
-                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mb-2">
-                                {job.department}
+                            <span className="mb-2 inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-sm font-medium text-blue-800">
+                                {display.department}
                             </span>
-                            <h3 className="text-xl font-bold text-gray-900">{job.title}</h3>
+                            <h3 className="text-xl font-bold text-gray-900">{display.title}</h3>
                             {job.clientId && (
                                 <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                                     <BuildingOfficeIcon className="h-4 w-4" /> 
@@ -179,21 +184,21 @@ export const HomePage: React.FC = () => {
                     <div className="mt-4 space-y-2 text-sm text-gray-500">
                          <div className="flex items-center gap-2">
                              <MapPinIcon className="h-4 w-4 text-gray-400" />
-                             <span>{job.location}</span>
+                             <span>{display.location}</span>
                          </div>
                          <div className="flex items-center gap-2">
                              <BriefcaseIcon className="h-4 w-4 text-gray-400" />
-                             <span>{job.type}</span>
+                             <span>{display.type}</span>
                          </div>
                     </div>
 
                     <div className="mt-4">
-                        <p className="text-gray-600 line-clamp-3 text-sm">{job.description}</p>
+                        <p className="line-clamp-3 text-sm text-gray-600">{display.description}</p>
                     </div>
 
                     <div className="mt-4">
-                        <div className="flex justify-between items-center mb-2">
-                             <p className="font-semibold text-sm text-gray-900">{t('home_qualifications')}</p>
+                        <div className="mb-2 flex items-center justify-between">
+                             <p className="text-sm font-semibold text-gray-900">{t('home_qualifications')}</p>
                              {hasMore && (
                                 <button 
                                     onClick={() => toggleRequirements(job.id)}
@@ -213,20 +218,20 @@ export const HomePage: React.FC = () => {
                                 <li key={idx}>{req}</li>
                             ))}
                             {!isExpanded && hasMore && (
-                                <li className="list-none text-gray-400 text-xs italic mt-1">... +{job.requirements.length - 3} lainnya</li>
+                                <li className="mt-1 list-none text-xs italic text-gray-400">... +{display.requirements.length - 3} lainnya</li>
                             )}
                         </ul>
                     </div>
                   </div>
                   <div className="p-6 bg-gray-50 border-t border-gray-100 mt-auto flex gap-3">
                     <button
-                        onClick={() => openMap(job.latitude, job.longitude, job.location)}
+                        onClick={() => openMap(job.latitude, job.longitude, display.location)}
                         className="flex-1 text-center bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded transition-colors text-sm"
                     >
                         {t('home_btn_location')}
                     </button>
                     <Link
-                      to={`/apply?position=${encodeURIComponent(job.title)}`}
+                      to={`/apply?position=${encodeURIComponent(display.title)}`}
                       className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors text-sm"
                     >
                       {t('home_btn_apply')}
@@ -234,8 +239,7 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
               )}}
-            </JobList>
-            </div>
+            />
           </DataFetchState>
         </div>
       </div>

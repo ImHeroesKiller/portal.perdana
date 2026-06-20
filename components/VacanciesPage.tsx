@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
-import { filterJobsBySearch, filterJobsBySector } from '../lib/job-filters';
+import { applyVacancyFilters } from '../lib/job-filters';
+import type { JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
 import { useLanguage } from '../services/i18n';
@@ -29,7 +30,7 @@ export const VacanciesPage: React.FC = () => {
     isError,
     error,
     refetch,
-  } = useJobs({ activeOnly: true });
+  } = useJobs();
   const { data: clients = [] } = useClients();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,21 +74,40 @@ export const VacanciesPage: React.FC = () => {
     }
   }, [searchParams]);
 
-  const filteredJobs = useMemo(() => {
-    const searched = filterJobsBySearch(jobs, searchQuery);
-    return filterJobsBySector(searched, selectedFilter);
-  }, [jobs, searchQuery, selectedFilter]);
+  const { jobs: filteredJobs, filterRelaxed } = useMemo(
+    () => applyVacancyFilters(jobs, searchQuery, selectedFilter),
+    [jobs, searchQuery, selectedFilter]
+  );
+
+  const showLoading = loading && allJobs.length === 0;
+  const hasNoJobsAtAll = !showLoading && !isError && allJobs.length === 0;
+  const hasJobsButFilteredEmpty =
+    !showLoading && !isError && allJobs.length > 0 && filteredJobs.length === 0 && !filterRelaxed;
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedFilter('Semua');
+  };
 
   useEffect(() => {
     console.log('[VacanciesPage] jobs state', {
       raw: allJobs.length,
-      visible: jobs.length,
-      filtered: filteredJobs.length,
-      loading,
+      hookData: jobs.length,
+      rendered: filteredJobs.length,
+      showLoading,
+      filterRelaxed,
       searchQuery,
       selectedFilter,
     });
-  }, [allJobs.length, jobs.length, filteredJobs.length, loading, searchQuery, selectedFilter]);
+  }, [
+    allJobs.length,
+    jobs.length,
+    filteredJobs.length,
+    showLoading,
+    filterRelaxed,
+    searchQuery,
+    selectedFilter,
+  ]);
 
   const getClientName = (clientId?: string) => {
     return clients.find(c => c.id === clientId)?.name || 'PT Indonesia Morowali Industrial Park (IMIP)';
@@ -168,25 +188,50 @@ export const VacanciesPage: React.FC = () => {
           })}
         </div>
 
+        {filterRelaxed && filteredJobs.length > 0 && (
+          <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+            Filter terlalu ketat — menampilkan semua {filteredJobs.length} lowongan.
+            <button type="button" onClick={resetFilters} className="ml-2 font-bold underline">
+              Reset filter
+            </button>
+          </div>
+        )}
+
         {/* 4. Active Job Vacancies output */}
+        {hasJobsButFilteredEmpty && (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+            <p className="text-sm font-medium text-slate-500">
+              Tidak ada lowongan yang cocok dengan kata kunci atau filter Anda.
+            </p>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700"
+            >
+              Reset pencarian & filter
+            </button>
+          </div>
+        )}
+
         <DataFetchState
-          isLoading={loading}
+          isLoading={showLoading}
+          isFetching={loading && allJobs.length > 0}
           error={isError ? error : null}
-          isEmpty={!loading && !isError && filteredJobs.length === 0}
-          emptyMessage="Tidak ada lowongan yang cocok dengan kata kunci atau filter Anda."
+          isEmpty={hasNoJobsAtAll}
+          emptyMessage="Belum ada lowongan tersedia saat ini."
           onRetry={() => { void refetch(); }}
         >
-          <div className="mt-2 space-y-4">
-            <JobList source="VacanciesPage" jobs={filteredJobs}>
-            {(job) => {
+          <JobList
+            source="VacanciesPage"
+            jobs={filteredJobs}
+            showCount
+            className="mt-2 space-y-4"
+            renderItem={(job, display: JobDisplayFields) => {
               const isBookmarked = bookmarkedJobs.includes(job.id);
-              const tagLabel = job.department ? job.department.toUpperCase() : 'OPERATOR';
+              const tagLabel = display.department.toUpperCase();
 
               return (
-                <div 
-                  key={job.id || job.title} 
-                  className="bg-white rounded-3xl border border-slate-100 shadow-xs p-5 hover:shadow-md transition duration-240 relative overflow-hidden"
-                >
+                <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-xs transition duration-240 hover:shadow-md">
                   
                   {/* Tag and Bookmark Row */}
                   <div className="flex justify-between items-start mb-3">
@@ -207,37 +252,37 @@ export const VacanciesPage: React.FC = () => {
 
                   {/* Title and Client */}
                   <div className="mb-3.5">
-                    <h2 className="text-base font-black text-slate-900 leading-tight mb-1">{job.title}</h2>
-                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                    <h2 className="mb-1 text-base font-black leading-tight text-slate-900">{display.title}</h2>
+                    <p className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
                       🏢 {getClientName(job.clientId)}
                     </p>
                   </div>
 
                   {/* High Quality Specification Pills */}
-                  <div className="flex flex-wrap gap-2 mt-3.5 mb-4">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F8FAFC] border border-slate-100 rounded-xl text-[10px] text-slate-600 font-bold">
+                  <div className="mb-4 mt-3.5 flex flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-[#F8FAFC] px-3 py-1.5 text-[10px] font-bold text-slate-600">
                       <MapPin className="h-3.5 w-3.5 text-blue-500" />
-                      <span>{job.location}</span>
+                      <span>{display.location}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F8FAFC] border border-slate-100 rounded-xl text-[10px] text-slate-600 font-bold">
+                    <div className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-[#F8FAFC] px-3 py-1.5 text-[10px] font-bold text-slate-600">
                       <Briefcase className="h-3.5 w-3.5 text-orange-400" />
-                      <span>{job.type}</span>
+                      <span>{display.type}</span>
                     </div>
                   </div>
 
                   {/* Description */}
-                  {job.description && (
-                    <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                      {job.description}
+                  {display.description && (
+                    <p className="mb-4 text-xs leading-relaxed text-slate-500">
+                      {display.description}
                     </p>
                   )}
 
                   {/* Qualifications */}
-                  {job.requirements && job.requirements.length > 0 && (
+                  {display.requirements.length > 0 && (
                     <div className="mt-2.5 pt-3 border-t border-slate-150/50">
                       <p className="font-extrabold text-[11px] text-slate-800 mb-1.5">Kualifikasi:</p>
                       <ul className="text-xs text-slate-600 space-y-1 pl-1">
-                        {job.requirements.map((req, idx) => (
+                        {display.requirements.map((req, idx) => (
                           <li key={idx} className="flex items-start gap-1 leading-relaxed">
                             <span className="text-blue-500 mt-1">•</span>
                             <span>{req}</span>
@@ -252,7 +297,7 @@ export const VacanciesPage: React.FC = () => {
                     
                     {/* Maps */}
                     <button
-                      onClick={() => handleOpenMap(job.latitude, job.longitude, job.location)}
+                      onClick={() => handleOpenMap(job.latitude, job.longitude, display.location)}
                       className="flex-1 py-3 bg-[#EBF5FF] hover:bg-blue-100 active:scale-[0.98] text-blue-700 font-black rounded-2xl text-[11px] tracking-wide transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Map className="h-3.5 w-3.5" />
@@ -261,7 +306,7 @@ export const VacanciesPage: React.FC = () => {
 
                     {/* Apply now */}
                     <Link
-                      to={`/apply?position=${encodeURIComponent(job.title)}`}
+                      to={`/apply?position=${encodeURIComponent(display.title)}`}
                       className="flex-1.5 py-3 bg-[#0462E9] hover:bg-blue-700 active:scale-[0.98] text-white font-black rounded-2xl text-[11px] tracking-wide text-center transition duration-150 flex items-center justify-center gap-1.5 shadow-xs"
                     >
                       <Send className="h-3.5 w-3.5" />
@@ -273,8 +318,7 @@ export const VacanciesPage: React.FC = () => {
                 </div>
               );
             }}
-            </JobList>
-          </div>
+          />
         </DataFetchState>
 
         {/* 5. Bottom document notification callout */}

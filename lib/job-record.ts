@@ -59,13 +59,13 @@ function parseJobType(value: unknown): JobVacancy['type'] {
 
 /** Normalize Firestore job doc for frontend (JobVacancy type). */
 export function normalizeJobFromFirestore(raw: Record<string, unknown>): JobVacancy {
-  const id = String(raw.id ?? '');
+  const id = String(raw.id ?? raw._id ?? '');
 
   return {
     id,
-    title: String(raw.title ?? 'Lowongan'),
-    department: String(raw.department ?? ''),
-    location: String(raw.location ?? ''),
+    title: String(raw.title ?? raw.name ?? raw.position ?? raw.jobTitle ?? 'Lowongan'),
+    department: String(raw.department ?? raw.dept ?? raw.sector ?? 'Umum'),
+    location: String(raw.location ?? raw.lokasi ?? raw.site ?? ''),
     latitude: raw.latitude != null && raw.latitude !== '' ? Number(raw.latitude) : undefined,
     longitude: raw.longitude != null && raw.longitude !== '' ? Number(raw.longitude) : undefined,
     clientId: raw.clientId != null && raw.clientId !== '' ? String(raw.clientId) : undefined,
