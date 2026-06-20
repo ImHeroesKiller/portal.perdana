@@ -27,6 +27,8 @@ import {
   PageHero,
   PageTopBar,
 } from '../layout/MarketingPageLayout';
+import { useJobSeo } from '../../hooks/usePageSeo';
+import { useLanguage } from '../../services/i18n';
 
 type MetaItem = {
   label: string;
@@ -80,6 +82,7 @@ function ApplyButton({
 export const JobDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -106,6 +109,8 @@ export const JobDetailPage: React.FC = () => {
   }, [clients, fields?.clientId]);
 
   const applyHref = job ? buildJobApplyHref(job, fields?.title) : '/apply';
+
+  useJobSeo(job, language);
 
   const metaItems: MetaItem[] = fields
     ? [

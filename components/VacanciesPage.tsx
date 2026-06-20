@@ -9,6 +9,14 @@ import { VacancyFilterChips } from './jobs/VacancyFilterChips';
 import { VacancyJobCard, resolveVacancyCardFields } from './jobs/VacancyJobCard';
 import { buildJobApplyHref, buildJobDetailHref } from '../lib/job-display';
 import { VACANCY_FILTER_OPTIONS, type VacancyFilter } from './home/homeContent';
+import { setSeoOverride } from '../hooks/usePageSeo';
+import {
+  buildJobListJsonLd,
+  getOrganizationJsonLd,
+  getWebSiteJsonLd,
+  resolvePageSeo,
+} from '../lib/seo';
+import { useLanguage } from '../services/i18n';
 import {
   ChevronLeft,
   Search,
@@ -19,6 +27,7 @@ import {
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -36,6 +45,17 @@ export const VacanciesPage: React.FC = () => {
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
   const [mapModalData, setMapModalData] = useState<{ lat: number; lng: number; title: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const locale = language === 'en' ? 'en' : 'id';
+    const base = resolvePageSeo('/vacancies', '', locale);
+    const activeJobs = jobs.filter((j) => j.isActive);
+    setSeoOverride({
+      ...base,
+      jsonLd: [getOrganizationJsonLd(), getWebSiteJsonLd(), buildJobListJsonLd(activeJobs)],
+    });
+    return () => setSeoOverride(null);
+  }, [jobs, language]);
 
   useEffect(() => {
     const saved = localStorage.getItem('bookmarked_jobs');

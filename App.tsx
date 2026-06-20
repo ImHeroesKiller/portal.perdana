@@ -12,7 +12,9 @@ import { NavBar } from './components/NavBar';
 import { BottomNavigation } from './components/BottomNavigation';
 import { RouteFallback } from './components/layout/RouteFallback';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { useGoogleAnalytics } from './hooks/useGoogleAnalytics';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
+import { RouteSeo } from './components/seo/RouteSeo';
 import { LanguageProvider } from './services/i18n';
 
 const RecruitmentForm = lazy(() =>
@@ -50,10 +52,12 @@ export default function App() {
 }
 
 function AppShell() {
+  useGoogleAnalytics();
   const isMobile = useIsMobile();
 
   return (
     <>
+      <RouteSeo />
       <NavBar />
       <main
         className={`min-h-screen bg-[#F1F5F9] md:bg-gray-50 ${

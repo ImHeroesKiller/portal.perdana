@@ -1,0 +1,26 @@
+# https://portal.perada.net
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /#/admin
+Disallow: /#/portal
+Disallow: /#/settings
+Disallow: /#/interview-session/
+
+# Hash routes — allow public marketing pages
+Allow: /#/
+Allow: /#/vacancies
+Allow: /#/about
+Allow: /#/contact
+Allow: /#/services
+Allow: /#/apply
+Allow: /#/help
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://portal.perada.net/sitemap.xml
+Host: portal.perada.net
