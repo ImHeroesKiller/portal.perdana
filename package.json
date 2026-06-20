@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "node scripts/optimize-images.mjs && vite build && node scripts/build-vercel-api.mjs",
+    "build": "node scripts/optimize-images.mjs && node scripts/generate-pwa-icons.mjs && vite build && node scripts/build-vercel-api.mjs",
+    "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
     "optimize:images": "node scripts/optimize-images.mjs",
     "build:api": "node scripts/build-vercel-api.mjs",
     "build:server": "node scripts/build-server.mjs",
@@ -42,7 +43,6 @@
     "tailwindcss": "^3.4.1",
     "tsx": "^4.22.4",
     "typescript": "^5.2.2",
-    "vite": "^5.1.0",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite": "^5.1.0"
   }
 }

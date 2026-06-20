@@ -1,48 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['assets/logo.png', 'assets/hero/**/*'],
-      manifest: {
-        name: 'PT Perdana Adi Yuda — Portal Rekrutmen',
-        short_name: 'Perdana',
-        description: 'Portal rekrutmen dan layanan tenaga kerja PT Perdana Adi Yuda',
-        theme_color: '#003087',
-        background_color: '#f8fafc',
-        display: 'standalone',
-        start_url: './',
-        scope: './',
-        icons: [
-          {
-            src: '/assets/logo.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'osm-tiles',
-              expiration: { maxEntries: 80, maxAgeSeconds: 7 * 24 * 60 * 60 },
-            },
-          },
-        ],
-      },
-    }),
-  ],
+  plugins: [react()],
   build: {
     rollupOptions: {
       external: ['firebase-admin', 'firebase-admin/app', 'firebase-admin/firestore'],
