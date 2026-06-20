@@ -8,6 +8,9 @@ import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOffi
 import { useLanguage } from '../services/i18n';
 import { MobileHomePage } from './MobileHomePage';
 import { HeroSection } from './home/HeroSection';
+import { StatsCards } from './home/StatsCards';
+import { QuickAccessGrid } from './home/QuickAccessGrid';
+import { JobSectorsGrid } from './home/JobSectorsGrid';
 
 export const HomePage: React.FC = () => {
   const {
@@ -117,26 +120,11 @@ export const HomePage: React.FC = () => {
         jobCount={stats.jobs}
       />
 
-      {/* Score Card Section */}
-      <div className="relative -mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-              <div className="text-center p-4 border-r border-gray-100 last:border-0">
-                  <p className="text-4xl font-bold text-blue-600">{stats.jobs}</p>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mt-1">{t('home_stat_pos')}</p>
-              </div>
-              <div className="text-center p-4 border-r border-gray-100 last:border-0">
-                  <p className="text-4xl font-bold text-green-600">{stats.applicants}</p>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mt-1">{t('home_stat_app')}</p>
-              </div>
-              <div className="text-center p-4 border-r border-gray-100 last:border-0">
-                  <p className="text-4xl font-bold text-orange-600">{stats.clients}</p>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mt-1">{t('home_stat_cli')}</p>
-              </div>
-              <div className="text-center p-4">
-                  <p className="text-4xl font-bold text-purple-600">{stats.projects}</p>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mt-1">{t('home_stat_proj')}</p>
-              </div>
-          </div>
+      {/* Stats + Quick Access + Sectors */}
+      <div className="relative z-10 -mt-12 max-w-7xl mx-auto space-y-10 px-4 pb-4 sm:px-6 lg:px-8">
+        <StatsCards variant="desktop" stats={stats} loading={loading} />
+        <QuickAccessGrid variant="desktop" stats={stats} />
+        <JobSectorsGrid variant="desktop" />
       </div>
 
       {/* Job Listings Section */}

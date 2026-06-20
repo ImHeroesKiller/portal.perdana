@@ -66,9 +66,16 @@ export const VacanciesPage: React.FC = () => {
     localStorage.setItem('bookmarked_jobs', JSON.stringify(updated));
   };
 
+  const FILTER_OPTIONS = ['Semua', 'Operasional', 'Administrasi', 'Teknis', 'Lainnya'] as const;
+
   useEffect(() => {
     const q = searchParams.get('q');
     if (q) setSearchQuery(q);
+
+    const filter = searchParams.get('filter');
+    if (filter && FILTER_OPTIONS.includes(filter as (typeof FILTER_OPTIONS)[number])) {
+      setSelectedFilter(filter as (typeof FILTER_OPTIONS)[number]);
+    }
   }, [searchParams]);
 
   useEffect(() => {

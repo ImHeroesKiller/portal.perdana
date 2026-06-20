@@ -1,28 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Client, Project } from '../types';
-import { getCurrentUser } from '../services/auth';
 import { HeroSection } from './home/HeroSection';
-import { 
-  Briefcase, 
-  Users, 
-  Handshake, 
-  Folder, 
-  ArrowRight,
-  Sparkles, 
-  LogIn, 
-  UserCheck, 
-  Info, 
-  Phone, 
-  Factory, 
-  Building2, 
-  ShieldCheck, 
-  Brush, 
-  Utensils, 
-  Megaphone, 
-  Calendar,
-  Construction
-} from 'lucide-react';
+import { StatsCards } from './home/StatsCards';
+import { QuickAccessGrid } from './home/QuickAccessGrid';
+import { JobSectorsGrid } from './home/JobSectorsGrid';
+import { SectionHeader } from './home/SectionHeader';
+import { ArrowRight, Megaphone, Calendar } from 'lucide-react';
 
 interface MobileHomePageProps {
   jobs: any[];
@@ -40,14 +24,34 @@ interface MobileHomePageProps {
 
 export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   stats,
+  loading,
   searchQuery,
   setSearchQuery,
+  t,
+  language,
 }) => {
   const navigate = useNavigate();
-  const currentUser = getCurrentUser();
+
+  const handleStatClick = (key: keyof typeof stats) => {
+    if (key === 'jobs') {
+      navigate('/vacancies');
+      return;
+    }
+    if (key === 'projects' || key === 'clients') {
+      navigate('/about');
+      return;
+    }
+    navigate('/vacancies');
+  };
+
+  const newsDate = new Date().toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F8FAFC] pb-6 font-sans antialiased text-slate-800">
+    <div className="flex min-h-screen flex-col bg-[#F1F5F9] pb-8 font-sans antialiased text-slate-800">
       <HeroSection
         compact
         searchQuery={searchQuery}
@@ -55,234 +59,59 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
         jobCount={stats.jobs}
       />
 
-      {/* 2. Balanced Simple Statistics Cards (Row layout) */}
-      <div className="px-4 mt-4">
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-xs grid grid-cols-4 gap-1 antialiased">
-          
-          {/* Card 1: Posisi */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-1">
-              <Briefcase className="w-4 h-4" />
-            </div>
-            <span className="text-base font-black text-[#0056C6] leading-none mt-1">{stats.jobs}</span>
-            <span className="text-[8px] text-slate-400 font-bold uppercase mt-1">Posisi</span>
-          </div>
+      <div className="mt-4 space-y-6 px-4">
+        <StatsCards
+          variant="mobile"
+          stats={stats}
+          loading={loading}
+          onStatClick={handleStatClick}
+        />
 
-          {/* Card 2: Pelamar */}
-          <div className="flex flex-col items-center text-center border-l border-slate-100">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-1">
-              <Users className="w-4 h-4" />
-            </div>
-            <span className="text-base font-black text-emerald-600 leading-none mt-1">{stats.applicants}</span>
-            <span className="text-[8px] text-slate-400 font-bold uppercase mt-1">Pelamar</span>
-          </div>
+        <QuickAccessGrid variant="mobile" stats={stats} />
 
-          {/* Card 3: Mitra */}
-          <div className="flex flex-col items-center text-center border-l border-slate-100">
-            <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 mb-1">
-              <Handshake className="w-4 h-4" />
-            </div>
-            <span className="text-base font-black text-amber-600 leading-none mt-1">{stats.clients}</span>
-            <span className="text-[8px] text-slate-400 font-bold uppercase mt-1">Mitra Bisnis</span>
-          </div>
+        <JobSectorsGrid variant="mobile" />
 
-          {/* Card 4: Proyek */}
-          <div className="flex flex-col items-center text-center border-l border-slate-100">
-            <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 mb-1">
-              <Folder className="w-4 h-4" />
-            </div>
-            <span className="text-base font-black text-purple-600 leading-none mt-1">{stats.projects}</span>
-            <span className="text-[8px] text-slate-400 font-bold uppercase mt-1">Proyek</span>
-          </div>
+        {/* Informasi Terkini */}
+        <div>
+          <SectionHeader
+            compact
+            title={t('home_news_section_title')}
+            action={
+              <button
+                type="button"
+                onClick={() => navigate('/about')}
+                className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#0056C6]"
+              >
+                {language === 'id' ? 'Lihat semua' : 'See all'}
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            }
+          />
 
-        </div>
-      </div>
+          <div className="flex items-start gap-3 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 text-[#0056C6]">
+              <Megaphone className="h-7 w-7 -rotate-12" />
+            </div>
 
-      {/* 3. LAYANAN & MENU UTAMA Grid layout */}
-      <div className="px-4 mt-6">
-        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest pl-1 mb-3">
-          LAYANAN & MENU UTAMA
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-3">
-          
-          {/* Card: Lihat Lowongan */}
-          <button 
-            onClick={() => navigate('/vacancies')}
-            className="bg-white border border-slate-100 hover:bg-blue-50/10 active:scale-[0.98] transition-all p-3.5 rounded-2xl shadow-xs flex flex-col justify-between items-start text-left h-[110px] w-full relative"
-          >
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0056C6] flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5" />
-            </div>
-            <div className="mt-2 pr-6">
-              <span className="text-xs font-extrabold text-slate-900 block leading-tight">Lihat Lowongan</span>
-              <span className="text-[9px] text-slate-400 mt-1 block leading-snug">Cari kerja sesuai minat dan keahlian Anda</span>
-            </div>
-            <div className="absolute bottom-3.5 right-3.5 w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-[#0462E9]">
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </button>
-
-          {/* Card: Masuk / Portal */}
-          <button 
-            onClick={() => navigate(currentUser ? (currentUser.role === 'admin' ? '/admin' : '/portal') : '/login')}
-            className="bg-white border border-slate-100 hover:bg-blue-50/10 active:scale-[0.98] transition-all p-3.5 rounded-2xl shadow-xs flex flex-col justify-between items-start text-left h-[110px] w-full relative"
-          >
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0462E9] flex items-center justify-center">
-              {currentUser ? <UserCheck className="w-4.5 h-4.5" /> : <LogIn className="w-4.5 h-4.5" />}
-            </div>
-            <div className="mt-2 pr-6">
-              <span className="text-xs font-extrabold text-slate-900 block leading-tight">
-                {currentUser ? 'Portal Saya' : 'Masuk'}
+            <div className="min-w-0 flex-1">
+              <span className="inline-flex rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-800">
+                {t('home_news_badge')}
               </span>
-              <span className="text-[9px] text-slate-400 mt-1 block leading-snug">
-                {currentUser ? 'Kelola Pekerjaan Anda' : 'Masuk Ke Portal'}
-              </span>
+              <h4 className="mt-1.5 text-sm font-extrabold leading-snug text-slate-950">
+                {t('home_news_title')}
+              </h4>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                {t('home_news_desc')}
+              </p>
             </div>
-            <div className="absolute bottom-3.5 right-3.5 w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-[#0462E9]">
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </button>
 
-          {/* Card: Tentang Kami */}
-          <button 
-            onClick={() => navigate('/about')}
-            className="bg-white border border-slate-100 hover:bg-blue-50/10 active:scale-[0.98] transition-all p-3.5 rounded-2xl shadow-xs flex flex-col justify-between items-start text-left h-[110px] w-full relative"
-          >
-            <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center">
-              <Info className="w-4.5 h-4.5" />
+            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-blue-100 bg-blue-50/80 px-2 py-2 text-[10px] font-bold text-blue-700">
+              <Calendar className="h-3.5 w-3.5 text-blue-600" />
+              <span>{newsDate}</span>
             </div>
-            <div className="mt-2 pr-6">
-              <span className="text-xs font-extrabold text-slate-900 block leading-tight">Tentang Kami</span>
-              <span className="text-[9px] text-slate-400 mt-1 block leading-snug">Visi, misi & informasi perusahaan</span>
-            </div>
-            <div className="absolute bottom-3.5 right-3.5 w-6 h-6 rounded-full bg-pink-50 flex items-center justify-center text-pink-500">
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </button>
-
-          {/* Card: Kontak Kami */}
-          <button 
-            onClick={() => navigate('/contact')}
-            className="bg-white border border-slate-100 hover:bg-blue-50/10 active:scale-[0.98] transition-all p-3.5 rounded-2xl shadow-xs flex flex-col justify-between items-start text-left h-[110px] w-full relative"
-          >
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
-              <Phone className="w-4.5 h-4.5" />
-            </div>
-            <div className="mt-2 pr-6">
-              <span className="text-xs font-extrabold text-slate-900 block leading-tight">Kontak Kami</span>
-              <span className="text-[9px] text-slate-400 mt-1 block leading-snug">Telegram & Bantuan langsung</span>
-            </div>
-            <div className="absolute bottom-3.5 right-3.5 w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </button>
-
+          </div>
         </div>
       </div>
-
-      {/* 4. SEKTOR ALIH DAYA quick selection */}
-      <div className="px-4 mt-6">
-        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest pl-1 mb-3">
-          SEKTOR ALIH DAYA
-        </h3>
-        
-        <div className="grid grid-cols-3 gap-2">
-          
-          {/* Manufaktur */}
-          <div className="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-2">
-              <Factory className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-900">Manufaktur</span>
-          </div>
-
-          {/* Perkantoran */}
-          <div className="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-2">
-              <Building2 className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-900">Perkantoran</span>
-          </div>
-
-          {/* Logistik */}
-          <div className="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-2">
-              <Construction className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-900">Logistik</span>
-          </div>
-
-          {/* Keamanan */}
-          <div className="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 mb-2">
-              <ShieldCheck className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-900">Keamanan</span>
-          </div>
-
-          {/* Kebersihan */}
-          <div className="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 mb-2">
-              <Brush className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-900">Kebersihan</span>
-          </div>
-
-          {/* F&B */}
-          <div className="bg-white border border-slate-100 p-3 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600 mb-2">
-              <Utensils className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-bold text-slate-900">F&B / Catering</span>
-          </div>
-
-        </div>
-      </div>
-
-      {/* 5. INFORMASI TERKINI card matching visual design */}
-      <div className="px-4 mt-6">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest pl-1 mb-0">
-            INFORMASI TERKINI
-          </h3>
-          <button 
-            onClick={() => navigate('/about')}
-            className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            Lihat semua <ArrowRight className="w-3 h-3 inline" />
-          </button>
-        </div>
-
-        <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-xs flex items-center gap-3">
-          
-          {/* Megaphone image container */}
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-            <Megaphone className="w-8 h-8 -rotate-12" />
-          </div>
-
-          {/* Details */}
-          <div className="flex-1 min-w-0">
-            <span className="bg-blue-100 text-blue-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-              PENGUMUMAN
-            </span>
-            <h4 className="text-xs font-extrabold text-slate-950 mt-1.5">
-              Informasi Rekrutmen Terbaru
-            </h4>
-            <p className="text-[9px] text-slate-400 mt-0.5 leading-snug">
-              Dapatkan update lowongan dan informasi penting lainnya dari PT Perdana Adi Yuda.
-            </p>
-          </div>
-
-          {/* Date Stamp */}
-          <div className="bg-blue-50/75 border border-blue-100 rounded-xl px-2.5 py-2 shrink-0 flex items-center gap-1 text-[9px] font-bold text-blue-700">
-            <Calendar className="w-3 h-3 text-blue-600" />
-            <span>20 Mei 2025</span>
-          </div>
-
-        </div>
-      </div>
-
     </div>
   );
 };
