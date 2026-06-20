@@ -1,15 +1,16 @@
 /**
- * Pre-compile serverless-src/*.ts → api/*.js for Vercel serverless.
+ * Pre-compile api .ts handlers to matching .js for Vercel serverless.
+ * Hand-written .js handlers (tanpa pasangan .ts) tidak disentuh.
  */
 import * as esbuild from 'esbuild';
 import { readdirSync, statSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join, relative, dirname } from 'path';
 import { getNodeExternals } from './esbuild-externals.mjs';
 
-const SRC_ROOT = new URL('../serverless-src', import.meta.url).pathname;
 const API_ROOT = new URL('../api', import.meta.url).pathname;
 const NODE_EXTERNALS = getNodeExternals();
 
+/** .js-only handlers — tidak dikompilasi dan tidak dihapus saat cleanup */
 const HANDWRITTEN = new Set([
   'send-telegram.js',
   'ping.js',
@@ -36,21 +37,17 @@ function walkTsFiles(dir, out = []) {
   return out;
 }
 
-const entries = walkTsFiles(SRC_ROOT);
+const entries = walkTsFiles(API_ROOT);
 if (!entries.length) {
-  console.log('build-vercel-api: no serverless-src/*.ts entrypoints');
+  console.log('build-vercel-api: no api .ts entrypoints');
   process.exit(0);
 }
 
 console.log(`build-vercel-api: compiling ${entries.length} handler(s)...`);
 
 for (const entry of entries) {
-  const rel = relative(SRC_ROOT, entry);
+  const rel = relative(API_ROOT, entry);
   const outRel = rel.replace(/\.ts$/, '.js');
-  if (isHandwritten(outRel)) {
-    console.log(`  ↷ skip hand-written api/${outRel}`);
-    continue;
-  }
   const outfile = join(API_ROOT, outRel);
   mkdirSync(dirname(outfile), { recursive: true });
 
@@ -68,7 +65,7 @@ for (const entry of entries) {
     logLevel: 'warning',
   });
 
-  console.log(`  ✓ api/${rel.replace(/\.ts$/, '.js')}`);
+  console.log(`  ✓ api/${outRel}`);
 }
 
 function walkJsFiles(dir) {
@@ -81,7 +78,7 @@ function walkJsFiles(dir) {
     if (!name.endsWith('.js')) continue;
     const rel = relative(API_ROOT, full);
     if (isHandwritten(rel)) continue;
-    const tsSource = join(SRC_ROOT, rel.replace(/\.js$/, '.ts'));
+    const tsSource = join(API_ROOT, rel.replace(/\.js$/, '.ts'));
     if (!existsSync(tsSource)) {
       unlinkSync(full);
       console.log(`  ✗ removed stale api/${rel}`);
