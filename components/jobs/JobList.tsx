@@ -30,22 +30,30 @@ export const JobList: React.FC<JobListProps> = ({
   countLabel = defaultCountLabel,
   renderItem,
 }) => {
+  const safeJobs = Array.isArray(jobs) ? jobs : [];
+
   console.log(`[JobList:${source}] render`, {
-    count: jobs.length,
-    ids: jobs.slice(0, 8).map((j) => j.id),
+    count: safeJobs.length,
+    ids: safeJobs.slice(0, 8).map((j) => j.id),
+    sample: safeJobs.slice(0, 3).map((j) => ({
+      id: j.id,
+      title: j.title,
+      department: j.department,
+      isActive: (j as { isActive?: unknown }).isActive,
+    })),
   });
 
-  if (!Array.isArray(jobs) || jobs.length === 0) {
+  if (safeJobs.length === 0) {
     console.log(`[JobList:${source}] skip — jobs kosong`);
     return null;
   }
 
   return (
-    <div className={className} data-job-list={source} data-count={jobs.length}>
+    <div className={className} data-job-list={source} data-count={safeJobs.length}>
       {showCount && (
-        <p className="mb-1 text-xs font-bold text-slate-500">{countLabel(jobs.length)}</p>
+        <p className="mb-1 text-xs font-bold text-slate-500">{countLabel(safeJobs.length)}</p>
       )}
-      {jobs.map((job, index) => {
+      {safeJobs.map((job, index) => {
         const display = getJobDisplayFields(job);
         const key = resolveJobKey(display, index);
 

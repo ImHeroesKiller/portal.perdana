@@ -1,15 +1,63 @@
 import type { JobVacancy } from '../types';
 import { jobSearchHaystack } from './job-display';
 
-/** Lowongan publik: hanya sembunyikan jika isActive secara eksplisit false */
+/**
+ * Lowongan publik: tampilkan kecuali isActive secara eksplisit nonaktif.
+ * undefined / null / string tidak dikenal → dianggap aktif.
+ */
+export function isJobPubliclyVisible(job: JobVacancy): boolean {
+  const value = (job as JobVacancy & { isActive?: unknown }).isActive;
+
+  if (value === undefined || value === null) return true;
+  if (typeof value === 'boolean') return value !== false;
+  if (typeof value === 'number') return value !== 0;
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (
+      normalized === 'false' ||
+      normalized === '0' ||
+      normalized === 'no' ||
+      normalized === 'inactive' ||
+      normalized === 'nonaktif' ||
+      normalized === 'tidak aktif'
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  return true;
+}
+
+/** Filter lowongan publik — isActive !== false (longgar) */
 export function filterPublicJobs(jobs: JobVacancy[]): JobVacancy[] {
-  const filtered = jobs.filter((job) => job.isActive !== false);
+  const filtered = jobs.filter(isJobPubliclyVisible);
   console.log('[filterPublicJobs]', {
     total: jobs.length,
     visible: filtered.length,
     hidden: jobs.length - filtered.length,
+    sampleInactive: jobs
+      .filter((j) => !isJobPubliclyVisible(j))
+      .slice(0, 3)
+      .map((j) => ({ id: j.id, isActive: (j as { isActive?: unknown }).isActive })),
   });
   return filtered;
+}
+
+/** Terapkan filter publik; fallback ke raw jika semua terfilter */
+export function applyPublicJobFilter(jobs: JobVacancy[]): {
+  jobs: JobVacancy[];
+  filterRelaxed: boolean;
+} {
+  const visible = filterPublicJobs(jobs);
+  if (visible.length === 0 && jobs.length > 0) {
+    console.warn('[applyPublicJobFilter] filter menghapus semua — gunakan data raw sebagai fallback', {
+      total: jobs.length,
+    });
+    return { jobs, filterRelaxed: true };
+  }
+  return { jobs: visible, filterRelaxed: false };
 }
 
 export function filterJobsBySearch(jobs: JobVacancy[], query: string): JobVacancy[] {

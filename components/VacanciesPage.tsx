@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
-import { applyVacancyFilters } from '../lib/job-filters';
+import { applyPublicJobFilter, applyVacancyFilters } from '../lib/job-filters';
 import type { JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
@@ -27,6 +27,7 @@ export const VacanciesPage: React.FC = () => {
     data: jobs = [],
     allJobs,
     isLoading: loading,
+    isFetching,
     isError,
     error,
     refetch,
@@ -74,17 +75,53 @@ export const VacanciesPage: React.FC = () => {
     }
   }, [searchParams]);
 
-  const jobsForList = allJobs.length > 0 ? allJobs : jobs;
-
-  const { jobs: filteredJobs, filterRelaxed } = useMemo(
-    () => applyVacancyFilters(jobsForList, searchQuery, selectedFilter),
-    [jobsForList, searchQuery, selectedFilter]
+  /** Data mentah dari API (prioritas allJobs) */
+  const rawJobs = useMemo(
+    () => (allJobs.length > 0 ? allJobs : jobs),
+    [allJobs, jobs]
   );
 
-  const showLoading = loading && allJobs.length === 0;
-  const hasNoJobsAtAll = !showLoading && !isError && allJobs.length === 0;
+  /** Filter isActive longgar (!== false) + fallback ke raw jika kosong */
+  const { jobs: publicJobs, filterRelaxed: publicFilterRelaxed } = useMemo(
+    () => applyPublicJobFilter(rawJobs),
+    [rawJobs]
+  );
+
+  const { jobs: uiFilteredJobs, filterRelaxed: uiFilterRelaxed } = useMemo(
+    () => applyVacancyFilters(publicJobs, searchQuery, selectedFilter),
+    [publicJobs, searchQuery, selectedFilter]
+  );
+
+  /** Job yang benar-benar di-render — fallback berlapis ke public/raw */
+  const jobsToRender = useMemo(() => {
+    if (uiFilteredJobs.length > 0) return uiFilteredJobs;
+    if (publicJobs.length > 0) {
+      console.warn('[VacanciesPage] filter UI kosong — fallback ke publicJobs', {
+        count: publicJobs.length,
+      });
+      return publicJobs;
+    }
+    if (rawJobs.length > 0) {
+      console.warn('[VacanciesPage] filter UI & public kosong — fallback ke rawJobs', {
+        count: rawJobs.length,
+      });
+      return rawJobs;
+    }
+    return [];
+  }, [uiFilteredJobs, publicJobs, rawJobs]);
+
+  const filterRelaxed = uiFilterRelaxed || publicFilterRelaxed;
+  const fetchInProgress = loading || isFetching;
+  const showLoading = fetchInProgress && rawJobs.length === 0;
+  const hasNoJobsAtAll =
+    !fetchInProgress && !isError && rawJobs.length === 0 && jobsToRender.length === 0;
   const hasJobsButFilteredEmpty =
-    !showLoading && !isError && allJobs.length > 0 && filteredJobs.length === 0 && !filterRelaxed;
+    !showLoading &&
+    !isError &&
+    rawJobs.length > 0 &&
+    uiFilteredJobs.length === 0 &&
+    jobsToRender.length > 0 &&
+    !filterRelaxed;
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -93,22 +130,38 @@ export const VacanciesPage: React.FC = () => {
 
   useEffect(() => {
     console.log('[VacanciesPage] jobs state', {
-      raw: allJobs.length,
-      hookData: jobs.length,
-      rendered: filteredJobs.length,
+      raw: rawJobs.length,
+      public: publicJobs.length,
+      uiFiltered: uiFilteredJobs.length,
+      rendered: jobsToRender.length,
       showLoading,
+      hasNoJobsAtAll,
+      fetchInProgress,
       filterRelaxed,
+      publicFilterRelaxed,
+      uiFilterRelaxed,
       searchQuery,
       selectedFilter,
+      sample: jobsToRender.slice(0, 3).map((j) => ({
+        id: j.id,
+        title: j.title,
+        isActive: (j as { isActive?: unknown }).isActive,
+      })),
     });
   }, [
-    allJobs.length,
-    jobs.length,
-    filteredJobs.length,
+    rawJobs.length,
+    publicJobs.length,
+    uiFilteredJobs.length,
+    jobsToRender.length,
     showLoading,
+    hasNoJobsAtAll,
+    fetchInProgress,
     filterRelaxed,
+    publicFilterRelaxed,
+    uiFilterRelaxed,
     searchQuery,
     selectedFilter,
+    jobsToRender,
   ]);
 
   const getClientName = (clientId?: string) => {
@@ -190,9 +243,9 @@ export const VacanciesPage: React.FC = () => {
           })}
         </div>
 
-        {filterRelaxed && filteredJobs.length > 0 && (
+        {filterRelaxed && jobsToRender.length > 0 && (
           <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
-            Filter terlalu ketat — menampilkan semua {filteredJobs.length} lowongan.
+            Filter terlalu ketat — menampilkan semua {jobsToRender.length} lowongan.
             <button type="button" onClick={resetFilters} className="ml-2 font-bold underline">
               Reset filter
             </button>
@@ -217,15 +270,16 @@ export const VacanciesPage: React.FC = () => {
 
         <DataFetchState
           isLoading={showLoading}
-          isFetching={loading && allJobs.length > 0}
+          isFetching={isFetching && rawJobs.length > 0}
           error={isError ? error : null}
           isEmpty={hasNoJobsAtAll}
           emptyMessage="Belum ada lowongan tersedia saat ini."
           onRetry={() => { void refetch(); }}
         >
+          {jobsToRender.length > 0 && (
           <JobList
             source="VacanciesPage"
-            jobs={filteredJobs}
+            jobs={jobsToRender}
             showCount
             className="mt-2 space-y-4"
             renderItem={(job, display: JobDisplayFields) => {
@@ -325,6 +379,7 @@ export const VacanciesPage: React.FC = () => {
               );
             }}
           />
+          )}
         </DataFetchState>
 
         {/* 5. Bottom document notification callout */}

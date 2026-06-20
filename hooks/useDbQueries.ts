@@ -19,7 +19,7 @@ import {
   updatePermanentEmployee,
 } from '../src/services/employeeService';
 import { queryKeys } from '../lib/queryKeys';
-import { filterPublicJobs } from '../lib/job-filters';
+import { applyPublicJobFilter, filterPublicJobs } from '../lib/job-filters';
 import type { JobVacancy, Employee, Client, Project } from '../types';
 
 const QUERY_OPTIONS = {
@@ -53,14 +53,7 @@ export function useJobs(options?: { activeOnly?: boolean }): JobsQueryResult {
   const data = useMemo(() => {
     const all = query.data ?? [];
     if (!activeOnly) return all;
-    const visible = filterPublicJobs(all);
-    if (visible.length === 0 && all.length > 0) {
-      console.warn('[useJobs] activeOnly menghapus semua job — tampilkan semua sebagai fallback', {
-        total: all.length,
-      });
-      return all;
-    }
-    return visible;
+    return applyPublicJobFilter(all).jobs;
   }, [query.data, activeOnly]);
 
   const allJobs = query.data ?? [];
