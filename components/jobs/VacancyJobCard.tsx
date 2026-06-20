@@ -23,6 +23,7 @@ export interface VacancyJobCardProps {
   onToggleBookmark?: () => void;
   onOpenMap?: () => void;
   applyHref: string;
+  detailHref?: string;
   maxRequirements?: number;
 }
 
@@ -38,6 +39,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   onToggleBookmark,
   onOpenMap,
   applyHref,
+  detailHref,
   maxRequirements = 3,
 }) => {
   const shownRequirements = requirements.slice(0, maxRequirements);
@@ -65,7 +67,13 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
         )}
       </div>
 
-      <h2 className="job-card-title text-base leading-snug sm:text-lg">{title}</h2>
+      {detailHref ? (
+        <Link to={detailHref} className="job-card-title block text-base leading-snug transition hover:text-[#003087] sm:text-lg">
+          {title}
+        </Link>
+      ) : (
+        <h2 className="job-card-title text-base leading-snug sm:text-lg">{title}</h2>
+      )}
 
       {clientName && (
         <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
@@ -114,6 +122,14 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
       )}
 
       <div className="mt-4 flex gap-2.5 border-t border-slate-50 pt-4">
+        {detailHref && (
+          <Link
+            to={detailHref}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 transition hover:border-[#003087]/25 hover:bg-slate-50 active:scale-[0.98] sm:text-xs"
+          >
+            Detail
+          </Link>
+        )}
         {onOpenMap && (
           <button
             type="button"

@@ -7,6 +7,7 @@ import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
 import { VacancyFilterChips } from './jobs/VacancyFilterChips';
 import { VacancyJobCard, resolveVacancyCardFields } from './jobs/VacancyJobCard';
+import { buildJobApplyHref, buildJobDetailHref } from '../lib/job-display';
 import { VACANCY_FILTER_OPTIONS, type VacancyFilter } from './home/homeContent';
 import {
   ChevronLeft,
@@ -272,7 +273,8 @@ export const VacanciesPage: React.FC = () => {
                     isBookmarked={bookmarkedJobs.includes(job.id)}
                     onToggleBookmark={() => toggleBookmark(job.id)}
                     onOpenMap={() => handleOpenMap(job.latitude, job.longitude, fields.location)}
-                    applyHref={`/apply?position=${encodeURIComponent(fields.title)}`}
+                    detailHref={buildJobDetailHref(job)}
+                    applyHref={buildJobApplyHref(job, fields.title)}
                   />
                 );
               }}

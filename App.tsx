@@ -14,6 +14,7 @@ import { Services } from './components/Services';
 import { AIInterviewSession } from './components/AIInterviewSession';
 import { EmployeePortal } from './components/EmployeePortal';
 import { VacanciesPage } from './components/VacanciesPage';
+import { JobDetailPage } from './components/jobs/JobDetailPage';
 import { NavBar } from './components/NavBar';
 import { BottomNavigation } from './components/BottomNavigation';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -48,6 +49,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/vacancies" element={<VacanciesPage />} />
+          <Route path="/vacancies/:jobId" element={<JobDetailPage />} />
           <Route path="/services" element={<Services />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

@@ -4,9 +4,15 @@ import { ArrowLeft } from 'lucide-react';
 
 interface PageTopBarProps {
   badge?: string;
+  backTo?: string;
+  backLabel?: string;
 }
 
-export const PageTopBar: React.FC<PageTopBarProps> = ({ badge }) => {
+export const PageTopBar: React.FC<PageTopBarProps> = ({
+  badge,
+  backTo = '/',
+  backLabel = 'Kembali ke Beranda',
+}) => {
   const navigate = useNavigate();
 
   return (
@@ -14,11 +20,11 @@ export const PageTopBar: React.FC<PageTopBarProps> = ({ badge }) => {
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(backTo)}
           className="flex min-h-[44px] items-center gap-2 text-[11px] font-extrabold text-[#003087] transition hover:text-blue-900 active:scale-95"
         >
           <ArrowLeft className="h-4 w-4 stroke-[2.5]" aria-hidden />
-          Kembali ke Beranda
+          {backLabel}
         </button>
         {badge && (
           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#003087]">
