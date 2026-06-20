@@ -19,8 +19,42 @@ export interface HeroSectionProps {
   onSearchChange: (value: string) => void;
   onSearchSubmit?: () => void;
   jobCount?: number;
-  /** true = tampilan mobile: tanpa foto, hanya gradient */
+  /** Padding lebih ringkas (mobile home) — tetap pakai foto background */
   compact?: boolean;
+}
+
+function HeroBrand({ compact }: { compact: boolean }) {
+  return (
+    <div
+      className={`flex items-center gap-3 sm:gap-4 ${
+        compact ? 'mb-4' : 'mb-5 sm:mb-6'
+      }`}
+    >
+      <div
+        className={`flex shrink-0 items-center justify-center rounded-2xl bg-white shadow-xl ring-2 ring-white/40 ${
+          compact ? 'h-14 w-14 p-2' : 'h-16 w-16 p-2.5 sm:h-[4.75rem] sm:w-[4.75rem] sm:p-3'
+        }`}
+      >
+        <img
+          src="/assets/logo.png"
+          alt="Logo PeRdana"
+          className="h-full w-full object-contain"
+        />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-cyan-300 sm:text-xs">
+          PeRdana
+        </p>
+        <p
+          className={`font-black uppercase leading-tight tracking-wide text-white ${
+            compact ? 'text-sm' : 'text-base sm:text-lg md:text-xl'
+          }`}
+        >
+          PERDANA ADI YUDA
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function HeroContent({
@@ -51,13 +85,15 @@ function HeroContent({
   };
 
   const contentPad = compact
-    ? 'px-4 py-10'
-    : 'px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20';
+    ? 'px-4 pb-8 pt-6'
+    : 'px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16';
 
   return (
     <div className={`relative z-10 w-full ${contentPad}`}>
       <div className={compact ? 'w-full' : 'mx-auto max-w-7xl'}>
         <div className={compact ? 'w-full' : 'max-w-2xl'}>
+          <HeroBrand compact={compact} />
+
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center rounded-full border border-cyan-400/35 bg-cyan-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.15em] text-cyan-300 sm:text-xs">
               {t('home_hero_badge')}
@@ -71,15 +107,15 @@ function HeroContent({
           </div>
 
           <h1
-            className={`mt-3 font-black leading-[1.05] tracking-tight text-white ${
-              compact ? 'text-[1.75rem]' : 'text-[2rem] sm:text-4xl lg:text-5xl'
+            className={`mt-3 font-black leading-[1.08] tracking-tight text-white ${
+              compact ? 'text-[1.65rem]' : 'text-[1.85rem] sm:text-4xl lg:text-[2.75rem]'
             }`}
           >
             {t('home_hero_headline')}
           </h1>
 
           <p
-            className={`mt-2 font-medium text-slate-200 ${
+            className={`mt-2 font-medium text-slate-200/95 ${
               compact ? 'text-sm leading-snug' : 'text-base sm:text-lg'
             }`}
           >
@@ -124,14 +160,14 @@ function HeroContent({
           >
             <Link
               to="/vacancies"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-800 active:scale-[0.98] sm:w-auto sm:px-8 sm:text-base"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-800 active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
             >
               {t('home_cta_button')}
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
             <Link
               to="/apply"
-              className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-white bg-white/95 px-6 py-4 text-sm font-extrabold text-blue-700 shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8 sm:text-base"
+              className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-white bg-white/95 px-6 py-3.5 text-sm font-extrabold text-blue-700 shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
             >
               {t('home_hero_apply_btn')}
             </Link>
@@ -142,34 +178,18 @@ function HeroContent({
   );
 }
 
-/** Mobile: gradient saja, tanpa foto & slideshow */
-function MobileHero(props: Omit<HeroSectionProps, 'compact'> & { t: (key: string) => string }) {
-  const { t, ...contentProps } = props;
-  return (
-    <section
-      className="w-full shrink-0 bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 text-white"
-      aria-label={t('home_hero_aria')}
-    >
-      <HeroContent {...contentProps} compact jobCount={contentProps.jobCount ?? 0} t={t} />
-    </section>
-  );
-}
-
-/** Desktop: foto konstruksi + overlay gradient */
-function DesktopHero(props: Omit<HeroSectionProps, 'compact'> & { t: (key: string) => string }) {
-  const { t, ...contentProps } = props;
-  const [activeImageIdx, setActiveImageIdx] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveImageIdx((prev) => (prev + 1) % HERO_IMAGES.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, []);
+function HeroBackground({
+  activeImageIdx,
+  compact,
+}: {
+  activeImageIdx: number;
+  compact: boolean;
+}) {
+  const minH = compact ? 'min-h-[22rem]' : 'min-h-[24rem] sm:min-h-[28rem] lg:min-h-[32rem]';
 
   return (
-    <section className="grid w-full text-white" aria-label={t('home_hero_aria')}>
-      <div className="col-start-1 row-start-1 relative min-h-56 w-full overflow-hidden lg:min-h-64">
+    <>
+      <div className={`col-start-1 row-start-1 relative w-full overflow-hidden ${minH}`}>
         {HERO_IMAGES.map((src, idx) => (
           <img
             key={src}
@@ -185,23 +205,53 @@ function DesktopHero(props: Omit<HeroSectionProps, 'compact'> & { t: (key: strin
         ))}
       </div>
 
+      {/* Overlay gradient — kontras teks & logo di mobile */}
       <div
-        className="col-start-1 row-start-1 min-h-56 w-full bg-gradient-to-br from-slate-950/90 via-blue-950/65 to-blue-800/30 lg:min-h-64"
+        className={`col-start-1 row-start-1 w-full bg-gradient-to-br from-slate-950/92 via-blue-950/75 to-blue-900/50 ${minH}`}
         aria-hidden="true"
       />
       <div
-        className="col-start-1 row-start-1 min-h-56 w-full bg-gradient-to-r from-slate-950/85 via-blue-950/45 to-transparent lg:min-h-64"
+        className={`col-start-1 row-start-1 w-full bg-gradient-to-r from-slate-950/88 via-blue-950/50 to-transparent ${minH}`}
         aria-hidden="true"
       />
       <div
-        className="col-start-1 row-start-1 min-h-56 w-full bg-gradient-to-t from-slate-950/80 via-transparent to-cyan-400/10 lg:min-h-64"
+        className={`col-start-1 row-start-1 w-full bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-cyan-500/10 ${minH}`}
         aria-hidden="true"
       />
+    </>
+  );
+}
+
+function HeroSlideshow({
+  compact,
+  ...contentProps
+}: Omit<HeroSectionProps, 'compact'> & {
+  compact: boolean;
+  t: (key: string) => string;
+}) {
+  const { t, ...rest } = contentProps;
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveImageIdx((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="grid w-full text-white" aria-label={t('home_hero_aria')}>
+      <HeroBackground activeImageIdx={activeImageIdx} compact={compact} />
 
       <div className="col-start-1 row-start-1">
-        <HeroContent {...contentProps} compact={false} jobCount={contentProps.jobCount ?? 0} t={t} />
+        <HeroContent
+          {...rest}
+          compact={compact}
+          jobCount={rest.jobCount ?? 0}
+          t={t}
+        />
 
-        <div className="relative z-10 -mt-2 mb-6 flex justify-center gap-1.5" aria-hidden="true">
+        <div className="relative z-10 -mt-1 mb-5 flex justify-center gap-1.5 sm:mb-6" aria-hidden="true">
           {HERO_IMAGES.map((_, idx) => (
             <button
               key={idx}
@@ -223,9 +273,5 @@ export const HeroSection: React.FC<HeroSectionProps> = (props) => {
   const { t } = useLanguage();
   const { compact = false, ...rest } = props;
 
-  if (compact) {
-    return <MobileHero {...rest} t={t} />;
-  }
-
-  return <DesktopHero {...rest} t={t} />;
+  return <HeroSlideshow {...rest} compact={compact} t={t} />;
 };
