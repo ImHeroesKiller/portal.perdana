@@ -20,6 +20,13 @@ import {
 
 export type VacancyFilter = 'Semua' | 'Operasional' | 'Administrasi' | 'Teknis' | 'Lainnya';
 
+/** Brand navy — accent utama halaman utama */
+export const BRAND_NAVY = '#003087';
+
+/** Horizontal scroll row — stats & sektor */
+export const HOME_H_SCROLL =
+  'overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
 export type StatItem = {
   key: 'jobs' | 'applicants' | 'clients' | 'projects';
   icon: LucideIcon;
@@ -36,7 +43,7 @@ export const STAT_ITEMS: StatItem[] = [
     icon: Briefcase,
     labelKey: 'home_stat_pos',
     hintKey: 'home_stat_pos_hint',
-    color: 'text-[#0056C6]',
+    color: 'text-[#003087]',
     bg: 'bg-blue-50',
     ring: 'ring-blue-100',
   },
@@ -81,8 +88,8 @@ export type QuickAccessItem = {
   dynamicSubtitleKey?: 'home_quick_jobs_sub';
 };
 
-/** Navy brand accent — dipakai seragam di Quick Access cards */
-export const QUICK_ACCESS_NAVY = '#003087';
+/** @deprecated Use BRAND_NAVY */
+export const QUICK_ACCESS_NAVY = BRAND_NAVY;
 
 export const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
   {

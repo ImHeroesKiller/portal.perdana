@@ -42,7 +42,7 @@ export const QuickAccessGrid: React.FC<QuickAccessGridProps> = ({
       )}
 
       <div
-        className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 gap-4 lg:grid-cols-4'}`}
+        className={`grid ${isMobile ? 'grid-cols-2 gap-3.5' : 'grid-cols-2 gap-4 lg:grid-cols-4'}`}
       >
         {QUICK_ACCESS_ITEMS.map((item) => {
           const Icon = resolveQuickAccessIcon(item, loggedIn);

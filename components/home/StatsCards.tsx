@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../../services/i18n';
-import { STAT_ITEMS } from './homeContent';
+import { HOME_H_SCROLL, STAT_ITEMS } from './homeContent';
 
 export type HomeStats = {
   jobs: number;
@@ -16,13 +16,10 @@ interface StatsCardsProps {
   onStatClick?: (key: keyof HomeStats) => void;
 }
 
-const MOBILE_SCROLL =
-  'overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
-
 function MobileStatsShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className={MOBILE_SCROLL}>
-      <div className="min-w-full rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+    <div className={HOME_H_SCROLL}>
+      <div className="min-w-full rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm">
         <div className="grid min-w-[18rem] grid-cols-4 gap-1 sm:min-w-full">{children}</div>
       </div>
     </div>
@@ -88,7 +85,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
               type={onStatClick ? 'button' : undefined}
               onClick={onStatClick ? () => onStatClick(item.key) : undefined}
               aria-label={`${t(item.labelKey)}: ${value}`}
-              className={`group flex min-h-[5.75rem] flex-col items-center px-1 py-2.5 text-center transition active:scale-[0.97] ${
+              className={`group flex min-h-[6rem] flex-col items-center px-1 py-3 text-center transition active:scale-[0.97] ${
                 idx > 0 ? 'border-l border-slate-100' : ''
               } ${onStatClick ? 'cursor-pointer rounded-xl hover:bg-slate-50 active:bg-slate-100/80' : ''}`}
             >
@@ -98,7 +95,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                 <Icon className={`h-4 w-4 ${item.color}`} aria-hidden="true" />
               </div>
               <p className={`mt-1 text-base font-black leading-none ${item.color}`}>{value}</p>
-              <p className="mt-1 line-clamp-2 text-[8px] font-bold uppercase leading-tight tracking-wide text-slate-500">
+              <p className="mt-1.5 line-clamp-2 text-[9px] font-bold uppercase leading-tight tracking-wide text-slate-500">
                 {t(item.labelKey)}
               </p>
             </Wrapper>
@@ -121,7 +118,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             type={onStatClick ? 'button' : undefined}
             onClick={onStatClick ? () => onStatClick(item.key) : undefined}
             className={`group relative min-h-[120px] overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition active:scale-[0.98] ${
-              onStatClick ? 'cursor-pointer hover:border-blue-200 hover:shadow-md' : ''
+              onStatClick ? 'cursor-pointer hover:border-[#003087]/25 hover:shadow-md' : ''
             }`}
           >
             <div

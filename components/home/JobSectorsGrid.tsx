@@ -2,15 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../services/i18n';
 import { SectionHeader } from './SectionHeader';
-import { JOB_SECTORS, QUICK_ACCESS_NAVY } from './homeContent';
+import { BRAND_NAVY, HOME_H_SCROLL, JOB_SECTORS } from './homeContent';
 
 interface JobSectorsGridProps {
   variant?: 'mobile' | 'desktop';
   showHeader?: boolean;
 }
 
-const SCROLL_ROW =
-  'overflow-x-auto overscroll-x-contain touch-pan-x snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+const SCROLL_ROW = `${HOME_H_SCROLL} snap-x snap-mandatory`;
 
 export const JobSectorsGrid: React.FC<JobSectorsGridProps> = ({
   variant = 'mobile',
@@ -36,8 +35,8 @@ export const JobSectorsGrid: React.FC<JobSectorsGridProps> = ({
         />
       )}
 
-      <div className={`-mx-4 ${SCROLL_ROW} px-4 pb-0.5`}>
-        <div className={`flex w-max min-w-full ${isMobile ? 'gap-2.5' : 'gap-3'}`}>
+      <div className={`-mx-4 ${SCROLL_ROW} px-4 pb-1 pt-0.5`}>
+        <div className={`flex w-max min-w-full ${isMobile ? 'gap-3' : 'gap-3.5'}`}>
           {JOB_SECTORS.map((sector) => {
             const Icon = sector.icon;
             const label = t(sector.titleKey);
@@ -61,7 +60,7 @@ export const JobSectorsGrid: React.FC<JobSectorsGridProps> = ({
                 >
                   <Icon
                     className={isMobile ? 'h-4 w-4' : 'h-[1.125rem] w-[1.125rem]'}
-                    style={{ color: QUICK_ACCESS_NAVY }}
+                    style={{ color: BRAND_NAVY }}
                     aria-hidden="true"
                   />
                 </span>

@@ -66,8 +66,11 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
     year: 'numeric',
   });
 
+  const sectionLinkClass =
+    'flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg px-1 text-[11px] font-bold text-[#003087] transition active:scale-[0.98]';
+
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden pb-4 font-sans antialiased text-slate-800">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-50 pb-8 font-sans antialiased text-slate-800">
       <HeroSection
         compact
         searchQuery={searchQuery}
@@ -75,28 +78,31 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
         jobCount={stats.jobs}
       />
 
-      <div className="mt-5 space-y-6 px-4">
-        <StatsCards
-          variant="mobile"
-          stats={stats}
-          loading={loading}
-          onStatClick={handleStatClick}
-        />
+      <main className="mt-6 flex flex-col gap-8 px-4">
+        <section aria-label="Statistik">
+          <StatsCards
+            variant="mobile"
+            stats={stats}
+            loading={loading}
+            onStatClick={handleStatClick}
+          />
+        </section>
 
-        <QuickAccessGrid variant="mobile" stats={stats} />
+        <section aria-label="Menu utama">
+          <QuickAccessGrid variant="mobile" stats={stats} />
+        </section>
 
-        <JobSectorsGrid variant="mobile" />
+        <section aria-label="Sektor alih daya">
+          <JobSectorsGrid variant="mobile" />
+        </section>
 
         {/* Daftar lowongan — mobile HomePage */}
-        <div>
+        <section aria-label="Lowongan terbaru">
           <SectionHeader
             compact
             title={t('home_vac_title')}
             action={
-              <Link
-                to="/vacancies"
-                className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#0056C6]"
-              >
+              <Link to="/vacancies" className={sectionLinkClass}>
                 {language === 'id' ? 'Lihat semua' : 'See all'}
                 <ArrowRight className="h-3 w-3" />
               </Link>
@@ -147,13 +153,13 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
                     <button
                       type="button"
                       onClick={() => openMap(job.latitude, job.longitude, location)}
-                      className="flex-1 rounded-xl bg-slate-100 py-2 text-[10px] font-bold text-slate-700"
+                      className="flex-1 rounded-xl bg-slate-100 py-2.5 text-[11px] font-bold text-slate-700 transition active:scale-[0.98]"
                     >
                       Peta
                     </button>
                     <Link
                       to={`/apply?position=${encodeURIComponent(title)}`}
-                      className="flex-1 rounded-xl bg-[#0056C6] py-2 text-center text-[10px] font-bold text-white"
+                      className="flex-1 rounded-xl bg-[#003087] py-2.5 text-center text-[11px] font-bold text-white transition active:scale-[0.98]"
                     >
                       Lamar
                     </Link>
@@ -162,10 +168,10 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               )}}
             />
           </DataFetchState>
-        </div>
+        </section>
 
         {/* Informasi Terkini */}
-        <div>
+        <section aria-label="Informasi terkini">
           <SectionHeader
             compact
             title={t('home_news_section_title')}
@@ -173,7 +179,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               <button
                 type="button"
                 onClick={() => navigate('/about')}
-                className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#0056C6]"
+                className={sectionLinkClass}
               >
                 {language === 'id' ? 'Lihat semua' : 'See all'}
                 <ArrowRight className="h-3 w-3" />
@@ -181,30 +187,30 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
             }
           />
 
-          <div className="flex items-start gap-3 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 text-[#0056C6]">
+          <div className="flex items-start gap-3.5 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-[#003087]">
               <Megaphone className="h-7 w-7 -rotate-12" />
             </div>
 
             <div className="min-w-0 flex-1">
-              <span className="inline-flex rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-800">
+              <span className="inline-flex rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#003087]">
                 {t('home_news_badge')}
               </span>
-              <h4 className="mt-1.5 text-sm font-extrabold leading-snug text-slate-950">
+              <h4 className="mt-2 text-sm font-extrabold leading-snug text-slate-950">
                 {t('home_news_title')}
               </h4>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+              <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
                 {t('home_news_desc')}
               </p>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-blue-100 bg-blue-50/80 px-2 py-2 text-[10px] font-bold text-blue-700">
-              <Calendar className="h-3.5 w-3.5 text-blue-600" />
+            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-blue-100 bg-blue-50/90 px-2.5 py-2 text-[10px] font-bold text-[#003087]">
+              <Calendar className="h-3.5 w-3.5" aria-hidden />
               <span>{newsDate}</span>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

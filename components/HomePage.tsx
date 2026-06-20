@@ -123,18 +123,18 @@ export const HomePage: React.FC = () => {
       />
 
       {/* Stats + Quick Access + Sectors */}
-      <div className="relative z-10 -mt-12 max-w-7xl mx-auto space-y-10 px-4 pb-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 -mt-14 max-w-7xl mx-auto space-y-12 px-4 pb-6 sm:px-6 lg:px-8">
         <StatsCards variant="desktop" stats={stats} loading={loading} />
         <QuickAccessGrid variant="desktop" stats={stats} />
         <JobSectorsGrid variant="desktop" />
       </div>
 
       {/* Job Listings Section */}
-      <div id="vacancies" className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold text-gray-900">{t('home_vac_title')}</h2>
-            <p className="mt-4 text-gray-600">{t('home_vac_desc')}</p>
+      <div id="vacancies" className="bg-slate-50 py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">{t('home_vac_title')}</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-600">{t('home_vac_desc')}</p>
           </div>
 
           {/* Search Bar */}
@@ -145,7 +145,7 @@ export const HomePage: React.FC = () => {
                 </div>
                 <input
                     type="text"
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                    className="block w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-3 leading-5 placeholder-gray-500 transition duration-150 ease-in-out focus:border-[#003087] focus:outline-none focus:ring-2 focus:ring-[#003087]/30 sm:text-sm"
                     placeholder={t('home_search_placeholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -252,7 +252,7 @@ export const HomePage: React.FC = () => {
                     </button>
                     <Link
                       to={`/apply?position=${encodeURIComponent(title)}`}
-                      className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors text-sm"
+                      className="flex-1 rounded bg-[#003087] px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-900"
                     >
                       {t('home_btn_apply')}
                     </Link>

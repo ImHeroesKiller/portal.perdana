@@ -46,11 +46,11 @@ function HeroBrand({ compact }: { compact: boolean }) {
           className="h-full w-full object-contain"
         />
       </div>
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-cyan-300 sm:text-xs">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-cyan-200 drop-shadow-md sm:text-xs">
         PeRdana
       </p>
       <p
-        className={`mt-1 font-black uppercase leading-tight tracking-[0.12em] text-white drop-shadow-sm ${
+        className={`mt-1 font-black uppercase leading-tight tracking-[0.12em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)] ${
           compact ? 'text-[0.95rem]' : 'text-base sm:text-lg md:text-xl'
         }`}
       >
@@ -89,8 +89,8 @@ function HeroContent({
 
   const align = compact ? 'items-center text-center' : 'items-start text-left sm:items-center sm:text-center lg:items-start lg:text-left';
   const contentPad = compact
-    ? 'px-4 pb-10 pt-7'
-    : 'px-4 pb-12 pt-8 sm:px-6 sm:pb-14 sm:pt-10 lg:px-8 lg:py-16';
+    ? 'px-4 pb-11 pt-8'
+    : 'px-4 pb-12 pt-9 sm:px-6 sm:pb-14 sm:pt-11 lg:px-8 lg:py-16';
 
   return (
     <div className={`relative z-20 flex w-full flex-col ${contentPad}`}>
@@ -119,19 +119,19 @@ function HeroContent({
           </div>
 
           <h1
-            className={`font-black leading-[1.1] tracking-tight text-white drop-shadow-md ${
+            className={`font-black leading-[1.12] tracking-tight text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)] ${
               compact
-                ? 'text-[1.7rem]'
-                : 'text-[1.9rem] sm:text-4xl lg:text-[2.75rem]'
+                ? 'text-[1.75rem]'
+                : 'text-[2rem] sm:text-4xl lg:text-[2.75rem]'
             }`}
           >
             {t('home_hero_headline')}
           </h1>
 
           <p
-            className={`mt-3 max-w-prose font-medium text-slate-100/90 ${
+            className={`mt-3.5 max-w-prose font-medium text-slate-100/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] ${
               compact
-                ? 'text-[0.9rem] leading-relaxed'
+                ? 'text-[0.925rem] leading-relaxed'
                 : 'text-base leading-relaxed sm:text-lg'
             }`}
           >
@@ -155,7 +155,7 @@ function HeroContent({
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder={t('home_search_placeholder')}
-                    className="w-full rounded-xl border-0 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/40 sm:py-4 sm:text-base"
+                    className="w-full rounded-xl border-0 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#003087]/35 sm:py-4 sm:text-base"
                     aria-label={t('home_search_placeholder')}
                   />
                 </div>
@@ -176,14 +176,14 @@ function HeroContent({
           >
             <Link
               to="/vacancies"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-800 active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+              className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-[#003087] px-6 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-900 active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
             >
               {t('home_cta_button')}
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
             <Link
               to="/apply"
-              className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-white/90 bg-white/95 px-6 py-3.5 text-sm font-extrabold text-blue-700 shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+              className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl border-2 border-white/90 bg-white/95 px-6 py-3.5 text-sm font-extrabold text-[#003087] shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
             >
               {t('home_hero_apply_btn')}
             </Link>
@@ -202,8 +202,8 @@ function HeroBackground({
   compact: boolean;
 }) {
   const minH = compact
-    ? 'min-h-[26rem]'
-    : 'min-h-[28rem] sm:min-h-[30rem] lg:min-h-[34rem]';
+    ? 'min-h-[27rem]'
+    : 'min-h-[29rem] sm:min-h-[31rem] lg:min-h-[34rem]';
 
   return (
     <>
@@ -234,14 +234,15 @@ function HeroBackground({
         })}
       </div>
 
-      {/* Layer 1: semi-transparent scrim — satu layer ringan agar foto tetap terlihat */}
+      {/* Layer 1: scrim — foto tetap terlihat, teks & logo lebih kontras */}
       <div
         className={`col-start-1 row-start-1 relative z-[1] pointer-events-none w-full ${minH}`}
         aria-hidden="true"
       >
-        <div className="absolute inset-0 bg-slate-950/30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-slate-950/25 to-blue-950/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-slate-950/35" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/82 via-[#003087]/45 to-slate-950/40" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_80%_at_50%_0%,rgba(0,48,135,0.35),transparent_65%)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/15 to-transparent" />
       </div>
     </>
   );
@@ -258,7 +259,7 @@ function SlideDots({
 }) {
   return (
     <div
-      className="relative z-20 flex justify-center pb-6 pt-2 sm:pb-8"
+      className="relative z-20 flex justify-center pb-7 pt-3 sm:pb-9"
       role="tablist"
       aria-label="Hero slideshow"
     >
