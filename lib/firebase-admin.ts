@@ -5,8 +5,11 @@
  * firebase-admin is lazy-loaded so Vercel cold starts do not crash when the
  * package fails to initialize at module scope.
  */
+import { createRequire } from 'module';
 import type { App } from 'firebase-admin/app';
 import type { Firestore } from 'firebase-admin/firestore';
+
+const require = createRequire(import.meta.url);
 import {
   getMissingAdminEnvKeys,
   readFirebaseAdminEnv,
