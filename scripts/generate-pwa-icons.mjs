@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generate square PWA icons (192, 512, maskable) as JPEG from public/assets/logo.png.
+ * Generate square PWA icons (192, 512) as PNG from public/assets/logo.png.
  * Uses macOS sips; skips gracefully on Linux/CI if icons already committed.
  */
 import { execSync } from 'node:child_process';
@@ -11,14 +11,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const logoSrc = join(root, 'public', 'assets', 'logo.png');
 const iconsDir = join(root, 'public', 'icons');
-const JPEG_OPTS = '-s format jpeg -s formatOptions 90';
 
-const REQUIRED = [
-  'icon-192.jpg',
-  'icon-512.jpg',
-  'icon-maskable-192.jpg',
-  'icon-maskable-512.jpg',
-];
+const REQUIRED = ['icon-192.png', 'icon-512.png'];
 
 function hasSips() {
   try {
@@ -27,10 +21,6 @@ function hasSips() {
   } catch {
     return false;
   }
-}
-
-function toJpeg(pngPath, jpgPath) {
-  execSync(`sips ${JPEG_OPTS} "${pngPath}" --out "${jpgPath}"`, { stdio: 'inherit' });
 }
 
 if (!existsSync(logoSrc)) {
@@ -51,28 +41,17 @@ if (!hasSips()) {
 mkdirSync(iconsDir, { recursive: true });
 
 const tmp410 = join(iconsDir, '.tmp-logo-410.png');
-const tmp340 = join(iconsDir, '.tmp-logo-340.png');
-const tmp512 = join(iconsDir, '.tmp-icon-512.png');
-const tmp192 = join(iconsDir, '.tmp-icon-192.png');
-const tmpMask512 = join(iconsDir, '.tmp-maskable-512.png');
-const tmpMask192 = join(iconsDir, '.tmp-maskable-192.png');
 
 execSync(`sips -Z 410 "${logoSrc}" --out "${tmp410}"`, { stdio: 'inherit' });
-execSync(`sips -p 512 512 --padColor FFFFFF "${tmp410}" --out "${tmp512}"`, { stdio: 'inherit' });
-execSync(`sips -z 192 192 "${tmp512}" --out "${tmp192}"`, { stdio: 'inherit' });
-toJpeg(tmp512, join(iconsDir, 'icon-512.jpg'));
-toJpeg(tmp192, join(iconsDir, 'icon-192.jpg'));
-
-execSync(`sips -Z 340 "${logoSrc}" --out "${tmp340}"`, { stdio: 'inherit' });
-execSync(`sips -p 512 512 --padColor FFFFFF "${tmp340}" --out "${tmpMask512}"`, { stdio: 'inherit' });
-execSync(`sips -z 192 192 "${tmpMask512}" --out "${tmpMask192}"`, { stdio: 'inherit' });
-toJpeg(tmpMask512, join(iconsDir, 'icon-maskable-512.jpg'));
-toJpeg(tmpMask192, join(iconsDir, 'icon-maskable-192.jpg'));
+execSync(`sips -p 512 512 --padColor FFFFFF "${tmp410}" --out "${join(iconsDir, 'icon-512.png')}"`, {
+  stdio: 'inherit',
+});
+execSync(`sips -z 192 192 "${join(iconsDir, 'icon-512.png')}" --out "${join(iconsDir, 'icon-192.png')}"`, {
+  stdio: 'inherit',
+});
 
 try {
-  execSync(`rm -f "${tmp410}" "${tmp340}" "${tmp512}" "${tmp192}" "${tmpMask512}" "${tmpMask192}"`, {
-    stdio: 'ignore',
-  });
+  execSync(`rm -f "${tmp410}"`, { stdio: 'ignore' });
 } catch {
   /* ignore */
 }

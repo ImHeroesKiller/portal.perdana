@@ -6,10 +6,8 @@ const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icons/icon-192.jpg',
-  '/icons/icon-512.jpg',
-  '/icons/icon-maskable-192.jpg',
-  '/icons/icon-maskable-512.jpg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/assets/logo.png',
 ];
 
