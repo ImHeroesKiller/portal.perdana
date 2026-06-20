@@ -77,7 +77,7 @@ export const HomePage: React.FC = () => {
       if (lat && lng) {
           setMapModalData({ lat, lng, title: title || 'Lokasi' });
       } else {
-          alert('Koordinat lokasi tidak tersedia untuk lowongan ini.');
+          alert(t('home_location_unavailable'));
       }
   }
 
@@ -180,12 +180,10 @@ export const HomePage: React.FC = () => {
               showCount
               countLabel={(count) =>
                 filteredJobs.length > HOME_PREVIEW_JOB_LIMIT
-                  ? t('home_vac_preview_count')
-                      .replace('{shown}', String(count))
-                      .replace('{total}', String(filteredJobs.length))
+                  ? t('home_vac_preview_count', { shown: count, total: filteredJobs.length })
                   : count === 1
-                    ? '1 lowongan ditemukan'
-                    : `${count} lowongan ditemukan`
+                    ? t('home_jobs_found_one')
+                    : t('home_jobs_found_many', { count })
               }
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {

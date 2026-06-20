@@ -1,7 +1,8 @@
 const { readAdminEnv, missingEnvKeys, getDb } = require('./_helpers/firebase');
 const { guardApi, RATE_LIMITS } = require('./_helpers/security');
+const { wrapHandler, captureError } = require('./_helpers/sentry');
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbRead })) return;
 
   if (req.method !== 'GET') {
@@ -41,6 +42,7 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     console.error('firebase-health error:', error);
+    captureError(error, { route: 'firebase-health' });
     return res.status(503).json({
       ok: false,
       timestamp: new Date().toISOString(),
@@ -54,4 +56,6 @@ module.exports = async function handler(req, res) {
       },
     });
   }
-};
+}
+
+module.exports = wrapHandler(handler);

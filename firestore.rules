@@ -11,7 +11,7 @@ service cloud.firestore {
 
     // Ambil role dari collection 'users'
     function getUserRole() {
-      let userDoc = get(/databases/\( (database)/documents/users/ \)(request.auth.uid));
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return userDoc.data.role;
     }
 

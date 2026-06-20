@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useLanguage } from '../services/i18n';
+import { appLangToSeoLocale, useLanguage, type AppLanguage } from '../services/i18n';
 import {
   buildJobDetailSeo,
   parseSeoLocale,
@@ -40,7 +40,8 @@ export function usePageSeo(): SeoConfig {
 
   const locale = useMemo(() => {
     const fromQuery = parseSeoLocale(location.search);
-    return language === 'en' ? 'en' : fromQuery;
+    const fromLang = appLangToSeoLocale(language);
+    return fromLang === 'en' ? 'en' : fromQuery;
   }, [location.search, language]);
 
   return useMemo(() => {
@@ -49,7 +50,8 @@ export function usePageSeo(): SeoConfig {
   }, [override, location.pathname, location.search, locale]);
 }
 
-export function useJobSeo(job: import('../types').JobVacancy | undefined, locale: 'id' | 'en') {
+export function useJobSeo(job: import('../types').JobVacancy | undefined, language: AppLanguage) {
+  const locale = appLangToSeoLocale(language);
   useEffect(() => {
     if (job?.isActive) {
       setSeoOverride(buildJobDetailSeo(job, locale));
@@ -57,5 +59,5 @@ export function useJobSeo(job: import('../types').JobVacancy | undefined, locale
       setSeoOverride(null);
     }
     return () => setSeoOverride(null);
-  }, [job, locale]);
+  }, [job, locale, language]);
 }

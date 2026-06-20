@@ -62,9 +62,11 @@ function JobMetaGrid({ items }: { items: MetaItem[] }) {
 
 function ApplyButton({
   href,
+  label,
   className = '',
 }: {
   href: string;
+  label: string;
   className?: string;
 }) {
   return (
@@ -74,7 +76,7 @@ function ApplyButton({
       style={{ backgroundColor: BRAND_NAVY }}
     >
       <Send className="h-4 w-4" aria-hidden />
-      Lamar Sekarang
+      {label}
     </Link>
   );
 }
@@ -82,7 +84,7 @@ function ApplyButton({
 export const JobDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -114,13 +116,13 @@ export const JobDetailPage: React.FC = () => {
 
   const metaItems: MetaItem[] = fields
     ? [
-        { label: 'Tipe Kontrak', value: fields.type, icon: Briefcase },
-        { label: 'Departemen', value: fields.department, icon: Building2 },
-        { label: 'Gaji', value: formatSalaryRange(fields.salaryRange), icon: Wallet },
-        { label: 'Pendidikan', value: fields.minEducation || 'Tidak ditentukan', icon: GraduationCap },
-        { label: 'Usia', value: formatMaxAge(fields.maxAge), icon: Calendar },
+        { label: t('job_meta_contract'), value: fields.type, icon: Briefcase },
+        { label: t('job_meta_department'), value: fields.department, icon: Building2 },
+        { label: t('job_meta_salary'), value: formatSalaryRange(fields.salaryRange), icon: Wallet },
+        { label: t('job_meta_education'), value: fields.minEducation || t('job_meta_unspecified'), icon: GraduationCap },
+        { label: t('job_meta_age'), value: formatMaxAge(fields.maxAge), icon: Calendar },
         {
-          label: 'Gender',
+          label: t('job_meta_gender'),
           value: formatGenderPreference(fields.genderPreference),
           icon: UserRound,
         },
@@ -140,8 +142,8 @@ export const JobDetailPage: React.FC = () => {
     >
       <PageTopBar
         backTo="/vacancies"
-        backLabel="Kembali ke Lowongan"
-        badge="Detail Lowongan"
+        backLabel={t('job_back_label')}
+        badge={t('job_badge')}
       />
 
       <DataFetchState
@@ -167,13 +169,13 @@ export const JobDetailPage: React.FC = () => {
               />
 
               <ContentCard>
-                <SectionHeader compact title="Informasi Utama" />
+                <SectionHeader compact title={t('job_main_info')} />
                 <JobMetaGrid items={metaItems} />
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#003087]/10 bg-blue-50/40 px-3.5 py-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#003087]" aria-hidden />
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                      Lokasi Penempatan
+                      {t('job_placement_location')}
                     </p>
                     <p className="mt-0.5 text-sm font-extrabold text-slate-900">{fields.location}</p>
                   </div>
@@ -182,7 +184,7 @@ export const JobDetailPage: React.FC = () => {
 
               {fields.description && (
                 <ContentCard>
-                  <SectionHeader compact title="Deskripsi Lowongan" />
+                  <SectionHeader compact title={t('job_description')} />
                   <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
                     {fields.description}
                   </p>
@@ -191,7 +193,7 @@ export const JobDetailPage: React.FC = () => {
 
               {fields.requirements.length > 0 && (
                 <ContentCard>
-                  <SectionHeader compact title="Kualifikasi / Persyaratan" />
+                  <SectionHeader compact title={t('job_requirements')} />
                   <ul className="space-y-2.5">
                     {fields.requirements.map((req, idx) => (
                       <li
@@ -212,7 +214,7 @@ export const JobDetailPage: React.FC = () => {
 
               {fields.requiredSkills.length > 0 && (
                 <ContentCard>
-                  <SectionHeader compact title="Required Skills" />
+                  <SectionHeader compact title={t('job_required_skills')} />
                   <div className="flex flex-wrap gap-2">
                     {fields.requiredSkills.map((skill) => (
                       <span
@@ -227,7 +229,7 @@ export const JobDetailPage: React.FC = () => {
               )}
 
               <div className="hidden md:block">
-                <ApplyButton href={applyHref} />
+                <ApplyButton href={applyHref} label={t('job_apply_now')} />
               </div>
             </MarketingPageShell>
 
@@ -235,7 +237,7 @@ export const JobDetailPage: React.FC = () => {
               className="fixed inset-x-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_24px_rgba(15,23,42,0.08)] backdrop-blur-md md:hidden"
               style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
             >
-              <ApplyButton href={applyHref} />
+              <ApplyButton href={applyHref} label={t('job_apply_now')} />
             </div>
           </>
         ) : (
@@ -243,16 +245,16 @@ export const JobDetailPage: React.FC = () => {
           !isError && (
             <MarketingPageShell>
               <ContentCard className="text-center">
-                <p className="text-sm font-bold text-slate-700">Lowongan tidak ditemukan</p>
+                <p className="text-sm font-bold text-slate-700">{t('job_not_found')}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  ID: {jobId || '—'} — mungkin sudah ditutup atau dihapus.
+                  {t('job_not_found_desc', { id: jobId || '—' })}
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate('/vacancies')}
                   className="mt-5 min-h-[44px] rounded-xl px-5 py-2.5 text-xs font-bold text-[#003087] underline"
                 >
-                  Lihat semua lowongan
+                  {t('job_view_all')}
                 </button>
               </ContentCard>
             </MarketingPageShell>

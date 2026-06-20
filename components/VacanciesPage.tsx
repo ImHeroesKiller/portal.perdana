@@ -16,7 +16,7 @@ import {
   getWebSiteJsonLd,
   resolvePageSeo,
 } from '../lib/seo';
-import { useLanguage } from '../services/i18n';
+import { appLangToSeoLocale, useLanguage } from '../services/i18n';
 import {
   ChevronLeft,
   Search,
@@ -27,7 +27,7 @@ import {
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -47,7 +47,7 @@ export const VacanciesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const locale = language === 'en' ? 'en' : 'id';
+    const locale = appLangToSeoLocale(language);
     const base = resolvePageSeo('/vacancies', '', locale);
     const activeJobs = jobs.filter((j) => j.isActive);
     setSeoOverride({
@@ -168,7 +168,7 @@ export const VacanciesPage: React.FC = () => {
 
   const handleOpenMap = (lat?: number, lng?: number, title?: string) => {
     if (lat && lng) {
-      setMapModalData({ lat, lng, title: title || 'Lokasi' });
+      setMapModalData({ lat, lng, title: title || t('vacancies_location_default') });
     } else {
       setMapModalData({ lat: -2.6781, lng: 121.9315, title: title || 'Morowali' });
     }
@@ -184,14 +184,14 @@ export const VacanciesPage: React.FC = () => {
             onClick={() => navigate('/')}
             className="mr-2 flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-95"
             id="btn-back-vacancies"
-            aria-label="Kembali ke beranda"
+            aria-label={t('vacancies_back_aria')}
           >
             <ChevronLeft className="h-6 w-6 stroke-[2.5]" />
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-black tracking-tight">Lowongan Tersedia</h1>
+            <h1 className="text-lg font-black tracking-tight">{t('vacancies_title')}</h1>
             <p className="mt-0.5 text-[10px] font-semibold tracking-wider text-blue-200">
-              PT Perdana Adi Yuda • Karir Alih Daya
+              {t('vacancies_subtitle')}
             </p>
           </div>
         </div>
@@ -208,10 +208,10 @@ export const VacanciesPage: React.FC = () => {
             <input
               type="search"
               className="block w-full rounded-2xl border border-slate-100 bg-white py-3.5 pl-10 pr-4 text-sm font-medium text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#003087]/30 focus:outline-none focus:ring-2 focus:ring-[#003087]/25"
-              placeholder="Cari lowongan berdasarkan judul atau deskripsi..."
+              placeholder={t('vacancies_search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Cari lowongan"
+              aria-label={t('vacancies_search_aria')}
             />
           </div>
 
@@ -219,10 +219,10 @@ export const VacanciesPage: React.FC = () => {
             type="button"
             onClick={() => setShowFilterModal(true)}
             className="flex min-h-[48px] shrink-0 items-center gap-1.5 rounded-2xl border border-slate-100 bg-white px-3.5 text-xs font-bold text-[#003087] shadow-sm transition hover:bg-blue-50 active:scale-[0.98]"
-            aria-label="Buka filter sektor"
+            aria-label={t('vacancies_filter_aria')}
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
-            <span>Filter</span>
+            <span>{t('vacancies_filter')}</span>
           </button>
         </div>
 
@@ -235,9 +235,9 @@ export const VacanciesPage: React.FC = () => {
 
         {filterRelaxed && jobsToRender.length > 0 && (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] font-semibold text-amber-800">
-            Filter terlalu ketat — menampilkan semua {jobsToRender.length} lowongan.
+            {t('vacancies_filter_relaxed', { count: jobsToRender.length })}
             <button type="button" onClick={resetFilters} className="ml-2 font-bold underline">
-              Reset filter
+              {t('vacancies_reset_filter')}
             </button>
           </div>
         )}
@@ -245,17 +245,17 @@ export const VacanciesPage: React.FC = () => {
         {hasJobsButFilteredEmpty && (
           <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="text-sm font-semibold text-slate-700">
-              Tidak ada lowongan yang cocok
+              {t('vacancies_no_match_title')}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Coba ubah kata kunci atau filter sektor pekerjaan.
+              {t('vacancies_no_match_desc')}
             </p>
             <button
               type="button"
               onClick={resetFilters}
               className="mt-4 min-h-[48px] rounded-xl border border-[#003087]/20 bg-blue-50 px-5 text-xs font-bold text-[#003087] transition active:scale-[0.98]"
             >
-              Reset pencarian & filter
+              {t('vacancies_reset_all')}
             </button>
           </div>
         )}
@@ -265,7 +265,7 @@ export const VacanciesPage: React.FC = () => {
           isFetching={isFetching && rawJobs.length > 0}
           error={isError ? error : null}
           isEmpty={hasNoJobsAtAll}
-          emptyMessage="Belum ada lowongan tersedia saat ini."
+          emptyMessage={t('vacancies_empty')}
           onRetry={() => { void refetch(); }}
           minHeight="14rem"
         >
@@ -312,16 +312,16 @@ export const VacanciesPage: React.FC = () => {
           </div>
           <div>
             <p className="text-[11px] font-bold leading-snug text-slate-800">
-              Tidak menemukan lowongan yang cocok?
+              {t('vacancies_cta_title')}
             </p>
             <p className="mt-1 text-[10px] leading-snug text-slate-500">
-              Hubungi tim HR atau daftar agar CV Anda masuk ke arsip rekrutmen.
+              {t('vacancies_cta_desc')}
             </p>
             <Link
               to="/contact"
               className="mt-2.5 inline-flex min-h-[36px] items-center text-[11px] font-extrabold text-[#003087] transition hover:underline"
             >
-              Beri tahu posisi yang Anda cari →
+              {t('vacancies_cta_link')}
             </Link>
           </div>
         </div>
@@ -345,14 +345,14 @@ export const VacanciesPage: React.FC = () => {
                 id="filter-modal-title"
                 className="text-xs font-black uppercase tracking-wider text-slate-900"
               >
-                Filter Sektor
+                {t('vacancies_filter_modal_title')}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowFilterModal(false)}
                 className="text-sm font-bold text-slate-400 transition hover:text-slate-700"
               >
-                Tutup
+                {t('vacancies_filter_close')}
               </button>
             </div>
             <div className="space-y-2 p-4">
@@ -370,7 +370,7 @@ export const VacanciesPage: React.FC = () => {
                       : 'border-slate-100 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {f === 'Semua' ? 'Tampilkan Semua Kategori' : `Sektor ${f}`}
+                  {f === 'Semua' ? t('vacancies_filter_all') : t('vacancies_filter_sector', { name: f })}
                 </button>
               ))}
             </div>
@@ -389,17 +389,17 @@ export const VacanciesPage: React.FC = () => {
             className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
-            aria-label={`Peta lokasi ${mapModalData.title}`}
+            aria-label={t('vacancies_map_title', { name: mapModalData.title })}
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
               <h3 className="text-xs font-extrabold text-slate-950">
-                Lokasi: {mapModalData.title}
+                {t('vacancies_map_title', { name: mapModalData.title })}
               </h3>
               <button
                 type="button"
                 onClick={() => setMapModalData(null)}
                 className="text-base font-extrabold text-slate-400 hover:text-slate-700"
-                aria-label="Tutup peta"
+                aria-label={t('vacancies_map_close')}
               >
                 ×
               </button>

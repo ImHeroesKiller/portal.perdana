@@ -42,7 +42,7 @@ export const NavBar: React.FC = () => {
   const accountRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const currentUser = getCurrentUser();
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const refreshNotifications = () => {
     setNotifications(getNavNotifications());
@@ -115,7 +115,7 @@ export const NavBar: React.FC = () => {
           type="button"
           onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
           className="-ml-1 rounded-lg p-2 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-          aria-label={isMobileNavOpen ? 'Tutup menu' : 'Buka menu'}
+          aria-label={isMobileNavOpen ? t('nav_close_menu') : t('nav_open_menu')}
           aria-expanded={isMobileNavOpen}
         >
           {isMobileNavOpen ? (
@@ -127,15 +127,28 @@ export const NavBar: React.FC = () => {
 
         {/* Kanan: bahasa, notifikasi, profil */}
         <div className="flex items-center gap-1 sm:gap-2">
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-            aria-label={language === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+          <div
+            className="inline-flex items-center rounded-lg border border-slate-200/80 bg-slate-50/80 p-0.5"
+            role="group"
+            aria-label={t('lang_switch_aria')}
           >
-            <GlobeAltIcon className="h-[18px] w-[18px]" />
-            <span>{language === 'id' ? 'ID' : 'EN'}</span>
-          </button>
+            <GlobeAltIcon className="ml-1.5 h-4 w-4 text-slate-500" aria-hidden />
+            {(['id', 'en', 'zh'] as const).map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setLanguage(code)}
+                className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${
+                  language === code
+                    ? 'bg-white text-[#0056C6] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                aria-pressed={language === code}
+              >
+                {t(`lang_${code}`)}
+              </button>
+            ))}
+          </div>
 
           <div className="relative" ref={notifRef}>
             <button
@@ -204,7 +217,7 @@ export const NavBar: React.FC = () => {
                 setIsNotifOpen(false);
               }}
               className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-200"
-              aria-label={currentUser ? 'Menu akun' : t('nav_login')}
+              aria-label={currentUser ? t('nav_account_menu') : t('nav_login')}
               aria-expanded={isAccountOpen}
             >
               {avatarInitial ? (

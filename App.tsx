@@ -10,7 +10,7 @@ import { useGoogleAnalytics } from './hooks/useGoogleAnalytics';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { useAuthFirebaseSync } from './hooks/useAuthFirebaseSync';
 import { RouteSeo } from './components/seo/RouteSeo';
-import { LanguageProvider } from './services/i18n';
+import { LanguageUrlSync } from './services/i18n';
 
 const VacanciesPage = lazy(() =>
   import('./components/VacanciesPage').then((m) => ({ default: m.VacanciesPage }))
@@ -49,11 +49,10 @@ export default function App() {
   useAuthFirebaseSync();
 
   return (
-    <LanguageProvider>
-      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <AppShell />
-      </HashRouter>
-    </LanguageProvider>
+    <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <LanguageUrlSync />
+      <AppShell />
+    </HashRouter>
   );
 }
 

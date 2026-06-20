@@ -1,6 +1,7 @@
 const { guardApi } = require('./_helpers/security');
+const { wrapHandler } = require('./_helpers/sentry');
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (!guardApi(req, res)) return;
 
   if (req.method !== 'GET') {
@@ -8,4 +9,6 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(200).json({ ok: true, pong: true, ts: new Date().toISOString() });
-};
+}
+
+module.exports = wrapHandler(handler);

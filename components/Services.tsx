@@ -7,7 +7,7 @@ import {
   CheckCircleIcon,
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
-import { useLanguage } from '../services/i18n';
+import { pickLocalized, useLanguage } from '../services/i18n';
 import { SectionHeader } from './home/SectionHeader';
 import {
   ContentCard,
@@ -104,26 +104,21 @@ const SERVICES_DATA: ServiceDetail[] = [
 ];
 
 export const Services: React.FC = () => {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('business-support');
-  const lang = language === 'id' ? 'id' : 'en';
 
   const activeService = SERVICES_DATA.find((s) => s.id === activeTab) ?? SERVICES_DATA[0];
   const ActiveIcon = activeService.icon;
 
   return (
     <div id="services-page" className="min-h-screen bg-slate-50 font-sans antialiased text-slate-800">
-      <PageTopBar badge="Layanan Alih Daya" />
+      <PageTopBar badge={t('services_badge')} />
 
       <MarketingPageShell wide>
         <PageHero
           eyebrow="PT Perdana Adi Yuda"
-          title={lang === 'id' ? 'Layanan Solusi Tenaga Kerja' : 'Manpower Solution Services'}
-          subtitle={
-            lang === 'id'
-              ? 'Layanan pengelolaan tenaga kerja terintegrasi, profesional, dan andal untuk mendukung efisiensi operasional bisnis Anda.'
-              : 'Integrated, professional, and reliable workforce management services to support your business operational efficiency.'
-          }
+          title={t('services_hero_title')}
+          subtitle={t('services_hero_sub')}
           imageSrc="/assets/hero/site_scaffolding.jpg"
           imageAlt="Layanan konstruksi"
         />
@@ -131,12 +126,8 @@ export const Services: React.FC = () => {
         <ContentCard>
           <SectionHeader
             compact
-            title={lang === 'id' ? 'Solusi Layanan Terpadu' : 'Comprehensive Services'}
-            subtitle={
-              lang === 'id'
-                ? 'Empat pilar utama layanan pendukung bisnis untuk mitra korporasi'
-                : 'Four main pillars of business support services for corporate partners'
-            }
+            title={t('services_section_title')}
+            subtitle={t('services_section_sub')}
           />
 
           <div className={`${HOME_H_SCROLL} -mx-2 mb-6 px-2 pb-1`}>
@@ -144,7 +135,7 @@ export const Services: React.FC = () => {
               {SERVICES_DATA.map((service) => {
                 const Icon = service.icon;
                 const isActive = activeTab === service.id;
-                const label = lang === 'id' ? service.title.id : service.title.en;
+                const label = pickLocalized(service.title, language);
 
                 return (
                   <button
@@ -178,41 +169,32 @@ export const Services: React.FC = () => {
                   <ActiveIcon className="h-6 w-6" aria-hidden />
                 </div>
                 <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl">
-                  {lang === 'id' ? activeService.title.id : activeService.title.en}
+                  {pickLocalized(activeService.title, language)}
                 </h3>
               </div>
 
               <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
-                {lang === 'id' ? activeService.desc.id : activeService.desc.en}
+                {pickLocalized(activeService.desc, language)}
               </p>
 
               <div className="mt-6 border-t border-slate-100 pt-6">
                 <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
                   <CheckCircleIcon className="h-5 w-5 text-[#003087]" aria-hidden />
-                  {lang === 'id' ? 'Item Cakupan Kerja' : 'Work Scope Deliverables'}
+                  {t('services_scope_title')}
                 </h4>
-                <WorkScopeTimeline items={activeService.items} lang={lang} />
+                <WorkScopeTimeline items={activeService.items} lang={language} />
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-100 bg-blue-50/40 p-5 lg:col-span-5">
               <h4 className="text-[11px] font-black uppercase tracking-widest text-[#003087]">
-                {lang === 'id' ? 'Mengapa Memilih Kami?' : 'Why Choose Our Solutions?'}
+                {t('services_why_title')}
               </h4>
               <div className="mt-4 space-y-4 text-sm">
                 {[
-                  {
-                    title: lang === 'id' ? 'Kepatuhan Hukum Penuh' : 'Full Legal Compliance',
-                    desc: lang === 'id' ? 'Menjunjung peraturan ketenagakerjaan resmi.' : 'Adhere with formal Indonesian labor laws.',
-                  },
-                  {
-                    title: lang === 'id' ? 'Respon & Seleksi Cepat' : 'Rapid SLA Response',
-                    desc: lang === 'id' ? 'Proses sourcing ringkas untuk minimalisasi downtime.' : 'Short sourcing process to minimize downtime.',
-                  },
-                  {
-                    title: lang === 'id' ? 'Garansi Penggantian' : 'Replacement Guarantee',
-                    desc: lang === 'id' ? 'Garansi penggantian personil jika tidak memenuhi kualifikasi.' : 'Replacement if personnel does not meet standards.',
-                  },
+                  { title: t('services_why_legal'), desc: t('services_why_legal_desc') },
+                  { title: t('services_why_sla'), desc: t('services_why_sla_desc') },
+                  { title: t('services_why_guarantee'), desc: t('services_why_guarantee_desc') },
                 ].map((point) => (
                   <div key={point.title}>
                     <h5 className="font-bold text-slate-900">{point.title}</h5>
@@ -225,7 +207,7 @@ export const Services: React.FC = () => {
                   href="#/contact"
                   className="inline-flex min-h-[48px] items-center gap-1.5 rounded-xl bg-[#003087] px-5 text-xs font-bold text-white transition hover:bg-blue-900 active:scale-[0.98]"
                 >
-                  {lang === 'id' ? 'Hubungi Admin' : 'Contact Admin'}
+                  {t('services_contact_admin')}
                   <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
                 </a>
               </div>
@@ -236,40 +218,28 @@ export const Services: React.FC = () => {
         <ContentCard>
           <SectionHeader
             compact
-            title={lang === 'id' ? 'Alur Perekrutan' : 'Recruitment Workflow'}
-            subtitle={
-              lang === 'id'
-                ? 'Prosedur 8 langkah mengkurasi talenta non-manajemen berkualitas'
-                : '8-step blueprint from identification to onboarding'
-            }
+            title={t('services_flow_title')}
+            subtitle={t('services_flow_sub')}
           />
-          <RecruitmentFlowTimeline lang={lang} />
+          <RecruitmentFlowTimeline lang={language} />
         </ContentCard>
 
         <ContentCard>
           <SectionHeader
             compact
-            title={lang === 'id' ? 'Siklus Manajemen Tenaga Kerja' : 'Enterprise Lifecycle'}
-            subtitle={
-              lang === 'id'
-                ? 'Pengelolaan siklus hidup ketenagakerjaan untuk produktivitas konstan'
-                : 'Complete manpower lifecycle for constant performance'
-            }
+            title={t('services_lifecycle_title')}
+            subtitle={t('services_lifecycle_sub')}
           />
-          <EnterpriseLifecycleTimeline lang={lang} />
+          <EnterpriseLifecycleTimeline lang={language} />
         </ContentCard>
 
         <ContentCard>
           <SectionHeader
             compact
-            title={lang === 'id' ? 'Mitra & Pengalaman Operasional' : 'Partners & Experience'}
-            subtitle={
-              lang === 'id'
-                ? 'Dipercaya perusahaan nasional — termasuk IMIP & mitra industri'
-                : 'Trusted by national enterprises — including IMIP & industry partners'
-            }
+            title={t('services_partners_title')}
+            subtitle={t('services_partners_sub')}
           />
-          <PartnerExperienceSection lang={lang} />
+          <PartnerExperienceSection lang={language} />
         </ContentCard>
       </MarketingPageShell>
     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BRAND_NAVY } from '../home/homeContent';
+import { pickLocalized, useLanguage, type AppLanguage } from '../../services/i18n';
 import {
   LIFECYCLE_STEPS,
   RECRUIT_FLOW_STEPS,
@@ -8,10 +9,8 @@ import {
   type PartnerBrand,
 } from './servicesContent';
 
-type Lang = 'id' | 'en';
-
-function t(text: LocalizedText, lang: Lang): string {
-  return lang === 'id' ? text.id : text.en;
+function localized(text: LocalizedText, lang: AppLanguage): string {
+  return pickLocalized(text, lang);
 }
 
 /** Work scope — timeline ringkas dengan nomor navy */
@@ -20,7 +19,7 @@ export function WorkScopeTimeline({
   lang,
 }: {
   items: { id: string; en: string }[];
-  lang: Lang;
+  lang: AppLanguage;
 }) {
   return (
     <ol className="relative space-y-3">
@@ -40,7 +39,7 @@ export function WorkScopeTimeline({
           </span>
           <div className="min-w-0 flex-1 rounded-xl border border-slate-100 bg-white px-3.5 py-3 shadow-sm transition hover:border-[#003087]/20 hover:shadow-md">
             <p className="text-xs font-semibold leading-snug text-slate-800 sm:text-sm">
-              {lang === 'id' ? item.id : item.en}
+              {pickLocalized(item, lang)}
             </p>
           </div>
         </li>
@@ -50,7 +49,7 @@ export function WorkScopeTimeline({
 }
 
 /** Recruitment flow — horizontal step cards (scroll di mobile) */
-export function RecruitmentFlowTimeline({ lang }: { lang: Lang }) {
+export function RecruitmentFlowTimeline({ lang }: { lang: AppLanguage }) {
   return (
     <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex min-w-max gap-0 px-1">
@@ -66,10 +65,10 @@ export function RecruitmentFlowTimeline({ lang }: { lang: Lang }) {
                   {flow.step}
                 </div>
                 <p className="mt-2 text-center text-[10px] font-bold uppercase tracking-wide text-[#003087]">
-                  {t(flow.short, lang)}
+                  {localized(flow.short, lang)}
                 </p>
                 <p className="mt-1.5 line-clamp-3 text-center text-[11px] font-semibold leading-snug text-slate-800">
-                  {t(flow.title, lang)}
+                  {localized(flow.title, lang)}
                 </p>
               </div>
               {!isLast && (
@@ -84,7 +83,7 @@ export function RecruitmentFlowTimeline({ lang }: { lang: Lang }) {
 }
 
 /** Enterprise lifecycle — kartu step vertikal dengan connector */
-export function EnterpriseLifecycleTimeline({ lang }: { lang: Lang }) {
+export function EnterpriseLifecycleTimeline({ lang }: { lang: AppLanguage }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {LIFECYCLE_STEPS.map((step, idx) => (
@@ -103,8 +102,8 @@ export function EnterpriseLifecycleTimeline({ lang }: { lang: Lang }) {
               {String(step.step).padStart(2, '0')}
             </span>
           </div>
-          <h4 className="text-sm font-extrabold text-slate-900">{t(step.title, lang)}</h4>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t(step.detail, lang)}</p>
+          <h4 className="text-sm font-extrabold text-slate-900">{localized(step.title, lang)}</h4>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{localized(step.detail, lang)}</p>
           {idx < LIFECYCLE_STEPS.length - 1 && (
             <span
               className="absolute -right-2 top-1/2 hidden h-4 w-4 -translate-y-1/2 text-[#003087]/30 lg:block"
@@ -119,7 +118,7 @@ export function EnterpriseLifecycleTimeline({ lang }: { lang: Lang }) {
   );
 }
 
-function PartnerCard({ partner, lang }: { partner: PartnerBrand; lang: Lang }) {
+function PartnerCard({ partner, lang }: { partner: PartnerBrand; lang: AppLanguage }) {
   const featured = partner.featured;
 
   return (
@@ -142,12 +141,12 @@ function PartnerCard({ partner, lang }: { partner: PartnerBrand; lang: Lang }) {
       </p>
       {partner.fullName && (
         <p className="mt-1 text-[10px] font-medium leading-snug text-slate-500">
-          {t(partner.fullName, lang)}
+          {partner.fullName ? localized(partner.fullName, lang) : partner.name}
         </p>
       )}
       {partner.sector && (
         <span className="mt-2 inline-flex rounded-full border border-[#003087]/15 bg-blue-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#003087]">
-          {t(partner.sector, lang)}
+          {partner.sector ? localized(partner.sector, lang) : ''}
         </span>
       )}
     </div>
@@ -155,7 +154,8 @@ function PartnerCard({ partner, lang }: { partner: PartnerBrand; lang: Lang }) {
 }
 
 /** Partner & Experience — logo placeholder + IMIP featured */
-export function PartnerExperienceSection({ lang }: { lang: Lang }) {
+export function PartnerExperienceSection({ lang }: { lang: AppLanguage }) {
+  const { t } = useLanguage();
   const featured = SERVICE_PARTNERS.filter((p) => p.featured);
   const others = SERVICE_PARTNERS.filter((p) => !p.featured);
 
@@ -171,11 +171,7 @@ export function PartnerExperienceSection({ lang }: { lang: Lang }) {
       </div>
 
       <div className="rounded-2xl border border-dashed border-[#003087]/20 bg-blue-50/40 px-4 py-3 text-center">
-        <p className="text-[11px] font-semibold text-slate-600">
-          {lang === 'id'
-            ? 'Pengalaman penempatan tenaga kerja di sektor smelter, konstruksi, manufaktur, dan operasional industri.'
-            : 'Proven workforce placement across smelter, construction, manufacturing, and industrial operations.'}
-        </p>
+        <p className="text-[11px] font-semibold text-slate-600">{t('services_partners_footer')}</p>
       </div>
     </div>
   );

@@ -181,7 +181,8 @@ const PRIVATE_ROUTE_PREFIXES = ['/admin', '/portal', '/settings', '/interview-se
 export function parseSeoLocale(search: string): SeoLocale {
   try {
     const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-    return params.get('lang') === 'en' ? 'en' : 'id';
+    const lang = params.get('lang');
+    return lang === 'en' ? 'en' : 'id';
   } catch {
     return 'id';
   }

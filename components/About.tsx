@@ -21,65 +21,53 @@ import {
   PageHero,
   PageTopBar,
 } from './layout/MarketingPageLayout';
-
-const VALUES = [
-  { icon: ShieldCheck, title: 'Integritas', desc: 'Menjunjung tinggi kejujuran dan tanggung jawab dalam setiap proses kerja.' },
-  { icon: Users, title: 'Profesionalisme', desc: 'Bekerja secara kompeten, terukur, dan berorientasi pada hasil terbaik.' },
-  { icon: Handshake, title: 'Kemitraan', desc: 'Membangun hubungan jangka panjang yang saling percaya dan menguntungkan.' },
-  { icon: Star, title: 'Kualitas', desc: 'Mengutamakan mutu layanan dan kepuasan pelanggan secara berkelanjutan.' },
-];
-
-const SERVICES = [
-  { icon: Search, title: 'Rekrutmen & Seleksi', desc: 'Proses rekrutmen profesional untuk mendapatkan talenta terbaik sesuai kebutuhan perusahaan.' },
-  { icon: GraduationCap, title: 'Pelatihan Kerja', desc: 'Program pelatihan terstruktur untuk meningkatkan kompetensi dan produktivitas tenaga kerja.' },
-  { icon: UserCheck, title: 'Penempatan Tenaga Kerja', desc: 'Penempatan tenaga kerja yang tepat, sesuai posisi dan budaya kerja perusahaan.' },
-  { icon: FileSpreadsheet, title: 'Manajemen & Administrasi', desc: 'Pengelolaan administrasi ketenagakerjaan yang rapi, patuh regulasi, dan efisien.' },
-];
-
-const STATS = [
-  { icon: Briefcase, value: '500+', label: 'Mitra Perusahaan' },
-  { icon: Users, value: '10.000+', label: 'Tenaga Kerja Aktif' },
-  { icon: Building2, value: '20+', label: 'Kota Operasional' },
-  { icon: Handshake, value: '15+', label: 'Tahun Pengalaman' },
-];
+import { useLanguage } from '../services/i18n';
 
 export const About: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const VALUES = [
+    { icon: ShieldCheck, title: t('about_val_integrity'), desc: t('about_val_integrity_desc') },
+    { icon: Users, title: t('about_val_pro'), desc: t('about_val_pro_desc') },
+    { icon: Handshake, title: t('about_val_partnership'), desc: t('about_val_partnership_desc') },
+    { icon: Star, title: t('about_val_quality'), desc: t('about_val_quality_desc') },
+  ];
+
+  const SERVICES = [
+    { icon: Search, title: t('about_svc_recruitment'), desc: t('about_svc_recruitment_desc') },
+    { icon: GraduationCap, title: t('about_svc_training'), desc: t('about_svc_training_desc') },
+    { icon: UserCheck, title: t('about_svc_placement'), desc: t('about_svc_placement_desc') },
+    { icon: FileSpreadsheet, title: t('about_svc_admin'), desc: t('about_svc_admin_desc') },
+  ];
+
+  const STATS = [
+    { icon: Briefcase, value: '500+', label: t('about_stat_partners') },
+    { icon: Users, value: '10.000+', label: t('about_stat_workers') },
+    { icon: Building2, value: '20+', label: t('about_stat_cities') },
+    { icon: Handshake, value: '15+', label: t('about_stat_years') },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-800">
-      <PageTopBar badge="Profil Perusahaan" />
+      <PageTopBar badge={t('about_badge')} />
 
       <MarketingPageShell>
         <PageHero
-          eyebrow="Tentang Kami"
-          title={
-            <>
-              Mitra Terpercaya dalam <span className="text-cyan-200">Solusi SDM</span>
-            </>
-          }
-          subtitle="PT Perdana Adi Yuda berkomitmen menyediakan layanan alih daya terbaik melalui proses rekrutmen yang profesional, pelatihan berkualitas, dan penempatan tenaga kerja yang tepat."
+          eyebrow={t('about_eyebrow')}
+          title={t('about_hero_title')}
+          subtitle={t('about_hero_subtitle')}
           imageSrc="/assets/hero/site_workers.jpg"
           imageAlt="Tim lapangan Perdana"
         />
 
         <ContentCard>
-          <SectionHeader
-            compact
-            title="Siapa Kami"
-            subtitle="Profil singkat PT Perdana Adi Yuda (PERDANA)"
-          />
+          <SectionHeader compact title={t('about_who_section')} subtitle={t('about_who_sub')} />
           <div className="flex flex-col gap-6 md:flex-row md:items-start">
             <div className="flex-1 space-y-3.5 text-sm font-medium leading-relaxed text-slate-600">
-              <p>
-                Didirikan dengan semangat untuk menjadi mitra strategis perusahaan dalam pengelolaan sumber daya manusia.
-              </p>
-              <p>
-                Kami menghadirkan solusi alih daya yang fleksibel, efisien, dan berorientasi pada kualitas serta kepuasan pelanggan.
-              </p>
-              <p>
-                Dengan pengalaman dan jaringan yang luas, kami siap mendukung berbagai kebutuhan tenaga kerja di berbagai sektor industri di seluruh Indonesia.
-              </p>
+              <p>{t('about_who_p1')}</p>
+              <p>{t('about_who_p2')}</p>
+              <p>{t('about_who_p3')}</p>
             </div>
             <div className="relative h-64 w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 md:w-64">
               <img
@@ -92,7 +80,7 @@ export const About: React.FC = () => {
               />
               <div className="absolute bottom-3 left-3 right-3 rounded-xl border border-white/10 bg-slate-900/80 p-3 text-center text-white backdrop-blur-sm">
                 <span className="block text-[9px] font-black uppercase tracking-widest text-cyan-200">
-                  Field Representative
+                  {t('about_field_rep')}
                 </span>
                 <p className="mt-0.5 text-[10px] font-bold">PT Perdana Adi Yuda</p>
               </div>
@@ -101,11 +89,7 @@ export const About: React.FC = () => {
         </ContentCard>
 
         <ContentCard>
-          <SectionHeader
-            compact
-            title="Komitmen & Nilai Utama"
-            subtitle="Nilai yang menjadi dasar kami dalam setiap layanan dan tindakan"
-          />
+          <SectionHeader compact title={t('about_values_title')} subtitle={t('about_values_sub')} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
             {VALUES.map((item) => {
               const Icon = item.icon;
@@ -128,11 +112,7 @@ export const About: React.FC = () => {
         </ContentCard>
 
         <ContentCard>
-          <SectionHeader
-            compact
-            title="Layanan Kami"
-            subtitle="Solusi alih daya untuk membantu pertumbuhan bisnis Anda"
-          />
+          <SectionHeader compact title={t('about_services_title')} subtitle={t('about_services_sub')} />
           <div className="space-y-3">
             {SERVICES.map((item) => {
               const Icon = item.icon;
@@ -158,11 +138,7 @@ export const About: React.FC = () => {
         </ContentCard>
 
         <ContentCard>
-          <SectionHeader
-            compact
-            title="Perdana Dalam Angka"
-            subtitle="Capaian kami dalam mendukung berbagai perusahaan di Indonesia"
-          />
+          <SectionHeader compact title={t('about_stats_title')} subtitle={t('about_stats_sub')} />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {STATS.map((stat) => {
               const Icon = stat.icon;
@@ -183,9 +159,9 @@ export const About: React.FC = () => {
         </ContentCard>
 
         <NavyCtaBanner
-          title="Butuh bantuan atau informasi lebih lanjut?"
-          subtitle="Tim kami siap melayani dan memberikan jawaban atas kebutuhan Anda."
-          buttonLabel="Hubungi Kami"
+          title={t('about_cta_title')}
+          subtitle={t('about_cta_sub')}
+          buttonLabel={t('about_cta_btn')}
           onClick={() => navigate('/contact')}
         />
       </MarketingPageShell>

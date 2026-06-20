@@ -19,6 +19,7 @@ import {
 } from "./lib/db-api";
 import { formatFirebaseError, toHttpStatus } from "./lib/firebase-errors";
 import { JOBS_COLLECTION, normalizeJobFromFirestore } from "./lib/job-record";
+import { initSentryServer, captureServerError } from "./lib/sentry-server";
 
 const SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda yang profesional, efisien, dan ramah. Tugas Anda adalah memandu pelamar kerja mengisi formulir pendaftaran secara bertahap melalui percakapan natural.
@@ -85,6 +86,8 @@ Skema JSON yang harus Anda buat adalah sebagai berikut:
 `;
 
 async function startServer() {
+  initSentryServer();
+
   const app = express();
   const PORT = Number(process.env.PORT) || 5173;
 

@@ -56,7 +56,13 @@ function setJsonLd(data: Record<string, unknown> | Record<string, unknown>[]) {
 export function SeoHead({ config }: { config: SeoConfig }) {
   useEffect(() => {
     document.title = config.title;
-    document.documentElement.lang = config.locale === 'en' ? 'en' : 'id';
+    const htmlLang =
+      typeof document.documentElement.lang === 'string' && document.documentElement.lang.startsWith('zh')
+        ? 'zh-Hans'
+        : config.locale === 'en'
+          ? 'en'
+          : 'id';
+    document.documentElement.lang = htmlLang;
 
     upsertMeta('name', 'description', config.description);
     upsertMeta('name', 'keywords', config.keywords);

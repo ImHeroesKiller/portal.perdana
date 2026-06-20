@@ -132,12 +132,10 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               showCount
               countLabel={(count) =>
                 totalFilteredJobs > count
-                  ? t('home_vac_preview_count')
-                      .replace('{shown}', String(count))
-                      .replace('{total}', String(totalFilteredJobs))
+                  ? t('home_vac_preview_count', { shown: count, total: totalFilteredJobs })
                   : count === 1
-                    ? '1 lowongan ditemukan'
-                    : `${count} lowongan ditemukan`
+                    ? t('home_jobs_found_one')
+                    : t('home_jobs_found_many', { count })
               }
               className="space-y-3"
               renderItem={(job, display: JobDisplayFields) => {

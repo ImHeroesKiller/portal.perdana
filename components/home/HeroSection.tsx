@@ -116,7 +116,7 @@ function HeroContent({
             {jobCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 px-2.5 py-1 text-[10px] font-bold text-amber-100 sm:text-xs">
                 <BriefcaseIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                {t('home_hero_jobs_count').replace('{count}', String(jobCount))}
+                {t('home_hero_jobs_count', { count: jobCount })}
               </span>
             )}
           </div>

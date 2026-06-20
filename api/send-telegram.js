@@ -1,6 +1,7 @@
 const { guardApi, RATE_LIMITS } = require('./_helpers/security');
+const { wrapHandler, captureError } = require('./_helpers/sentry');
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (!guardApi(req, res, { rateLimit: RATE_LIMITS.telegram, requireOrigin: true })) return;
 
   if (req.method !== 'POST') {
@@ -37,6 +38,9 @@ module.exports = async function handler(req, res) {
     return res.status(502).json({ error: 'Gagal mengirim pesan Telegram.' });
   } catch (err) {
     console.error('send-telegram error:', err);
+    captureError(err, { route: 'send-telegram' });
     return res.status(500).json({ error: 'Gagal mengirim pesan Telegram.' });
   }
-};
+}
+
+module.exports = wrapHandler(handler);

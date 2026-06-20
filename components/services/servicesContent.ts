@@ -1,4 +1,4 @@
-export type LocalizedText = { id: string; en: string };
+export type LocalizedText = { id: string; en: string; zh?: string };
 
 export type PartnerBrand = {
   id: string;

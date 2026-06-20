@@ -123,7 +123,7 @@ export const Login: React.FC = () => {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               className="absolute inset-y-0 right-0 flex min-w-[44px] items-center justify-center text-slate-400 transition hover:text-slate-600"
-              aria-label={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+              aria-label={showPassword ? t('login_hide_password') : t('login_show_password')}
               tabIndex={-1}
             >
               {showPassword ? (

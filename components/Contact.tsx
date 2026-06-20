@@ -76,11 +76,11 @@ export const Contact: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-800">
-      <PageTopBar badge="Kontak & Bantuan" />
+      <PageTopBar badge={t('contact_badge')} />
 
       <MarketingPageShell wide>
         <PageHero
-          eyebrow="Hubungi Kami"
+          eyebrow={t('contact_eyebrow')}
           title={t('contact_title')}
           subtitle={t('contact_desc')}
           compact
@@ -88,7 +88,7 @@ export const Contact: React.FC = () => {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <ContentCard>
-            <SectionHeader compact title={t('contact_office')} subtitle="Alamat, telepon, dan peta lokasi" />
+            <SectionHeader compact title={t('contact_office')} subtitle={t('contact_office_sub')} />
 
             <div className="space-y-5">
               <div className="flex items-start gap-3">
@@ -99,7 +99,7 @@ export const Contact: React.FC = () => {
                   <h3 className="text-sm font-bold text-slate-900">{t('contact_address')}</h3>
                   <div className="mt-2 space-y-3 text-sm text-slate-600">
                     <div>
-                      <h4 className="font-semibold text-slate-800">Kantor Pusat</h4>
+                      <h4 className="font-semibold text-slate-800">{t('contact_head_office')}</h4>
                       <p className="whitespace-pre-wrap leading-relaxed">{settings.headOfficeAddress}</p>
                     </div>
                     {settings.branches.map((branch) => (
@@ -126,7 +126,7 @@ export const Contact: React.FC = () => {
                     className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-[#003087] transition hover:underline"
                   >
                     <ChatBubbleLeftRightIcon className="h-4 w-4" aria-hidden />
-                    Chat WhatsApp
+                    {t('contact_whatsapp')}
                   </a>
                 </div>
               </div>
@@ -136,11 +136,11 @@ export const Contact: React.FC = () => {
                   <EnvelopeIcon className="h-5 w-5" aria-hidden />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Email</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{t('contact_email')}</h3>
                   <p className="mt-1 text-sm text-slate-600">{settings.email}</p>
                   {settings.website && (
                     <p className="mt-1 text-xs text-slate-500">
-                      Website:{' '}
+                      {t('contact_website')}:{' '}
                       <a
                         href={settings.website}
                         target="_blank"
@@ -175,7 +175,7 @@ export const Contact: React.FC = () => {
                 required
               />
               <Input
-                label="Email"
+                label={t('contact_email')}
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}

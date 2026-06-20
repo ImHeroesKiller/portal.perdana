@@ -226,7 +226,7 @@ export const JOB_SECTORS: JobSector[] = [
 export function resolveQuickAccessTitle(
   item: QuickAccessItem,
   loggedIn: boolean,
-  t: (key: string) => string
+  t: (key: string, options?: Record<string, unknown>) => string
 ): string {
   if (item.id === 'portal' && loggedIn) {
     return t('home_quick_portal_user');
@@ -238,13 +238,13 @@ export function resolveQuickAccessSubtitle(
   item: QuickAccessItem,
   loggedIn: boolean,
   jobCount: number,
-  t: (key: string) => string
+  t: (key: string, options?: Record<string, unknown>) => string
 ): string {
   if (item.id === 'portal' && loggedIn) {
     return t('home_quick_portal_user_sub');
   }
   if (item.dynamicSubtitleKey && jobCount > 0) {
-    return t(item.dynamicSubtitleKey).replace('{count}', String(jobCount));
+    return t(item.dynamicSubtitleKey, { count: jobCount });
   }
   return t(item.subtitleKey);
 }
