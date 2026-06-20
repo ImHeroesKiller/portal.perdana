@@ -3,6 +3,8 @@
   "framework": "vite",
 
   "rewrites": [
+    { "source": "/api/ping", "destination": "/api/health/ping" },
+    { "source": "/api/firebase-health", "destination": "/api/health/firebase-health" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
 
@@ -85,15 +87,14 @@
 
   "functions": {
     "api/**/*.js": {
-      "memory": 1024,
-      "maxDuration": 60
+      "maxDuration": 10
     }
   },
 
   "crons": [
     {
       "path": "/api/cron/uptime-check",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }

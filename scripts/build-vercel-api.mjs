@@ -13,16 +13,13 @@ const NODE_EXTERNALS = getNodeExternals();
 /** .js-only handlers — tidak dikompilasi dan tidak dihapus saat cleanup */
 const HANDWRITTEN = new Set([
   'send-telegram.js',
-  'ping.js',
   'package.json',
-  'firebase-health.js',
   'cron/uptime-check.js',
   'db/projects.js',
   'db/[collection]/index.js',
   'db/[collection]/[id].js',
-  'telegram/send-user.js',
-  'telegram/updates.js',
-  'telegram/me.js',
+  'telegram/[action].js',
+  'health/[check].js',
 ]);
 
 function isHandwritten(relPath) {

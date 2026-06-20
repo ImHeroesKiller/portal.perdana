@@ -1,14 +1,12 @@
-const { readAdminEnv, missingEnvKeys, getDb } = require('./_helpers/firebase');
-const { guardApi, RATE_LIMITS } = require('./_helpers/security');
-const { wrapHandler, captureError } = require('./_helpers/sentry');
+const { readAdminEnv, missingEnvKeys, getDb } = require('../_helpers/firebase');
+const { guardApi, RATE_LIMITS } = require('../_helpers/security');
+const { wrapHandler, captureError } = require('../_helpers/sentry');
 
-async function handler(req, res) {
-  if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbRead })) return;
+async function handlePing(req, res) {
+  return res.status(200).json({ ok: true, pong: true, ts: new Date().toISOString() });
+}
 
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
+async function handleFirebaseHealth(req, res) {
   const env = readAdminEnv();
   if (!env) {
     return res.status(503).json({
@@ -58,4 +56,26 @@ async function handler(req, res) {
   }
 }
 
-module.exports = wrapHandler(handler);
+const CHECKS = {
+  ping: { method: 'GET', rateLimit: null, handler: handlePing },
+  'firebase-health': { method: 'GET', rateLimit: RATE_LIMITS.dbRead, handler: handleFirebaseHealth },
+};
+
+async function rawHandler(req, res) {
+  const check = req.query?.check;
+  const config = CHECKS[check];
+
+  if (!config) {
+    return res.status(404).json({ error: 'Not Found' });
+  }
+
+  if (!guardApi(req, res, config.rateLimit ? { rateLimit: config.rateLimit } : {})) return;
+
+  if (req.method !== config.method) {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  return config.handler(req, res);
+}
+
+module.exports = wrapHandler(rawHandler);
