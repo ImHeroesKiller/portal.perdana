@@ -1,6 +1,6 @@
 import React from 'react';
 import type { JobVacancy } from '../../types';
-import { getJobDisplayFields, type JobDisplayFields } from '../../lib/job-display';
+import { getJobDisplayFields, resolveJobTitle, type JobDisplayFields } from '../../lib/job-display';
 
 export type { JobDisplayFields };
 
@@ -37,7 +37,8 @@ export const JobList: React.FC<JobListProps> = ({
     ids: safeJobs.slice(0, 8).map((j) => j.id),
     sample: safeJobs.slice(0, 3).map((j) => ({
       id: j.id,
-      title: j.title,
+      jobTitle: j.title,
+      resolvedTitle: resolveJobTitle(j),
       department: j.department,
       isActive: (j as { isActive?: unknown }).isActive,
     })),
@@ -55,22 +56,24 @@ export const JobList: React.FC<JobListProps> = ({
       )}
       {safeJobs.map((job, index) => {
         const display = getJobDisplayFields(job);
-        const key = resolveJobKey(display, index);
+        const title = resolveJobTitle(job);
+        const displayForRender: JobDisplayFields = { ...display, title };
+        const key = resolveJobKey(displayForRender, index);
 
         console.log(`[JobList:${source}] renderItem`, {
           index,
           key,
-          id: display.id,
-          title: display.title || job.title,
-          department: display.department || job.department,
-          location: display.location || job.location,
-          rawTitle: job.title,
+          id: displayForRender.id,
+          title,
+          jobTitle: job.title,
+          department: displayForRender.department,
+          location: displayForRender.location,
           isActive: job.isActive,
         });
 
         return (
-          <div key={key} data-job-id={display.id || undefined} data-job-index={index}>
-            {renderItem(job, display, index)}
+          <div key={key} data-job-id={displayForRender.id || undefined} data-job-index={index}>
+            {renderItem(job, displayForRender, index)}
           </div>
         );
       })}

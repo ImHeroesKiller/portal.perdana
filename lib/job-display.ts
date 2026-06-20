@@ -10,40 +10,35 @@ export type JobDisplayFields = {
   requirements: string[];
 };
 
-function safeString(value: unknown, fallback = ''): string {
-  if (value == null) return fallback;
-  const text = String(value).trim();
-  return text || fallback;
-}
-
-/** Gabungkan field root + nested `data` dari Firestore */
-function unwrapJobRecord(job: JobVacancy): Record<string, unknown> {
-  const raw = job as JobVacancy & Record<string, unknown>;
-  const nested = raw.data;
-  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
-    return { ...raw, ...(nested as Record<string, unknown>) };
-  }
-  return raw;
-}
-
-function pickFirstString(sources: unknown[], fallback: string): string {
-  for (const value of sources) {
-    const text = safeString(value);
-    if (text) return text;
-  }
-  return fallback;
-}
+const GENERIC_TITLE_VALUES = new Set([
+  'lowongan',
+  'job',
+  'vacancy',
+  'posisi',
+  'position',
+  '-',
+  'n/a',
+  'na',
+  'undefined',
+  'null',
+]);
 
 const TITLE_KEYS = [
   'title',
+  'jobTitle',
+  'job_title',
   'name',
   'position',
-  'jobTitle',
+  'positionName',
+  'positionApplied',
   'nama',
   'judul',
   'namaLowongan',
-  'positionName',
+  'namaJabatan',
+  'jabatan',
+  'posisi',
   'role',
+  'label',
 ] as const;
 
 const DEPT_KEYS = ['department', 'dept', 'sector', 'divisi', 'division', 'category'] as const;
@@ -58,37 +53,119 @@ const LOCATION_KEYS = [
   'city',
 ] as const;
 
-/** Kunci stabil untuk React list — hindari duplikat id kosong */
+function safeString(value: unknown, fallback = ''): string {
+  if (value == null) return fallback;
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    for (const key of ['value', 'text', 'label', 'name', 'title']) {
+      const nested = safeString(obj[key]);
+      if (nested) return nested;
+    }
+    return fallback;
+  }
+  const text = String(value).trim();
+  return text || fallback;
+}
+
+function isMeaningfulTitle(value: unknown): boolean {
+  const text = safeString(value);
+  if (!text) return false;
+  return !GENERIC_TITLE_VALUES.has(text.toLowerCase());
+}
+
+/** Gabungkan field root + nested `data` — jangan timpa nilai root yang sudah ada */
+function unwrapJobRecord(job: JobVacancy): Record<string, unknown> {
+  const raw = job as JobVacancy & Record<string, unknown>;
+  const nested = raw.data;
+  if (!nested || typeof nested !== 'object' || Array.isArray(nested)) {
+    return { ...raw };
+  }
+
+  const merged: Record<string, unknown> = { ...raw };
+  for (const [key, value] of Object.entries(nested as Record<string, unknown>)) {
+    const existing = safeString(merged[key]);
+    const incoming = safeString(value);
+    if (!existing && incoming) {
+      merged[key] = value;
+    } else if (!merged[key] && value != null) {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
+function buildCaseInsensitiveMap(record: Record<string, unknown>): Map<string, unknown> {
+  const map = new Map<string, unknown>();
+  for (const [key, value] of Object.entries(record)) {
+    map.set(key.toLowerCase(), value);
+  }
+  return map;
+}
+
+function pickFromRecord(record: Record<string, unknown>, keys: readonly string[]): string {
+  const ci = buildCaseInsensitiveMap(record);
+  for (const key of keys) {
+    const direct = record[key];
+    if (direct != null && safeString(direct)) return safeString(direct);
+    const insensitive = ci.get(key.toLowerCase());
+    if (insensitive != null && safeString(insensitive)) return safeString(insensitive);
+  }
+  return '';
+}
+
+function pickFirstString(sources: unknown[], fallback: string): string {
+  for (const value of sources) {
+    const text = safeString(value);
+    if (text) return text;
+  }
+  return fallback;
+}
+
+/** Judul lowongan dari job + variasi field API (title, jobTitle, name, …) */
+export function resolveJobTitle(job: JobVacancy): string {
+  const raw = unwrapJobRecord(job);
+  const sources: unknown[] = [
+    job.title,
+    ...TITLE_KEYS.map((key) => raw[key]),
+  ];
+
+  for (const value of sources) {
+    if (isMeaningfulTitle(value)) {
+      return safeString(value);
+    }
+  }
+
+  const fromRecord = pickFromRecord(raw, TITLE_KEYS);
+  if (isMeaningfulTitle(fromRecord)) return fromRecord;
+
+  return 'Lowongan';
+}
+
+/** Kunci stabil untuk React list */
 export function getJobKey(job: JobVacancy, index: number): string {
   const id = safeString(job.id);
   if (id) return id;
-  const title = safeString(job.title, 'job');
-  return `${title}-${index}`;
+  return `${resolveJobTitle(job)}-${index}`;
 }
 
-/** Field aman untuk render UI — tangani variasi nama field dari API */
+/** Field aman untuk render UI */
 export function getJobDisplayFields(job: JobVacancy): JobDisplayFields {
   const raw = unwrapJobRecord(job);
-
-  const title = pickFirstString(
-    TITLE_KEYS.map((key) => raw[key] ?? (job as Record<string, unknown>)[key]),
-    'Lowongan'
-  );
+  const title = resolveJobTitle(job);
 
   const department = pickFirstString(
-    DEPT_KEYS.map((key) => raw[key]),
+    [job.department, ...DEPT_KEYS.map((key) => raw[key])],
     'Umum'
   );
 
   const location = pickFirstString(
-    LOCATION_KEYS.map((key) => raw[key]),
+    [job.location, ...LOCATION_KEYS.map((key) => raw[key])],
     'Lokasi belum diisi'
   );
 
-  const description = pickFirstString(
-    ['description', 'desc', 'deskripsi', 'summary', 'jobDescription'].map((key) => raw[key]),
-    ''
-  );
+  const description =
+    pickFirstString([job.description], '') ||
+    pickFromRecord(raw, ['description', 'desc', 'deskripsi', 'summary', 'jobDescription']);
 
   const requirementsRaw = raw.requirements ?? raw.kualifikasi ?? raw.qualifications;
   const requirements = Array.isArray(requirementsRaw)

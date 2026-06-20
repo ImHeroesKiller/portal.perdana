@@ -15,12 +15,25 @@ export async function getJobs(options?: GetJobsOptions): Promise<JobVacancy[]> {
   const list = await fetchCollection<Record<string, unknown>>(JOBS_COLLECTION, {
     forceRefresh: options?.forceRefresh,
   });
+
+  if (list.length > 0) {
+    const sample = list[0];
+    console.log('[jobService] sample raw API fields', {
+      keys: Object.keys(sample),
+      title: sample.title,
+      jobTitle: sample.jobTitle,
+      name: sample.name,
+      position: sample.position,
+    });
+  }
+
   const normalized = list.map((doc) => normalizeJobFromFirestore(doc));
   const sorted = normalized.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   console.log(`[jobService] loaded ${sorted.length} jobs from "${JOBS_COLLECTION}"`, {
     active: sorted.filter((j) => j.isActive).length,
+    sampleTitles: sorted.slice(0, 5).map((j) => ({ id: j.id, title: j.title })),
   });
   return sorted;
 }

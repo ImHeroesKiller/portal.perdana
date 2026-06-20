@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useHomePageData } from '../hooks/useDbQueries';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { filterJobsBySearch } from '../lib/job-filters';
-import type { JobDisplayFields } from '../lib/job-display';
+import { resolveJobTitle, type JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
 import { JobVacancy } from '../types';
@@ -173,7 +173,7 @@ export const HomePage: React.FC = () => {
               showCount
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {
-                const title = display.title || job.title || 'Lowongan';
+                const title = resolveJobTitle(job);
                 const department = display.department || job.department || 'Umum';
                 const location = display.location || job.location || 'Lokasi belum diisi';
                 const jobType = display.type || job.type || 'Contract';

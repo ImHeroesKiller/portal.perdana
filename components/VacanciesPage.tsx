@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
 import { applyPublicJobFilter, applyVacancyFilters } from '../lib/job-filters';
-import type { JobDisplayFields } from '../lib/job-display';
+import { resolveJobTitle, type JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
 import { useLanguage } from '../services/i18n';
@@ -284,7 +284,7 @@ export const VacanciesPage: React.FC = () => {
             className="mt-2 space-y-4"
             renderItem={(job, display: JobDisplayFields) => {
               const isBookmarked = bookmarkedJobs.includes(job.id);
-              const title = display.title || job.title || 'Lowongan';
+              const title = resolveJobTitle(job);
               const department = display.department || job.department || 'Umum';
               const location = display.location || job.location || 'Lokasi belum diisi';
               const jobType = display.type || job.type || 'Contract';

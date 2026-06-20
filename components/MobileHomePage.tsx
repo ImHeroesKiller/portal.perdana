@@ -8,6 +8,7 @@ import { JobSectorsGrid } from './home/JobSectorsGrid';
 import { SectionHeader } from './home/SectionHeader';
 import { JobList } from './jobs/JobList';
 import { DataFetchState } from '../src/components/DataFetchState';
+import { resolveJobTitle } from '../lib/job-display';
 import type { JobDisplayFields } from './jobs/JobList';
 import { ArrowRight, Megaphone, Calendar, MapPin, Briefcase } from 'lucide-react';
 
@@ -121,7 +122,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               showCount
               className="space-y-3"
               renderItem={(job, display: JobDisplayFields) => {
-                const title = display.title || job.title || 'Lowongan';
+                const title = resolveJobTitle(job);
                 const department = display.department || job.department || 'Umum';
                 const location = display.location || job.location || 'Lokasi belum diisi';
                 const jobType = display.type || job.type || 'Contract';

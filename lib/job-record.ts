@@ -59,16 +59,34 @@ function parseJobType(value: unknown): JobVacancy['type'] {
 
 function mergeNestedFields(raw: Record<string, unknown>): Record<string, unknown> {
   const nested = raw.data;
-  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
-    return { ...raw, ...(nested as Record<string, unknown>) };
+  if (!nested || typeof nested !== 'object' || Array.isArray(nested)) {
+    return { ...raw };
   }
-  return raw;
+
+  const merged: Record<string, unknown> = { ...raw };
+  for (const [key, value] of Object.entries(nested as Record<string, unknown>)) {
+    const existing = merged[key];
+    const hasExisting =
+      existing != null && String(existing).trim() !== '' && String(existing).trim() !== 'Lowongan';
+    const hasIncoming = value != null && String(value).trim() !== '';
+    if (!hasExisting && hasIncoming) {
+      merged[key] = value;
+    }
+  }
+  return merged;
 }
 
 function pickField(raw: Record<string, unknown>, keys: string[], fallback = ''): string {
+  const lowerMap = new Map<string, unknown>();
+  for (const [key, value] of Object.entries(raw)) {
+    lowerMap.set(key.toLowerCase(), value);
+  }
+
   for (const key of keys) {
-    const value = raw[key];
-    if (value != null && String(value).trim()) return String(value).trim();
+    const candidates = [raw[key], lowerMap.get(key.toLowerCase())];
+    for (const value of candidates) {
+      if (value != null && String(value).trim()) return String(value).trim();
+    }
   }
   return fallback;
 }
@@ -82,14 +100,20 @@ export function normalizeJobFromFirestore(raw: Record<string, unknown>): JobVaca
     id,
     title: pickField(merged, [
       'title',
+      'jobTitle',
+      'job_title',
       'name',
       'position',
-      'jobTitle',
+      'positionName',
+      'positionApplied',
       'nama',
       'judul',
       'namaLowongan',
-      'positionName',
+      'namaJabatan',
+      'jabatan',
+      'posisi',
       'role',
+      'label',
     ], 'Lowongan'),
     department: pickField(merged, ['department', 'dept', 'sector', 'divisi', 'division', 'category'], 'Umum'),
     location: pickField(merged, ['location', 'lokasi', 'site', 'placement', 'workLocation', 'penempatan', 'city']),
