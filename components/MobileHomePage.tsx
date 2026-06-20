@@ -51,7 +51,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   });
 
   return (
-    <div className="flex min-h-screen flex-col pb-4 font-sans antialiased text-slate-800">
+    <div className="flex min-h-screen flex-col overflow-x-hidden pb-4 font-sans antialiased text-slate-800">
       <HeroSection
         compact
         searchQuery={searchQuery}
@@ -59,7 +59,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
         jobCount={stats.jobs}
       />
 
-      <div className="mt-4 space-y-6 px-4">
+      <div className="mt-5 space-y-6 px-4">
         <StatsCards
           variant="mobile"
           stats={stats}

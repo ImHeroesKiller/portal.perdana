@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  ArrowRightIcon,
+  BriefcaseIcon,
+} from '@heroicons/react/24/outline';
 import { useLanguage } from '../../services/i18n';
 
 const HERO_IMAGES = [
@@ -15,26 +19,26 @@ export interface HeroSectionProps {
   onSearchChange: (value: string) => void;
   onSearchSubmit?: () => void;
   jobCount?: number;
+  /** true = tampilan mobile: tanpa foto, hanya gradient */
   compact?: boolean;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({
+function HeroContent({
   searchQuery,
   onSearchChange,
   onSearchSubmit,
-  jobCount = 0,
-  compact = false,
-}) => {
-  const { t, language } = useLanguage();
+  jobCount,
+  compact,
+  t,
+}: {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit?: () => void;
+  jobCount: number;
+  compact: boolean;
+  t: (key: string) => string;
+}) {
   const navigate = useNavigate();
-  const [activeImageIdx, setActiveImageIdx] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveImageIdx((prev) => (prev + 1) % HERO_IMAGES.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,15 +50,126 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     navigate(q ? `/vacancies?q=${encodeURIComponent(q)}` : '/vacancies');
   };
 
+  const contentPad = compact
+    ? 'px-4 py-10'
+    : 'px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20';
+
+  return (
+    <div className={`relative z-10 w-full ${contentPad}`}>
+      <div className={compact ? 'w-full' : 'mx-auto max-w-7xl'}>
+        <div className={compact ? 'w-full' : 'max-w-2xl'}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-cyan-400/35 bg-cyan-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.15em] text-cyan-300 sm:text-xs">
+              {t('home_hero_badge')}
+            </span>
+            {jobCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-bold text-amber-200 sm:text-xs">
+                <BriefcaseIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                {t('home_hero_jobs_count').replace('{count}', String(jobCount))}
+              </span>
+            )}
+          </div>
+
+          <h1
+            className={`mt-3 font-black leading-[1.05] tracking-tight text-white ${
+              compact ? 'text-[1.75rem]' : 'text-[2rem] sm:text-4xl lg:text-5xl'
+            }`}
+          >
+            {t('home_hero_headline')}
+          </h1>
+
+          <p
+            className={`mt-2 font-medium text-slate-200 ${
+              compact ? 'text-sm leading-snug' : 'text-base sm:text-lg'
+            }`}
+          >
+            {t('home_hero_tagline')}
+          </p>
+
+          <form
+            onSubmit={handleSearchSubmit}
+            className={`mt-5 sm:mt-6 ${compact ? '' : 'max-w-xl'}`}
+            role="search"
+          >
+            <div className="rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-white/50 sm:p-2">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <MagnifyingGlassIcon
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder={t('home_search_placeholder')}
+                    className="w-full rounded-xl border-0 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/40 sm:text-base"
+                    aria-label={t('home_search_placeholder')}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3.5 text-sm font-extrabold text-slate-900 shadow-md transition hover:bg-amber-400 active:scale-[0.98] sm:w-auto sm:min-w-[6.5rem] sm:text-base"
+                >
+                  {t('home_hero_search_btn')}
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div
+            className={`mt-4 flex flex-col gap-2.5 sm:mt-5 sm:flex-row sm:items-center ${
+              compact ? '' : 'max-w-xl'
+            }`}
+          >
+            <Link
+              to="/vacancies"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-extrabold text-white shadow-lg transition hover:bg-blue-800 active:scale-[0.98] sm:w-auto sm:px-8 sm:text-base"
+            >
+              {t('home_cta_button')}
+              <ArrowRightIcon className="h-5 w-5" />
+            </Link>
+            <Link
+              to="/apply"
+              className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-white bg-white/95 px-6 py-4 text-sm font-extrabold text-blue-700 shadow-lg transition hover:bg-white active:scale-[0.98] sm:w-auto sm:px-8 sm:text-base"
+            >
+              {t('home_hero_apply_btn')}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Mobile: gradient saja, tanpa foto & slideshow */
+function MobileHero(props: Omit<HeroSectionProps, 'compact'> & { t: (key: string) => string }) {
+  const { t, ...contentProps } = props;
   return (
     <section
-      className={`relative overflow-hidden text-white ${
-        compact ? 'rounded-3xl mx-4 mt-4' : 'w-full'
-      }`}
+      className="w-full shrink-0 bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 text-white"
       aria-label={t('home_hero_aria')}
     >
-      {/* Background slideshow */}
-      <div className={`absolute inset-0 ${compact ? 'rounded-3xl' : ''}`}>
+      <HeroContent {...contentProps} compact jobCount={contentProps.jobCount ?? 0} t={t} />
+    </section>
+  );
+}
+
+/** Desktop: foto konstruksi + overlay gradient */
+function DesktopHero(props: Omit<HeroSectionProps, 'compact'> & { t: (key: string) => string }) {
+  const { t, ...contentProps } = props;
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveImageIdx((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="grid w-full text-white" aria-label={t('home_hero_aria')}>
+      <div className="col-start-1 row-start-1 relative min-h-56 w-full overflow-hidden lg:min-h-64">
         {HERO_IMAGES.map((src, idx) => (
           <img
             key={src}
@@ -68,109 +183,49 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {...(idx === 0 ? { fetchpriority: 'high' as const } : {})}
           />
         ))}
-        {/* Elegant overlay — foto tetap terlihat */}
-        <div
-          className={`absolute inset-0 bg-gradient-to-r from-slate-950/92 via-blue-950/78 to-blue-900/45 ${
-            compact ? 'rounded-3xl' : ''
-          }`}
-        />
-        <div
-          className={`absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent ${
-            compact ? 'rounded-3xl' : ''
-          }`}
-        />
       </div>
 
       <div
-        className={`relative z-10 ${
-          compact
-            ? 'px-5 py-8'
-            : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24'
-        }`}
-      >
-        <div className={`${compact ? '' : 'max-w-3xl'}`}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-300 sm:text-xs">
-            {t('home_hero_badge')}
-          </span>
+        className="col-start-1 row-start-1 min-h-56 w-full bg-gradient-to-br from-slate-950/90 via-blue-950/65 to-blue-800/30 lg:min-h-64"
+        aria-hidden="true"
+      />
+      <div
+        className="col-start-1 row-start-1 min-h-56 w-full bg-gradient-to-r from-slate-950/85 via-blue-950/45 to-transparent lg:min-h-64"
+        aria-hidden="true"
+      />
+      <div
+        className="col-start-1 row-start-1 min-h-56 w-full bg-gradient-to-t from-slate-950/80 via-transparent to-cyan-400/10 lg:min-h-64"
+        aria-hidden="true"
+      />
 
-          <h1
-            className={`mt-4 font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-lg ${
-              compact ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl lg:text-5xl xl:text-6xl'
-            }`}
-          >
-            {t('home_hero_headline')}
-          </h1>
+      <div className="col-start-1 row-start-1">
+        <HeroContent {...contentProps} compact={false} jobCount={contentProps.jobCount ?? 0} t={t} />
 
-          <p
-            className={`mt-3 font-medium text-slate-200/90 ${
-              compact ? 'text-sm leading-relaxed' : 'text-base sm:text-lg lg:text-xl max-w-2xl'
-            }`}
-          >
-            {t('home_hero_tagline')}
-            {jobCount > 0 && (
-              <span className="mt-1 block text-cyan-300/90 text-sm font-semibold">
-                {t('home_hero_jobs_count').replace('{count}', String(jobCount))}
-              </span>
-            )}
-          </p>
-
-          {/* Search bar */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className={`mt-6 ${compact ? '' : 'max-w-2xl'}`}
-            role="search"
-          >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-              <div className="relative flex-1">
-                <MagnifyingGlassIcon
-                  className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-                  aria-hidden="true"
-                />
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  placeholder={t('home_search_placeholder')}
-                  className="w-full rounded-xl border-0 bg-white py-3.5 pl-12 pr-4 text-sm font-medium text-slate-800 shadow-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 sm:text-base"
-                  aria-label={t('home_search_placeholder')}
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F59E0B] px-6 py-3.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-400 active:scale-[0.98] sm:text-base"
-              >
-                {t('home_hero_search_btn')}
-                <MagnifyingGlassIcon className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
-
-          {/* CTA row */}
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Link
-              to="/vacancies"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0056C6] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-blue-700 active:scale-[0.98] sm:px-6 sm:text-base"
-            >
-              {t('home_cta_button')}
-              <ArrowRightIcon className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/apply"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-white/80 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-[0.98] sm:text-base"
-            >
-              {t('home_hero_apply_btn')}
-            </Link>
-            {!compact && (
-              <Link
-                to="/services"
-                className="text-sm font-semibold text-cyan-200/90 underline-offset-4 hover:text-white hover:underline"
-              >
-                {language === 'id' ? 'Layanan Kami →' : 'Our Services →'}
-              </Link>
-            )}
-          </div>
+        <div className="relative z-10 -mt-2 mb-6 flex justify-center gap-1.5" aria-hidden="true">
+          {HERO_IMAGES.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setActiveImageIdx(idx)}
+              className={`h-1 rounded-full transition-all ${
+                activeImageIdx === idx ? 'w-5 bg-cyan-400' : 'w-1.5 bg-white/40'
+              }`}
+              aria-label={`Slide ${idx + 1}`}
+            />
+          ))}
         </div>
       </div>
     </section>
   );
+}
+
+export const HeroSection: React.FC<HeroSectionProps> = (props) => {
+  const { t } = useLanguage();
+  const { compact = false, ...rest } = props;
+
+  if (compact) {
+    return <MobileHero {...rest} t={t} />;
+  }
+
+  return <DesktopHero {...rest} t={t} />;
 };

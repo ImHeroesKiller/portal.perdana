@@ -1,7 +1,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useJobs, useCandidates, useClients, useProjects, useForceRefresh } from '../hooks/useDbQueries';
+import { useHomePageData } from '../hooks/useDbQueries';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobVacancy } from '../types';
 import { MapPinIcon, BriefcaseIcon, ClockIcon, MagnifyingGlassIcon, BuildingOfficeIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
@@ -14,25 +15,16 @@ import { JobSectorsGrid } from './home/JobSectorsGrid';
 
 export const HomePage: React.FC = () => {
   const {
-    data: jobs = [],
-    isLoading: jobsLoading,
-    isError: jobsError,
-    error: jobsFetchError,
-    refetch: refetchJobs,
-  } = useJobs({ activeOnly: true });
-  const { data: candidates = [], isLoading: candidatesLoading } = useCandidates();
-  const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
-  const forceRefresh = useForceRefresh();
-
-  useEffect(() => {
-    console.log('[HomePage] mount — force refresh jobs + candidates');
-    void forceRefresh.both();
-  }, []);
+    jobs,
+    candidates,
+    clients,
+    projects,
+    loading,
+    fetchError,
+    refetchJobs,
+  } = useHomePageData();
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const loading = jobsLoading || candidatesLoading || clientsLoading || projectsLoading;
-  const fetchError = jobsError ? jobsFetchError : null;
 
   const stats = useMemo(() => ({
     jobs: jobs.length,
@@ -42,17 +34,8 @@ export const HomePage: React.FC = () => {
   }), [jobs, candidates, clients, projects]);
   const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+  const isMobile = useIsMobile();
   const { t, language } = useLanguage();
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     setFilteredJobs(jobs);

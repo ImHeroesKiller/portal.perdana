@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MapPinIcon, PhoneIcon, EnvelopeIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { Input, TextArea } from './ui/Input';
 import { useLanguage } from '../services/i18n';
-import { getCompanySettings } from '../services/companySettings';
+import { useCompanySettings } from '../hooks/useCompanySettings';
 
 // Declare Leaflet global
 declare const L: any;
@@ -12,16 +12,7 @@ export const Contact: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const { t } = useLanguage();
-  const [settings, setSettings] = useState(() => getCompanySettings());
-
-  // Subscribe to changes
-  useEffect(() => {
-    const handleUpdate = () => {
-      setSettings(getCompanySettings());
-    };
-    window.addEventListener('company-settings-updated', handleUpdate);
-    return () => window.removeEventListener('company-settings-updated', handleUpdate);
-  }, []);
+  const settings = useCompanySettings();
 
   // Form State
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });

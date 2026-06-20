@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { getClients, getProjects } from '../services/db';
 import {
@@ -25,9 +26,11 @@ const QUERY_OPTIONS = {
   gcTime: 5 * 60_000,
   refetchOnWindowFocus: true,
   refetchOnReconnect: true,
-  refetchOnMount: 'always' as const,
+  refetchOnMount: true,
   retry: 2,
 };
+
+let homePageForceRefreshDone = false;
 
 export function useJobs(options?: { activeOnly?: boolean }) {
   return useQuery<JobVacancy[], Error>({
@@ -94,6 +97,41 @@ export function useProjects() {
     queryFn: getProjects,
     ...QUERY_OPTIONS,
   });
+}
+
+/** Coordinated HomePage queries — one force-refresh per session, not per mount. */
+export function useHomePageData() {
+  const qc = useQueryClient();
+  const jobsQuery = useJobs({ activeOnly: true });
+  const candidatesQuery = useCandidates();
+  const clientsQuery = useClients();
+  const projectsQuery = useProjects();
+
+  useEffect(() => {
+    if (homePageForceRefreshDone) return;
+    homePageForceRefreshDone = true;
+    void Promise.all([forceRefreshJobs(qc), forceRefreshCandidates(qc)]);
+  }, [qc]);
+
+  const jobs = jobsQuery.data ?? [];
+  const candidates = candidatesQuery.data ?? [];
+  const clients = clientsQuery.data ?? [];
+  const projects = projectsQuery.data ?? [];
+  const loading =
+    jobsQuery.isLoading ||
+    candidatesQuery.isLoading ||
+    clientsQuery.isLoading ||
+    projectsQuery.isLoading;
+
+  return {
+    jobs,
+    candidates,
+    clients,
+    projects,
+    loading,
+    fetchError: jobsQuery.isError ? jobsQuery.error : null,
+    refetchJobs: jobsQuery.refetch,
+  };
 }
 
 export async function forceRefreshJobs(qc: QueryClient): Promise<JobVacancy[]> {

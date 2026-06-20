@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { useJobs, useClients, useForceRefresh } from '../hooks/useDbQueries';
+import { useJobs, useClients } from '../hooks/useDbQueries';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobVacancy } from '../types';
 import { useLanguage } from '../services/i18n';
@@ -29,12 +29,6 @@ export const VacanciesPage: React.FC = () => {
     refetch,
   } = useJobs({ activeOnly: true });
   const { data: clients = [] } = useClients();
-  const forceRefresh = useForceRefresh();
-
-  useEffect(() => {
-    console.log('[VacanciesPage] mount — force refresh jobs');
-    void forceRefresh.jobs();
-  }, []);
 
   const [filteredJobs, setFilteredJobs] = useState<JobVacancy[]>([]);
   const [searchQuery, setSearchQuery] = useState('');

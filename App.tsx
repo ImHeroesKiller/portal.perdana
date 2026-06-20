@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { RecruitmentForm } from './components/RecruitmentForm';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -17,9 +17,9 @@ import { VacanciesPage } from './components/VacanciesPage';
 import { NavBar } from './components/NavBar';
 import { BottomNavigation } from './components/BottomNavigation';
 import { useIsMobile } from './hooks/useMediaQuery';
-import { getCurrentUser, logout } from './services/auth';
+import { useCompanySettings } from './hooks/useCompanySettings';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { LanguageProvider, useLanguage } from './services/i18n';
-import { getCompanySettings } from './services/companySettings';
 
 const MOBILE_BOTTOM_PAD = 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]';
 
@@ -27,15 +27,7 @@ const Footer = () => {
     const { t } = useLanguage();
     const location = useLocation();
     const isMobile = useIsMobile();
-    const [settings, setSettings] = useState(() => getCompanySettings());
-
-    useEffect(() => {
-        const handleUpdate = () => {
-          setSettings(getCompanySettings());
-        };
-        window.addEventListener('company-settings-updated', handleUpdate);
-        return () => window.removeEventListener('company-settings-updated', handleUpdate);
-    }, []);
+    const settings = useCompanySettings();
 
     // Hide Footer on Interview Session
     if (location.pathname.startsWith('/interview-session')) return null;
@@ -128,49 +120,7 @@ const Footer = () => {
 };
 
 export default function App() {
-  // 15-minute Inactivity (AFK) Automatic Logout Implementation
-  useEffect(() => {
-    // Check if a user session exists
-    const currentUser = getCurrentUser();
-    if (!currentUser) return;
-
-    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes in milliseconds
-    let lastActiveTime = Date.now();
-
-    const updateActivity = () => {
-      lastActiveTime = Date.now();
-    };
-
-    // Events that signify the user is active
-    const activeEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-
-    activeEvents.forEach(evt => {
-      window.addEventListener(evt, updateActivity, { passive: true });
-    });
-
-    // Check inactivity every 10 seconds
-    const intervalId = setInterval(() => {
-      const elapsed = Date.now() - lastActiveTime;
-      if (elapsed >= INACTIVITY_LIMIT) {
-        clearInterval(intervalId);
-        
-        // Remove event listeners
-        activeEvents.forEach(evt => {
-          window.removeEventListener(evt, updateActivity);
-        });
-
-        // Trigger session logout
-        logout();
-      }
-    }, 10000);
-
-    return () => {
-      activeEvents.forEach(evt => {
-        window.removeEventListener(evt, updateActivity);
-      });
-      clearInterval(intervalId);
-    };
-  }, []);
+  useInactivityLogout();
 
   return (
     <LanguageProvider>

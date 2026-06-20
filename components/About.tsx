@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { 
   ArrowLeft, 
   ShieldCheck, 
@@ -20,13 +21,7 @@ import {
 
 export const About: React.FC = () => {
   const navigate = useNavigate();
-  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
-
-  React.useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile();
 
   return (
     <div id="about-us-container" className="bg-[#F8FAFC] min-h-screen pb-12 font-sans select-none antialiased text-slate-800">
