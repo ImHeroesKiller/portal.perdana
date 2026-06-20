@@ -136,16 +136,25 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   );
 };
 
-/** Resolve field tampilan dari JobDisplayFields + fallback job mentah */
+function safeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/** Resolve field tampilan — prioritas display, fallback ke field mentah job */
 export function resolveVacancyCardFields(
-  job: { department?: string; location?: string; type?: string; clientId?: string },
+  job: { title?: string; department?: string; location?: string; type?: string; clientId?: string },
   display: JobDisplayFields
 ) {
+  const title = safeText(display.title) || safeText(job.title) || 'Lowongan';
+  const department = safeText(display.department) || safeText(job.department) || 'Umum';
+  const location = safeText(display.location) || safeText(job.location) || 'Lokasi belum diisi';
+  const jobType = safeText(display.type) || safeText(job.type) || 'Contract';
+
   return {
-    title: display.title,
-    department: display.department || job.department || 'Umum',
-    location: display.location || job.location || 'Lokasi belum diisi',
-    jobType: display.type || job.type || 'Contract',
+    title,
+    department,
+    location,
+    jobType,
     description: display.description,
     requirements: display.requirements,
   };

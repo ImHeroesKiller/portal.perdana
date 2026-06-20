@@ -244,8 +244,7 @@ export const VacanciesPage: React.FC = () => {
               showCount
               className="mt-4 space-y-4"
               renderItem={(job, display: JobDisplayFields) => {
-                const title = resolveJobTitle(job);
-                const fields = resolveVacancyCardFields(job, { ...display, title });
+                const fields = resolveVacancyCardFields(job, display);
                 const clientName = getClientName(job.clientId);
 
                 return (
