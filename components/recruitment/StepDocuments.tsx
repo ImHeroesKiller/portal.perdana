@@ -1,53 +1,111 @@
-
 import React from 'react';
-import { Input } from '../ui/Input';
-import { FormDataState, FileState } from '../RecruitmentForm';
+import { DocumentArrowUpIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import type { FileState } from '../../types/recruitment-form';
+import type { FieldErrors } from '../../lib/recruitment-validation';
+import { StepHeader } from './recruitmentUi';
 
 interface Props {
-    formData: FormDataState;
-    onChange: (e: React.ChangeEvent<any>) => void;
-    files: FileState;
-    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, field: keyof FileState) => void;
+  files: FileState;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>, field: keyof FileState) => void;
+  fieldErrors?: FieldErrors;
 }
 
-export const StepDocuments: React.FC<Props> = ({ formData, onChange, files, onFileChange }) => (
-    <div className="space-y-4 animate-fade-in">
-        <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Langkah 4: Data Pendukung & Dokumen</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Nama Bank" name="bankName" value={formData.bankName} onChange={onChange} required />
-            <Input label="No. Rekening" name="accountNumber" value={formData.accountNumber} onChange={onChange} required />
-        </div>
-        
-        <div className="border-t pt-4">
-            <h4 className="font-bold text-gray-700 mb-2">Kontak Darurat</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Input label="Nama" name="emergencyName" value={formData.emergencyName} onChange={onChange} required />
-                <Input label="Hubungan" name="emergencyRelation" value={formData.emergencyRelation} onChange={onChange} required />
-                <Input label="No Telp" name="emergencyPhone" value={formData.emergencyPhone} onChange={onChange} required />
-            </div>
-        </div>
+const DOC_FIELDS: {
+  key: keyof FileState;
+  label: string;
+  required: boolean;
+  hint?: string;
+}[] = [
+  { key: 'applicationLetter', label: 'Surat Lamaran', required: true },
+  { key: 'cv', label: 'CV / Resume', required: true },
+  { key: 'ktp', label: 'KTP', required: true },
+  { key: 'photo', label: 'Foto Diri', required: true, hint: 'Foto formal, latar polos' },
+  { key: 'kk', label: 'Kartu Keluarga (KK)', required: false },
+  { key: 'diploma', label: 'Ijazah / Transkrip', required: false },
+  { key: 'certificate', label: 'Sertifikat Keahlian', required: false },
+];
 
-        <div className="border-t pt-4">
-             <h4 className="font-bold text-gray-700 mb-2">Unggah Dokumen (Max 5MB)</h4>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FileInput label="Surat Lamaran" onChange={e => onFileChange(e, 'applicationLetter')} required />
-                <FileInput label="CV / Resume" onChange={e => onFileChange(e, 'cv')} required />
-                <FileInput label="KTP" onChange={e => onFileChange(e, 'ktp')} required />
-                <FileInput label="KK" onChange={e => onFileChange(e, 'kk')} required />
-                <FileInput label="Ijazah" onChange={e => onFileChange(e, 'diploma')} required />
-                <FileInput label="Foto Diri" onChange={e => onFileChange(e, 'photo')} required />
-             </div>
-        </div>
+export const StepDocuments: React.FC<Props> = ({ files, onFileChange, fieldErrors = {} }) => (
+  <div className="animate-fade-in space-y-6">
+    <StepHeader
+      step={4}
+      title="Unggah Dokumen"
+      subtitle="Format PDF, JPG, atau PNG. Maksimal 5 MB per file."
+    />
+
+    <div className="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+      <strong>Wajib:</strong> Surat Lamaran, CV, KTP, dan Foto Diri. Dokumen lain sangat disarankan untuk mempercepat proses screening.
     </div>
+
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {DOC_FIELDS.map(({ key, label, required, hint }) => (
+        <FileInput
+          key={key}
+          label={label}
+          required={required}
+          hint={hint}
+          file={files[key]}
+          error={fieldErrors[key]}
+          onChange={(e) => onFileChange(e, key)}
+        />
+      ))}
+    </div>
+  </div>
 );
 
-const FileInput = ({ label, onChange, required }: any) => {
-    const id = React.useId();
-    return (
-        <div className="border border-gray-300 rounded p-4">
-            <label htmlFor={id} className="block text-sm font-medium mb-1">{label} {required && '*'}</label>
-            <input id={id} type="file" onChange={onChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700" />
-        </div>
-    )
+function FileInput({
+  label,
+  required,
+  hint,
+  file,
+  error,
+  onChange,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  file: File | null;
+  error?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const id = React.useId();
+  const hasFile = Boolean(file);
+
+  return (
+    <div
+      className={`rounded-xl border p-4 transition ${
+        error
+          ? 'border-red-300 bg-red-50/30'
+          : hasFile
+            ? 'border-[#003087]/25 bg-blue-50/40'
+            : 'border-slate-200 bg-white hover:border-[#003087]/20'
+      }`}
+    >
+      <label htmlFor={id} className="mb-2 flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800">
+        {hasFile ? (
+          <CheckCircleIcon className="h-5 w-5 text-emerald-600" aria-hidden />
+        ) : (
+          <DocumentArrowUpIcon className="h-5 w-5 text-[#003087]" aria-hidden />
+        )}
+        {label}
+        {required && <span className="text-red-500">*</span>}
+      </label>
+      {hint && <p className="mb-2 text-xs text-slate-500">{hint}</p>}
+      {hasFile && (
+        <p className="mb-2 truncate text-xs font-medium text-[#003087]">{file!.name}</p>
+      )}
+      <input
+        id={id}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
+        onChange={onChange}
+        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#003087] file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:opacity-90"
+      />
+      {error && (
+        <p className="mt-2 text-xs font-medium text-red-500" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }

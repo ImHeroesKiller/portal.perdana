@@ -1,42 +1,163 @@
-
 import React from 'react';
 import { Input, Select, TextArea } from '../ui/Input';
-import { FormDataState } from '../RecruitmentForm';
+import type { FormDataState } from '../../types/recruitment-form';
+import type { FieldErrors } from '../../lib/recruitment-validation';
+import { StepHeader } from './recruitmentUi';
 
 interface Props {
-    formData: FormDataState;
-    onChange: (e: React.ChangeEvent<any>) => void;
+  formData: FormDataState;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  fieldErrors?: FieldErrors;
 }
 
-export const StepProfessional: React.FC<Props> = ({ formData, onChange }) => (
-    <div className="space-y-4 animate-fade-in">
-        <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Langkah 3: Profesional & Data Tambahan</h3>
-        
-        <h4 className="font-bold text-gray-700">Pendidikan Terakhir</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select label="Jenjang" name="lastEducation" value={formData.lastEducation} onChange={onChange} required options={['SMP', 'SMA/SMK', 'Diploma', 'D3', 'S1', 'S2', 'S3'].map(j => ({value: j, label: j}))} />
-            <Input label="Institusi" name="institutionName" value={formData.institutionName} onChange={onChange} required />
-            <Input label="Jurusan" name="major" value={formData.major} onChange={onChange} required />
-            <Input label="Tahun Lulus" name="graduationYear" type="number" value={formData.graduationYear} onChange={onChange} required />
-        </div>
-        
-        <h4 className="font-bold text-gray-700 pt-4 border-t">Data Perbankan</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select label="Bank Utama" name="bankName" value={formData.bankName} onChange={onChange} required options={[{value:'Mandiri', label:'Mandiri'}, {value:'BCA', label:'BCA'}, {value:'Lainnya', label:'Lainnya (Ada Biaya Transfer)'}]} />
-            <Input label="Nomor Rekening" name="accountNumber" value={formData.accountNumber} onChange={onChange} required />
-        </div>
+export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErrors = {} }) => (
+  <div className="animate-fade-in space-y-6">
+    <StepHeader
+      step={3}
+      title="Profesional & Data Tambahan"
+      subtitle="Riwayat pendidikan, keahlian, perbankan, dan kontak darurat."
+    />
 
-        <h4 className="font-bold text-gray-700 pt-4 border-t">Kontak Darurat</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Nama Kontak" name="emergencyName" value={formData.emergencyName} onChange={onChange} required />
-            <Select label="Hubungan" name="emergencyRelation" value={formData.emergencyRelation} onChange={onChange} required options={[{value:'Orang Tua', label:'Orang Tua'}, {value:'Pasangan', label:'Pasangan'}, {value:'Saudara', label:'Saudara'}, {value:'Teman', label:'Teman'}]} />
-            <div className="flex gap-2">
-                <Input name="emergencyCountryCode" value={formData.emergencyCountryCode} onChange={onChange} className="w-16" />
-                <Input name="emergencyPhone" value={formData.emergencyPhone} onChange={onChange} required className="flex-1" />
-            </div>
+    <section>
+      <h4 className="mb-3 text-sm font-bold text-slate-800">Pendidikan Terakhir</h4>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Select
+          label="Jenjang"
+          name="lastEducation"
+          value={formData.lastEducation}
+          onChange={onChange}
+          required
+          error={fieldErrors.lastEducation}
+          options={['SMP', 'SMA/SMK', 'Diploma', 'D3', 'S1', 'S2', 'S3'].map((j) => ({ value: j, label: j }))}
+        />
+        <Input
+          label="Institusi"
+          name="institutionName"
+          value={formData.institutionName}
+          onChange={onChange}
+          required
+          error={fieldErrors.institutionName}
+        />
+        <Input
+          label="Jurusan"
+          name="major"
+          value={formData.major}
+          onChange={onChange}
+          required
+          error={fieldErrors.major}
+        />
+        <Input
+          label="Tahun Lulus"
+          name="graduationYear"
+          type="number"
+          value={formData.graduationYear}
+          onChange={onChange}
+          required
+          min={1960}
+          max={new Date().getFullYear() + 5}
+          error={fieldErrors.graduationYear}
+        />
+      </div>
+    </section>
+
+    <section className="border-t border-slate-100 pt-4">
+      <h4 className="mb-3 text-sm font-bold text-slate-800">Data Perbankan</h4>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Select
+          label="Bank Utama"
+          name="bankName"
+          value={formData.bankName}
+          onChange={onChange}
+          required
+          error={fieldErrors.bankName}
+          options={[
+            { value: 'Mandiri', label: 'Mandiri' },
+            { value: 'BCA', label: 'BCA' },
+            { value: 'Lainnya', label: 'Lainnya (Ada Biaya Transfer)' },
+          ]}
+        />
+        <Input
+          label="Nomor Rekening"
+          name="accountNumber"
+          value={formData.accountNumber}
+          onChange={onChange}
+          required
+          inputMode="numeric"
+          error={fieldErrors.accountNumber}
+        />
+      </div>
+    </section>
+
+    <section className="border-t border-slate-100 pt-4">
+      <h4 className="mb-3 text-sm font-bold text-slate-800">Kontak Darurat</h4>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Input
+          label="Nama Kontak"
+          name="emergencyName"
+          value={formData.emergencyName}
+          onChange={onChange}
+          required
+          error={fieldErrors.emergencyName}
+        />
+        <Select
+          label="Hubungan"
+          name="emergencyRelation"
+          value={formData.emergencyRelation}
+          onChange={onChange}
+          required
+          error={fieldErrors.emergencyRelation}
+          options={[
+            { value: 'Orang Tua', label: 'Orang Tua' },
+            { value: 'Pasangan', label: 'Pasangan' },
+            { value: 'Saudara', label: 'Saudara' },
+            { value: 'Teman', label: 'Teman' },
+          ]}
+        />
+        <div className="md:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Nomor Telepon Darurat <span className="text-red-500">*</span>
+          </label>
+          <div className="flex gap-2">
+            <Input
+              name="emergencyCountryCode"
+              value={formData.emergencyCountryCode}
+              onChange={onChange}
+              className="mb-0 w-20"
+              placeholder="+62"
+              aria-label="Kode negara kontak darurat"
+            />
+            <Input
+              name="emergencyPhone"
+              value={formData.emergencyPhone}
+              onChange={onChange}
+              required
+              inputMode="numeric"
+              className="mb-0 flex-1"
+              placeholder="8123456789"
+              error={fieldErrors.emergencyPhone}
+            />
+          </div>
         </div>
-        
-        <TextArea label="Keahlian (Skill)" name="skills" value={formData.skills} onChange={onChange} required placeholder="Contoh: Excel, Menyetir, dll" />
-        <TextArea label="Riwayat Kerja" name="workExperience" value={formData.workExperience} onChange={onChange} required rows={3} placeholder="Perusahaan - Posisi - Tahun" />
-    </div>
+      </div>
+    </section>
+
+    <TextArea
+      label="Keahlian (Skill)"
+      name="skills"
+      value={formData.skills}
+      onChange={onChange}
+      required
+      placeholder="Contoh: Excel, mengemudi, operator alat berat..."
+      error={fieldErrors.skills}
+    />
+    <TextArea
+      label="Riwayat Kerja"
+      name="workExperience"
+      value={formData.workExperience}
+      onChange={onChange}
+      required
+      rows={3}
+      placeholder="Perusahaan — Posisi — Tahun"
+    />
+  </div>
 );

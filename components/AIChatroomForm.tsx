@@ -28,13 +28,27 @@ interface Message {
   timestamp: Date;
 }
 
-export const AIChatroomForm: React.FC = () => {
+export interface AIChatroomFormProps {
+  initialPosition?: string;
+  initialJobId?: string;
+  onSwitchToManual?: () => void;
+}
+
+export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
+  initialPosition = '',
+  initialJobId = '',
+  onSwitchToManual,
+}) => {
   const navigate = useNavigate();
+  const welcomeMessage = initialPosition
+    ? `Selamat datang di Portal PT Perdana Adi Yuda! Saya Sara, AI Virtual Assistant rekrutmen Anda. Saya lihat Anda tertarik melamar posisi *${initialPosition}*. Saya akan memandu Anda mengisi formulir melalui obrolan santai. Pertama-tama, boleh tahu nama lengkap Anda sesuai KTP?`
+    : 'Selamat datang di Portal PT Perdana Adi Yuda! Saya Sara, AI Virtual Assistant rekrutmen Anda. Saya akan memandu Anda mengisi formulir pendaftaran ini melalui obrolan santai yang menyenangkan. Pertama-tama, boleh tahu siapa nama lengkap Anda serta posisi apa yang ingin Anda lamar?';
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: 'Selamat datang di Portal PT Perdana Adi Yuda! Saya Sara, AI Virtual Assistant rekrutmen Anda. Saya akan memandu Anda mengisi formulir pendaftaran ini melalui obrolan santai yang menyenangkan. Pertama-tama, boleh tahu siapa nama lengkap Anda serta posisi apa yang ingin Anda lamar?',
+      content: welcomeMessage,
       timestamp: new Date()
     }
   ]);
@@ -47,8 +61,18 @@ export const AIChatroomForm: React.FC = () => {
   
   // Parsed structured data
   const [extractedData, setExtractedData] = useState<Partial<NewEmployee>>({
-    willingToRelocate: 'Ya'
+    willingToRelocate: 'Ya',
+    ...(initialPosition ? { positionApplied: initialPosition } : {}),
   });
+
+  useEffect(() => {
+    if (initialPosition) {
+      setExtractedData((prev) => ({
+        ...prev,
+        positionApplied: prev.positionApplied || initialPosition,
+      }));
+    }
+  }, [initialPosition]);
 
   // Tahap 4 uploads
   const [files, setFiles] = useState<{
@@ -352,6 +376,7 @@ export const AIChatroomForm: React.FC = () => {
         photoPath: filePaths['photoPath'] || '',
         kkPath: filePaths['kkPath'] || '',
         certificatePath: filePaths['certificatePath'] || '',
+        jobId: initialJobId || undefined,
       };
 
       const result = await createCandidate(finalPayload, 'ai-sara');
@@ -396,13 +421,25 @@ export const AIChatroomForm: React.FC = () => {
         </div>
         
         {formStage === 'chat' && (
-          <button
-            onClick={handleForcePreview}
-            className="px-4 py-2 border border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 rounded-xl font-semibold text-sm transition-all shadow-sm active:scale-95"
-            id="btn_manual_review"
-          >
-            Tinjau Formulir Manual 📝
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {onSwitchToManual && (
+              <button
+                type="button"
+                onClick={onSwitchToManual}
+                className="rounded-xl border border-[#003087]/25 px-4 py-2 text-sm font-semibold text-[#003087] transition hover:bg-blue-50 active:scale-95"
+              >
+                Form Manual
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleForcePreview}
+              className="rounded-xl border border-[#003087] px-4 py-2 text-sm font-semibold text-[#003087] transition hover:bg-blue-50 active:scale-95"
+              id="btn_manual_review"
+            >
+              Tinjau Data
+            </button>
+          </div>
         )}
       </div>
 
