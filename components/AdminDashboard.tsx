@@ -1,9 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RouteFallback } from './layout/RouteFallback';
-import { 
-  getCurrentUser, logout 
-} from '../services/auth';
+import { getCurrentUser, logout } from '../services/auth-session';
 import { useActivePermanentEmployees } from '../hooks/useDbQueries';
 import { Employee } from '../types';
 

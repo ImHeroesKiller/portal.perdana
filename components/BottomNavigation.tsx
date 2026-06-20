@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Briefcase, Layers, Info, UserCircle } from 'lucide-react';
-import { getCurrentUser } from '../services/auth';
+import { getCurrentUser } from '../services/auth-session';
 import { useLanguage } from '../services/i18n';
 import { useIsMobile } from '../hooks/useMediaQuery';
 

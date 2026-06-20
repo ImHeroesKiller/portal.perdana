@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { getCurrentUser, logout } from '../services/auth';
+import { getCurrentUser, logout } from '../services/auth-session';
 
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
 const CHECK_INTERVAL_MS = 10_000;

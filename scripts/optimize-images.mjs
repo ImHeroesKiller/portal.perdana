@@ -68,8 +68,8 @@ async function optimizeWithSharp(sharp) {
 
     await sharp(src)
       .rotate()
-      .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 72, mozjpeg: true })
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 68, mozjpeg: true })
       .toFile(tmp);
     renameSync(tmp, jpgDest);
 

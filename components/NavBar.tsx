@@ -13,7 +13,7 @@ import {
   PhoneIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
-import { getCurrentUser, logout } from '../services/auth';
+import { getCurrentUser, logout } from '../services/auth-session';
 import { useLanguage } from '../services/i18n';
 import {
   getNavNotifications,

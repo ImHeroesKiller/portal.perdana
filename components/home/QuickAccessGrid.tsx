@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { getCurrentUser } from '../../services/auth';
+import { getCurrentUser } from '../../services/auth-session';
 import { useLanguage } from '../../services/i18n';
 import { SectionHeader } from './SectionHeader';
 import {

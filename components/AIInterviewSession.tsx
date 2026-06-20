@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCandidates, updateCandidate } from '../hooks/useDbQueries';
-import { getCurrentUser } from '../services/auth';
+import { getCurrentUser } from '../services/auth-session';
 import { Employee } from '../types';
 import { VideoCameraIcon, MicrophoneIcon, ClockIcon, CheckCircleIcon, PlayCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 

@@ -8,6 +8,7 @@ import { RouteFallback } from './components/layout/RouteFallback';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { useGoogleAnalytics } from './hooks/useGoogleAnalytics';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
+import { useAuthFirebaseSync } from './hooks/useAuthFirebaseSync';
 import { RouteSeo } from './components/seo/RouteSeo';
 import { LanguageProvider } from './services/i18n';
 
@@ -45,6 +46,7 @@ const MOBILE_BOTTOM_PAD = 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]';
 
 export default function App() {
   useInactivityLogout();
+  useAuthFirebaseSync();
 
   return (
     <LanguageProvider>
