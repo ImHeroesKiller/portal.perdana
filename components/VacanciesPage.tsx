@@ -2,27 +2,22 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
 import { applyPublicJobFilter, applyVacancyFilters } from '../lib/job-filters';
-import { resolveJobTitle, type JobDisplayFields } from '../lib/job-display';
+import type { JobDisplayFields } from '../lib/job-display';
 import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
-import { useLanguage } from '../services/i18n';
-import { 
-  ChevronLeft, 
-  Search, 
-  SlidersHorizontal, 
-  Bookmark, 
-  MapPin, 
-  Briefcase, 
-  Map, 
-  Send, 
+import { VacancyFilterChips } from './jobs/VacancyFilterChips';
+import { VacancyJobCard, resolveVacancyCardFields } from './jobs/VacancyJobCard';
+import { VACANCY_FILTER_OPTIONS, type VacancyFilter } from './home/homeContent';
+import {
+  ChevronLeft,
+  Search,
+  SlidersHorizontal,
   FileText,
-  BookmarkCheck
 } from 'lucide-react';
 
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -35,12 +30,11 @@ export const VacanciesPage: React.FC = () => {
   const { data: clients = [] } = useClients();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'Semua' | 'Operasional' | 'Administrasi' | 'Teknis' | 'Lainnya'>('Semua');
+  const [selectedFilter, setSelectedFilter] = useState<VacancyFilter>('Semua');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
-  const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
+  const [mapModalData, setMapModalData] = useState<{ lat: number; lng: number; title: string } | null>(null);
 
-  // Load Bookmarks on mount
   useEffect(() => {
     const saved = localStorage.getItem('bookmarked_jobs');
     if (saved) {
@@ -53,35 +47,28 @@ export const VacanciesPage: React.FC = () => {
   }, []);
 
   const toggleBookmark = (id: string) => {
-    let updated;
-    if (bookmarkedJobs.includes(id)) {
-      updated = bookmarkedJobs.filter(bId => bId !== id);
-    } else {
-      updated = [...bookmarkedJobs, id];
-    }
+    const updated = bookmarkedJobs.includes(id)
+      ? bookmarkedJobs.filter((bId) => bId !== id)
+      : [...bookmarkedJobs, id];
     setBookmarkedJobs(updated);
     localStorage.setItem('bookmarked_jobs', JSON.stringify(updated));
   };
-
-  const FILTER_OPTIONS = ['Semua', 'Operasional', 'Administrasi', 'Teknis', 'Lainnya'] as const;
 
   useEffect(() => {
     const q = searchParams.get('q');
     if (q) setSearchQuery(q);
 
     const filter = searchParams.get('filter');
-    if (filter && FILTER_OPTIONS.includes(filter as (typeof FILTER_OPTIONS)[number])) {
-      setSelectedFilter(filter as (typeof FILTER_OPTIONS)[number]);
+    if (filter && VACANCY_FILTER_OPTIONS.includes(filter as VacancyFilter)) {
+      setSelectedFilter(filter as VacancyFilter);
     }
   }, [searchParams]);
 
-  /** Data mentah dari API (prioritas allJobs) */
   const rawJobs = useMemo(
     () => (allJobs.length > 0 ? allJobs : jobs),
     [allJobs, jobs]
   );
 
-  /** Filter isActive longgar (!== false) + fallback ke raw jika kosong */
   const { jobs: publicJobs, filterRelaxed: publicFilterRelaxed } = useMemo(
     () => applyPublicJobFilter(rawJobs),
     [rawJobs]
@@ -92,21 +79,10 @@ export const VacanciesPage: React.FC = () => {
     [publicJobs, searchQuery, selectedFilter]
   );
 
-  /** Job yang benar-benar di-render — fallback berlapis ke public/raw */
   const jobsToRender = useMemo(() => {
     if (uiFilteredJobs.length > 0) return uiFilteredJobs;
-    if (publicJobs.length > 0) {
-      console.warn('[VacanciesPage] filter UI kosong — fallback ke publicJobs', {
-        count: publicJobs.length,
-      });
-      return publicJobs;
-    }
-    if (rawJobs.length > 0) {
-      console.warn('[VacanciesPage] filter UI & public kosong — fallback ke rawJobs', {
-        count: rawJobs.length,
-      });
-      return rawJobs;
-    }
+    if (publicJobs.length > 0) return publicJobs;
+    if (rawJobs.length > 0) return rawJobs;
     return [];
   }, [uiFilteredJobs, publicJobs, rawJobs]);
 
@@ -138,15 +114,8 @@ export const VacanciesPage: React.FC = () => {
       hasNoJobsAtAll,
       fetchInProgress,
       filterRelaxed,
-      publicFilterRelaxed,
-      uiFilterRelaxed,
       searchQuery,
       selectedFilter,
-      sample: jobsToRender.slice(0, 3).map((j) => ({
-        id: j.id,
-        title: j.title,
-        isActive: (j as { isActive?: unknown }).isActive,
-      })),
     });
   }, [
     rawJobs.length,
@@ -157,94 +126,83 @@ export const VacanciesPage: React.FC = () => {
     hasNoJobsAtAll,
     fetchInProgress,
     filterRelaxed,
-    publicFilterRelaxed,
-    uiFilterRelaxed,
     searchQuery,
     selectedFilter,
-    jobsToRender,
   ]);
 
   const getClientName = (clientId?: string) => {
-    return clients.find(c => c.id === clientId)?.name || 'PT Indonesia Morowali Industrial Park (IMIP)';
+    return clients.find((c) => c.id === clientId)?.name || '';
   };
 
   const handleOpenMap = (lat?: number, lng?: number, title?: string) => {
     if (lat && lng) {
       setMapModalData({ lat, lng, title: title || 'Lokasi' });
     } else {
-      // default coordinates matching reference map indicator (e.g. Morowali)
       setMapModalData({ lat: -2.6781, lng: 121.9315, title: title || 'Morowali' });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] pb-24 font-sans select-none antialiased text-slate-800">
-      
-      {/* 1. Dark/blue header of exact matching mockup */}
-      <div className="bg-gradient-to-r from-blue-900 to-blue-950 text-white pt-6 pb-6 px-4 sticky top-0 z-30 shadow-md">
-        <div className="max-w-xl mx-auto flex items-center pr-3">
-          <button 
-            onClick={() => navigate('/')} 
-            className="mr-3 p-2 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center active:scale-95 cursor-pointer text-white"
+    <div className="min-h-screen select-none bg-slate-50 pb-24 font-sans antialiased text-slate-800">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-[#003087] px-4 pb-5 pt-6 text-white shadow-md">
+        <div className="mx-auto flex max-w-xl items-center">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="mr-2 flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-95"
             id="btn-back-vacancies"
+            aria-label="Kembali ke beranda"
           >
             <ChevronLeft className="h-6 w-6 stroke-[2.5]" />
           </button>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="text-lg font-black tracking-tight">Lowongan Tersedia</h1>
-            <p className="text-[10px] text-blue-200 mt-0.5 tracking-wider font-semibold">PT Perdana Adi Yuda • Karir Alih Daya</p>
+            <p className="mt-0.5 text-[10px] font-semibold tracking-wider text-blue-200">
+              PT Perdana Adi Yuda • Karir Alih Daya
+            </p>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-xl mx-auto px-4 mt-5">
-        
-        {/* 2. Search & Filter Input Row */}
-        <div className="flex gap-2 items-center">
+      <div className="mx-auto mt-5 max-w-xl px-4">
+        {/* Search & Filter */}
+        <div className="flex items-center gap-2.5">
           <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <Search className="h-4.5 w-4.5 text-slate-400" />
-            </div>
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden
+            />
             <input
-              type="text"
-              className="block w-full pl-10 pr-4 py-3 bg-white border border-slate-100 rounded-2xl leading-5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-xs shadow-xs transition"
+              type="search"
+              className="block w-full rounded-2xl border border-slate-100 bg-white py-3.5 pl-10 pr-4 text-sm font-medium text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#003087]/30 focus:outline-none focus:ring-2 focus:ring-[#003087]/25"
               placeholder="Cari lowongan berdasarkan judul atau deskripsi..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Cari lowongan"
             />
           </div>
 
-          <button 
-            onClick={() => setShowFilterModal(!showFilterModal)}
-            className="p-3 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-1.5 text-xs font-bold text-blue-600 shadow-xs cursor-pointer select-none shrink-0"
+          <button
+            type="button"
+            onClick={() => setShowFilterModal(true)}
+            className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-2xl border border-slate-100 bg-white px-3.5 py-3 text-xs font-bold text-[#003087] shadow-sm transition hover:bg-blue-50 active:scale-[0.98]"
+            aria-label="Buka filter sektor"
           >
-            <SlidersHorizontal className="h-4 w-4 text-blue-600" />
+            <SlidersHorizontal className="h-4 w-4" aria-hidden />
             <span>Filter</span>
           </button>
         </div>
 
-        {/* 3. Horizontal Pill Filter row */}
-        <div className="flex gap-2 overflow-x-auto py-2.5 mt-3 scrollbar-none select-none">
-          {['Semua', 'Operasional', 'Administrasi', 'Teknis', 'Lainnya'].map((filter) => {
-            const isActive = selectedFilter === filter;
-            return (
-              <button
-                key={filter}
-                onClick={() => setSelectedFilter(filter as any)}
-                className={`py-1.5 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition duration-150 cursor-pointer ${
-                  isActive 
-                    ? 'bg-[#0056C6] text-white shadow-xs' 
-                    : 'bg-white text-slate-500 hover:text-slate-700 border border-slate-100'
-                }`}
-              >
-                {filter}
-              </button>
-            );
-          })}
-        </div>
+        {/* Filter chips */}
+        <VacancyFilterChips
+          value={selectedFilter}
+          onChange={setSelectedFilter}
+          className="mt-4"
+        />
 
         {filterRelaxed && jobsToRender.length > 0 && (
-          <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] font-semibold text-amber-800">
             Filter terlalu ketat — menampilkan semua {jobsToRender.length} lowongan.
             <button type="button" onClick={resetFilters} className="ml-2 font-bold underline">
               Reset filter
@@ -252,16 +210,18 @@ export const VacanciesPage: React.FC = () => {
           </div>
         )}
 
-        {/* 4. Active Job Vacancies output */}
         {hasJobsButFilteredEmpty && (
-          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-            <p className="text-sm font-medium text-slate-500">
-              Tidak ada lowongan yang cocok dengan kata kunci atau filter Anda.
+          <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold text-slate-700">
+              Tidak ada lowongan yang cocok
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Coba ubah kata kunci atau filter sektor pekerjaan.
             </p>
             <button
               type="button"
               onClick={resetFilters}
-              className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700"
+              className="mt-4 min-h-[44px] rounded-xl border border-[#003087]/20 bg-blue-50 px-5 py-2.5 text-xs font-bold text-[#003087] transition active:scale-[0.98]"
             >
               Reset pencarian & filter
             </button>
@@ -275,156 +235,102 @@ export const VacanciesPage: React.FC = () => {
           isEmpty={hasNoJobsAtAll}
           emptyMessage="Belum ada lowongan tersedia saat ini."
           onRetry={() => { void refetch(); }}
+          minHeight="14rem"
         >
           {jobsToRender.length > 0 && (
-          <JobList
-            source="VacanciesPage"
-            jobs={jobsToRender}
-            showCount
-            className="mt-2 space-y-4"
-            renderItem={(job, display: JobDisplayFields) => {
-              const isBookmarked = bookmarkedJobs.includes(job.id);
-              const title = resolveJobTitle(job);
-              const department = display.department || job.department || 'Umum';
-              const location = display.location || job.location || 'Lokasi belum diisi';
-              const jobType = display.type || job.type || 'Contract';
-              const tagLabel = department.toUpperCase();
+            <JobList
+              source="VacanciesPage"
+              jobs={jobsToRender}
+              showCount
+              className="mt-4 space-y-4"
+              renderItem={(job, display: JobDisplayFields) => {
+                const title = resolveJobTitle(job);
+                const fields = resolveVacancyCardFields(job, { ...display, title });
+                const clientName = getClientName(job.clientId);
 
-              return (
-                <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-xs transition duration-240 hover:shadow-md">
-                  
-                  {/* Tag and Bookmark Row */}
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="job-card-dept inline-block rounded-lg px-3 py-1">
-                      {tagLabel}
-                    </span>
-                    <button 
-                      onClick={() => toggleBookmark(job.id)}
-                      className="p-1.5 rounded-full hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                    >
-                      {isBookmarked ? (
-                        <BookmarkCheck className="h-5 w-5 text-blue-600 fill-blue-600" />
-                      ) : (
-                        <Bookmark className="h-5 w-5 text-slate-400" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Title and Client */}
-                  <div className="mb-3.5">
-                    <h2 className="job-card-title mb-1">{title}</h2>
-                    <p className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
-                      🏢 {getClientName(job.clientId)}
-                    </p>
-                  </div>
-
-                  {/* High Quality Specification Pills */}
-                  <div className="mb-4 mt-3.5 flex flex-wrap gap-2">
-                    <div className="job-card-meta flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-hidden />
-                      <span>{location}</span>
-                    </div>
-                    <div className="job-card-meta flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
-                      <Briefcase className="h-3.5 w-3.5 shrink-0 text-orange-500" aria-hidden />
-                      <span>{jobType}</span>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  {display.description && (
-                    <p className="job-card-desc mb-4">
-                      {display.description}
-                    </p>
-                  )}
-
-                  {/* Qualifications */}
-                  {display.requirements.length > 0 && (
-                    <div className="mt-2.5 pt-3 border-t border-slate-150/50">
-                      <p className="font-extrabold text-[11px] text-slate-800 mb-1.5">Kualifikasi:</p>
-                      <ul className="text-xs text-slate-600 space-y-1 pl-1">
-                        {display.requirements.map((req, idx) => (
-                          <li key={idx} className="flex items-start gap-1 leading-relaxed">
-                            <span className="text-blue-500 mt-1">•</span>
-                            <span>{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Card bottom CTA Actions matching mockup visually */}
-                  <div className="flex gap-2.5 mt-5 border-t border-slate-50 pt-3.5">
-                    
-                    {/* Maps */}
-                    <button
-                      onClick={() => handleOpenMap(job.latitude, job.longitude, location)}
-                      className="flex-1 py-3 bg-[#EBF5FF] hover:bg-blue-100 active:scale-[0.98] text-blue-700 font-black rounded-2xl text-[11px] tracking-wide transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Map className="h-3.5 w-3.5" />
-                      Lihat Peta
-                    </button>
-
-                    {/* Apply now */}
-                    <Link
-                      to={`/apply?position=${encodeURIComponent(title)}`}
-                      className="flex-1.5 py-3 bg-[#0462E9] hover:bg-blue-700 active:scale-[0.98] text-white font-black rounded-2xl text-[11px] tracking-wide text-center transition duration-150 flex items-center justify-center gap-1.5 shadow-xs"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      Lamar & Kirim Berkas
-                    </Link>
-
-                  </div>
-
-                </div>
-              );
-            }}
-          />
+                return (
+                  <VacancyJobCard
+                    title={fields.title}
+                    department={fields.department}
+                    location={fields.location}
+                    jobType={fields.jobType}
+                    clientName={clientName || undefined}
+                    description={fields.description}
+                    requirements={fields.requirements}
+                    isBookmarked={bookmarkedJobs.includes(job.id)}
+                    onToggleBookmark={() => toggleBookmark(job.id)}
+                    onOpenMap={() => handleOpenMap(job.latitude, job.longitude, fields.location)}
+                    applyHref={`/apply?position=${encodeURIComponent(fields.title)}`}
+                  />
+                );
+              }}
+            />
           )}
         </DataFetchState>
 
-        {/* 5. Bottom document notification callout */}
-        <div className="mt-8 mb-6 p-4 bg-white border border-slate-100 rounded-3xl flex items-start gap-3 shadow-xs">
-          <div className="p-2 bg-blue-50 text-[#0056C6] rounded-xl shrink-0 mt-0.5">
-            <FileText className="w-5 h-5" />
+        {/* CTA bantuan */}
+        <div className="mb-6 mt-8 flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="mt-0.5 shrink-0 rounded-xl bg-blue-50 p-2.5 text-[#003087]">
+            <FileText className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-800 leading-snug">
+            <p className="text-[11px] font-bold leading-snug text-slate-800">
               Tidak menemukan lowongan yang cocok?
             </p>
-            <p className="text-[10px] text-slate-400 leading-snug mt-0.5">
-              Klik hubungi untuk konsultasi karir, atau daftar terlebih dahulu agar CV Anda masuk kearsipan rekrutmen.
+            <p className="mt-1 text-[10px] leading-snug text-slate-500">
+              Hubungi tim HR atau daftar agar CV Anda masuk ke arsip rekrutmen.
             </p>
-            <Link 
-              to="/contact" 
-              className="text-[11px] font-extrabold text-[#0056C6] hover:underline mt-2.5 inline-block cursor-pointer"
+            <Link
+              to="/contact"
+              className="mt-2.5 inline-flex min-h-[36px] items-center text-[11px] font-extrabold text-[#003087] transition hover:underline"
             >
-              Beri tahu kami posisi yang Anda cari ➔
+              Beri tahu posisi yang Anda cari →
             </Link>
           </div>
         </div>
-
       </div>
 
-      {/* Filter modal drawer option helper */}
+      {/* Filter modal */}
       {showFilterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setShowFilterModal(false)}>
-          <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm overflow-hidden animate-fade-in-down" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="text-xs font-black text-slate-900 tracking-wider uppercase">Filter Sektor Pekerjaan</h3>
-              <button onClick={() => setShowFilterModal(false)} className="text-slate-400 hover:text-slate-700 font-bold cursor-pointer text-sm">Tutup</button>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          onClick={() => setShowFilterModal(false)}
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="filter-modal-title"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-4">
+              <h3
+                id="filter-modal-title"
+                className="text-xs font-black uppercase tracking-wider text-slate-900"
+              >
+                Filter Sektor
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(false)}
+                className="text-sm font-bold text-slate-400 transition hover:text-slate-700"
+              >
+                Tutup
+              </button>
             </div>
-            <div className="p-5 space-y-2.5">
-              {['Semua', 'Operasional', 'Administrasi', 'Teknis', 'Lainnya'].map((f) => (
+            <div className="space-y-2 p-4">
+              {VACANCY_FILTER_OPTIONS.map((f) => (
                 <button
                   key={f}
+                  type="button"
                   onClick={() => {
-                    setSelectedFilter(f as any);
+                    setSelectedFilter(f);
                     setShowFilterModal(false);
                   }}
-                  className={`w-full p-3 text-left rounded-2xl text-xs font-bold border transition ${
-                    selectedFilter === f 
-                      ? 'border-[#0056C6] bg-blue-50/50 text-[#0056C6]' 
-                      : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-700'
+                  className={`w-full min-h-[44px] rounded-xl border px-4 py-3 text-left text-xs font-bold transition active:scale-[0.98] ${
+                    selectedFilter === f
+                      ? 'border-[#003087] bg-blue-50 text-[#003087]'
+                      : 'border-slate-100 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   {f === 'Semua' ? 'Tampilkan Semua Kategori' : `Sektor ${f}`}
@@ -435,37 +341,48 @@ export const VacanciesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Map modal visualization */}
+      {/* Map modal */}
       {mapModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setMapModalData(null)}>
-          <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm overflow-hidden animate-fade-in animate-duration-150" onClick={e => e.stopPropagation()}>
-            <div className="p-4 border-b flex justify-between items-center bg-[#F8FAFC]">
-              <h3 className="text-xs font-extrabold text-slate-950 flex items-center gap-1">
-                📍 Lokasi Penempatan: {mapModalData.title}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setMapModalData(null)}
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label={`Peta lokasi ${mapModalData.title}`}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+              <h3 className="text-xs font-extrabold text-slate-950">
+                Lokasi: {mapModalData.title}
               </h3>
-              <button onClick={() => setMapModalData(null)} className="text-slate-400 hover:text-slate-700 text-base font-extrabold cursor-pointer">&times;</button>
+              <button
+                type="button"
+                onClick={() => setMapModalData(null)}
+                className="text-base font-extrabold text-slate-400 hover:text-slate-700"
+                aria-label="Tutup peta"
+              >
+                ×
+              </button>
             </div>
             <div className="aspect-video w-full bg-slate-100">
-              <iframe 
-                width="100%" 
-                height="100%" 
-                frameBorder="0" 
-                scrolling="no" 
-                marginHeight={0} 
-                marginWidth={0} 
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapModalData.lng-0.015},${mapModalData.lat-0.015},${mapModalData.lng+0.015},${mapModalData.lat+0.015}&layer=mapnik&marker=${mapModalData.lat},${mapModalData.lng}`} 
-                className="w-full h-full border-0"
-              ></iframe>
-            </div>
-            <div className="p-3.5 bg-slate-50 text-center border-t border-slate-100">
-              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                Lokasi di atas disimulasikan sesuai titik koordinat penempatan resmi.
-              </p>
+              <iframe
+                title={`Peta ${mapModalData.title}`}
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                scrolling="no"
+                marginHeight={0}
+                marginWidth={0}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapModalData.lng - 0.015},${mapModalData.lat - 0.015},${mapModalData.lng + 0.015},${mapModalData.lat + 0.015}&layer=mapnik&marker=${mapModalData.lat},${mapModalData.lng}`}
+                className="h-full w-full border-0"
+              />
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

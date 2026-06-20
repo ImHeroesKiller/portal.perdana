@@ -25,11 +25,14 @@ export const DataFetchState: React.FC<DataFetchStateProps> = ({
   if (isLoading) {
     return (
       <div
-        className="flex flex-col items-center justify-center gap-3 text-slate-500"
+        className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-100 bg-white p-8 text-slate-500 shadow-sm"
         style={{ minHeight }}
       >
-        <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-500" />
-        <p className="text-sm font-medium">Memuat data...</p>
+        <ArrowPathIcon className="h-9 w-9 animate-spin text-[#003087]" />
+        <div className="text-center">
+          <p className="text-sm font-bold text-slate-700">Memuat lowongan...</p>
+          <p className="mt-1 text-xs text-slate-400">Mohon tunggu sebentar</p>
+        </div>
       </div>
     );
   }
@@ -59,10 +62,13 @@ export const DataFetchState: React.FC<DataFetchStateProps> = ({
   if (isEmpty) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-sm font-medium text-slate-400"
+        className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm"
         style={{ minHeight }}
       >
-        {emptyMessage}
+        <p className="text-sm font-bold text-slate-700">{emptyMessage}</p>
+        <p className="mt-1.5 text-xs text-slate-400">
+          Silakan cek kembali nanti atau hubungi tim HR.
+        </p>
       </div>
     );
   }
@@ -70,7 +76,7 @@ export const DataFetchState: React.FC<DataFetchStateProps> = ({
   return (
     <>
       {isFetching && (
-        <div className="mb-2 flex items-center gap-2 text-xs font-medium text-indigo-600">
+        <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[#003087]">
           <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
           Memperbarui data...
         </div>

@@ -20,6 +20,14 @@ import {
 
 export type VacancyFilter = 'Semua' | 'Operasional' | 'Administrasi' | 'Teknis' | 'Lainnya';
 
+export const VACANCY_FILTER_OPTIONS: VacancyFilter[] = [
+  'Semua',
+  'Operasional',
+  'Administrasi',
+  'Teknis',
+  'Lainnya',
+];
+
 /** Brand navy — accent utama halaman utama */
 export const BRAND_NAVY = '#003087';
 

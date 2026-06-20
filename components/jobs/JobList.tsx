@@ -6,6 +6,7 @@ import {
   resolveJobTitle,
   type JobDisplayFields,
 } from '../../lib/job-display';
+import { BRAND_NAVY } from '../home/homeContent';
 
 export type { JobDisplayFields };
 
@@ -63,7 +64,12 @@ export const JobList: React.FC<JobListProps> = ({
   return (
     <div className={className} data-job-list={source} data-count={safeJobs.length}>
       {showCount && (
-        <p className="mb-1 text-xs font-bold text-slate-500">{countLabel(safeJobs.length)}</p>
+        <div
+          className="mb-3 inline-flex items-center rounded-full border border-[#003087]/15 bg-blue-50 px-3 py-1.5"
+          style={{ color: BRAND_NAVY }}
+        >
+          <p className="text-xs font-bold">{countLabel(safeJobs.length)}</p>
+        </div>
       )}
       {safeJobs.map((job, index) => {
         const display = getJobDisplayFields(job);
@@ -80,6 +86,7 @@ export const JobList: React.FC<JobListProps> = ({
             jobTitle: job.title,
             department: displayForRender.department,
             location: displayForRender.location,
+            type: displayForRender.type,
             isActive: job.isActive,
           });
         }
