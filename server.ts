@@ -2,10 +2,13 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import axios from "axios";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import type { Firestore } from "firebase-admin/firestore";
 import { getAdminDb, isAdminConfigured, testAdminConnection } from "./lib/firebase-admin";
 import { applyNoStoreHeaders } from "./lib/api-cache";
+import { applySecurityHeaders, applyApiSecurityHeaders } from "./lib/security-headers";
+import { guardApi, sanitizeServerError } from "./lib/api-security";
+import { RATE_LIMITS } from "./lib/api-rate-limit";
 import {
   listCollection,
   listJobs,
@@ -87,6 +90,15 @@ async function startServer() {
 
   app.use(express.json());
 
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+      applyApiSecurityHeaders(res);
+    } else {
+      applySecurityHeaders(res);
+    }
+    next();
+  });
+
   // Initialize server-side Firebase Admin SDK (env-based, firebase-admin v14 modular API)
   let adminDb: Firestore | null = null;
   try {
@@ -109,7 +121,8 @@ async function startServer() {
     console.error("❌ Firebase Admin init error:", err);
   }
 
-  app.get("/api/firebase-health", async (_req, res) => {
+  app.get("/api/firebase-health", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbRead })) return;
     applyNoStoreHeaders(res);
     const health = await testAdminConnection();
     res.status(health.ok ? 200 : 503).json({
@@ -132,6 +145,7 @@ async function startServer() {
 
   // API route for recruitment AI chat assistant
   app.post("/api/recruitment-chat", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.chat, requireOrigin: true })) return;
     const { messages } = req.body;
     
     if (!process.env.GEMINI_API_KEY) {
@@ -161,8 +175,75 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ai-interview-analyze", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.aiInterview, requireOrigin: true })) return;
+
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(503).json({ error: "GEMINI_API_KEY belum dikonfigurasi di server." });
+    }
+
+    const { fullName, positionApplied, transcript } = req.body || {};
+    if (!transcript || typeof transcript !== "object") {
+      return res.status(400).json({ error: "Field 'transcript' wajib berupa object." });
+    }
+
+    try {
+      const prompt = `
+Analyze the following candidate interview based on the STAR method.
+
+Context:
+Candidate Name: ${fullName || "Candidate"}
+Position: ${positionApplied || "N/A"}
+
+Transcript:
+Situation: ${transcript.situation || "No answer"}
+Task: ${transcript.task || "No answer"}
+Action: ${transcript.action || "No answer"}
+Result: ${transcript.result || "No answer"}
+
+Provide:
+1. A brief analysis for each STAR component.
+2. An overall score (0-100).
+3. A summary of the candidate's performance.
+`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              starAnalysis: {
+                type: Type.OBJECT,
+                properties: {
+                  situation: { type: Type.STRING },
+                  task: { type: Type.STRING },
+                  action: { type: Type.STRING },
+                  result: { type: Type.STRING },
+                },
+              },
+              overallScore: { type: Type.NUMBER },
+              summary: { type: Type.STRING },
+            },
+          },
+        },
+      });
+
+      const parsed = JSON.parse(response.text || "{}");
+      return res.status(200).json({ result: parsed });
+    } catch (error: unknown) {
+      console.error("ai-interview-analyze error:", error);
+      const message = error instanceof Error ? error.message : "Gagal menganalisis interview.";
+      return res.status(500).json({ error: sanitizeServerError(message) });
+    }
+  });
+
   // API route for Telegram notification
   app.post("/api/send-telegram", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.telegram, requireOrigin: true })) return;
     const { message } = req.body;
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -185,6 +266,7 @@ async function startServer() {
 
   // REST API routes for robust server-side database CRUD operations
   app.get("/api/db/:collection", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbRead })) return;
     applyNoStoreHeaders(res);
     const { collection } = req.params;
     try {
@@ -204,6 +286,7 @@ async function startServer() {
   });
 
   app.post("/api/db/:collection/:id", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbWrite, requireOrigin: true })) return;
     applyNoStoreHeaders(res);
     const { collection, id } = req.params;
     const data = req.body;
@@ -218,6 +301,7 @@ async function startServer() {
   });
 
   app.put("/api/db/:collection/:id", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbWrite, requireOrigin: true })) return;
     applyNoStoreHeaders(res);
     const { collection, id } = req.params;
     const updates = req.body;
@@ -232,6 +316,7 @@ async function startServer() {
   });
 
   app.delete("/api/db/:collection/:id", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbWrite, requireOrigin: true })) return;
     applyNoStoreHeaders(res);
     const { collection, id } = req.params;
     if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
@@ -245,6 +330,7 @@ async function startServer() {
   });
 
   app.post("/api/db/seed/all", async (req, res) => {
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.seed, requireAdmin: true })) return;
     applyNoStoreHeaders(res);
     if (!adminDb) return res.status(500).json({ error: "Database not initialized on server" });
     try {

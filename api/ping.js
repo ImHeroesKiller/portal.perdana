@@ -1,8 +1,11 @@
+const { guardApi } = require('./_helpers/security');
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+  if (!guardApi(req, res)) return;
+
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
-  res.status(200).json({ ok: true, pong: true, ts: new Date().toISOString() });
+
+  return res.status(200).json({ ok: true, pong: true, ts: new Date().toISOString() });
 };

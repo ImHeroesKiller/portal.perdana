@@ -1,12 +1,18 @@
-import { applyCors, handleOptions } from '../../../lib/api-cors';
-import { applyNoStoreHeaders } from '../../../lib/api-cache';
+import { guardApi } from '../../../lib/api-cors';
+import { RATE_LIMITS } from '../../../lib/api-rate-limit';
 import { seedAllCollections } from '../../../lib/db-api';
 import { formatFirebaseError, toHttpStatus } from '../../../lib/firebase-errors';
 
 export default async function handler(req: any, res: any) {
-  applyCors(res);
-  applyNoStoreHeaders(res);
-  if (handleOptions(req, res)) return;
+  if (
+    !guardApi(req, res, {
+      rateLimit: RATE_LIMITS.seed,
+      requireOrigin: true,
+      requireAdmin: true,
+    })
+  ) {
+    return;
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });

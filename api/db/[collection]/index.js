@@ -6,6 +6,7 @@ const {
   readAdminEnv,
   missingEnvKeys,
 } = require('../../_helpers/firebase');
+const { guardApi, RATE_LIMITS } = require('../../_helpers/security');
 
 const JOBS_COLLECTION = 'jobs';
 const PROJECTS_COLLECTION = 'projects';
@@ -159,12 +160,7 @@ module.exports = async function handler(req, res) {
   let trimmed = '';
 
   try {
-    applyCors(res);
-
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
+    if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbRead })) return;
 
     if (req.method !== 'GET') {
       logInfo('method not allowed', { method: req.method });

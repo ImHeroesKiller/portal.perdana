@@ -5,7 +5,6 @@ import { useCandidates, updateCandidate } from '../hooks/useDbQueries';
 import { getCurrentUser } from '../services/auth';
 import { Employee } from '../types';
 import { VideoCameraIcon, MicrophoneIcon, ClockIcon, CheckCircleIcon, PlayCircleIcon, ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/react/24/outline';
-import { GoogleGenAI, Type } from "@google/genai";
 
 const STAR_STAGES = [
     { id: 'intro', title: 'Introduction', text: "Selamat datang di Interview Online PT Perdana Adi Yuda. Saya Sara, asisten AI rekrutmen Anda. Interview ini akan berlangsung maksimal 5 menit menggunakan metode STAR. Silakan perkenalkan diri Anda secara singkat." },
@@ -15,16 +14,6 @@ const STAR_STAGES = [
     { id: 'result', title: 'Result', text: "Bagaimana hasilnya? Apa dampak dari tindakan Anda terhadap perusahaan atau tim?" },
     { id: 'outro', title: 'Closing', text: "Terima kasih telah menyelesaikan sesi interview ini. Data Anda telah kami rekam dan akan dianalisis oleh tim HRD kami. Anda boleh menutup halaman ini." }
 ];
-
-// Safe access to environment variables
-const getEnv = (): any => {
-    try {
-        // @ts-ignore
-        return (import.meta && import.meta.env) ? import.meta.env : {};
-    } catch {
-        return {};
-    }
-};
 
 export const AIInterviewSession: React.FC = () => {
     const { employeeId } = useParams();
@@ -219,55 +208,23 @@ export const AIInterviewSession: React.FC = () => {
         
         let aiResult;
         try {
-            const env = getEnv();
-            const API_KEY = env.VITE_GEMINI_API_KEY || '';
-            const ai = new GoogleGenAI({ apiKey: API_KEY });
-            
-            const prompt = `
-                Analyze the following candidate interview based on the STAR method.
-                
-                Context:
-                Candidate Name: ${employee.fullName}
-                Position: ${employee.positionApplied}
-                
-                Transcript:
-                Situation: ${transcript['situation'] || 'No answer'}
-                Task: ${transcript['task'] || 'No answer'}
-                Action: ${transcript['action'] || 'No answer'}
-                Result: ${transcript['result'] || 'No answer'}
-                
-                Provide:
-                1. A brief analysis for each STAR component.
-                2. An overall score (0-100).
-                3. A summary of the candidate's performance.
-            `;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: 'application/json',
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            starAnalysis: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    situation: { type: Type.STRING },
-                                    task: { type: Type.STRING },
-                                    action: { type: Type.STRING },
-                                    result: { type: Type.STRING },
-                                }
-                            },
-                            overallScore: { type: Type.NUMBER },
-                            summary: { type: Type.STRING }
-                        }
-                    }
-                }
+            const res = await fetch('/api/ai-interview-analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: employee.fullName,
+                    positionApplied: employee.positionApplied,
+                    transcript,
+                }),
             });
-            
-            aiResult = JSON.parse(response.text);
-            
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || `Analisis AI gagal (HTTP ${res.status})`);
+            }
+
+            const { result } = await res.json();
+            aiResult = result;
         } catch (error) {
             console.error("Gemini Error:", error);
              aiResult = {

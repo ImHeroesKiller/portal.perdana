@@ -1,4 +1,4 @@
-const { guardApi, RATE_LIMITS } = require('./_helpers/security');
+const { guardApi, RATE_LIMITS } = require('../_helpers/security');
 
 module.exports = async function handler(req, res) {
   if (!guardApi(req, res, { rateLimit: RATE_LIMITS.telegram, requireOrigin: true })) return;
@@ -7,19 +7,18 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { message } = req.body || {};
+  const { chatId, text } = req.body || {};
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
 
-  if (!token || !chatId) {
+  if (!token) {
     return res.status(503).json({ error: 'Telegram belum dikonfigurasi di server.' });
   }
 
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: "Field 'message' wajib diisi." });
+  if (!chatId || !text || typeof text !== 'string') {
+    return res.status(400).json({ error: 'Field chatId dan text wajib diisi.' });
   }
 
-  if (message.length > 4096) {
+  if (text.length > 4096) {
     return res.status(400).json({ error: 'Pesan terlalu panjang.' });
   }
 
@@ -27,7 +26,11 @@ module.exports = async function handler(req, res) {
     const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: message }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: 'Markdown',
+      }),
     });
 
     const data = await response.json();
@@ -36,7 +39,7 @@ module.exports = async function handler(req, res) {
     }
     return res.status(502).json({ error: 'Gagal mengirim pesan Telegram.' });
   } catch (err) {
-    console.error('send-telegram error:', err);
+    console.error('telegram/send-user error:', err);
     return res.status(500).json({ error: 'Gagal mengirim pesan Telegram.' });
   }
 };

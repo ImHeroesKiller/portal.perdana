@@ -19,6 +19,9 @@ const HANDWRITTEN = new Set([
   'db/projects.js',
   'db/[collection]/index.js',
   'db/[collection]/[id].js',
+  'telegram/send-user.js',
+  'telegram/updates.js',
+  'telegram/me.js',
 ]);
 
 function isHandwritten(relPath) {

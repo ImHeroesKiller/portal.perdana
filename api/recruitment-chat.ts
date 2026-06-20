@@ -1,4 +1,5 @@
-import { applyCors, handleOptions } from '../lib/api-cors';
+import { guardApi } from '../lib/api-cors';
+import { RATE_LIMITS } from '../lib/api-rate-limit';
 import { extractPureJsonReply, trySaveCandidateFromReply } from '../lib/candidate';
 import { isAdminConfigured } from '../lib/firebase-admin';
 import { formatFirebaseError } from '../lib/firebase-errors';
@@ -122,8 +123,7 @@ INGAT: Jika checklist lengkap → respons Anda = HANYA satu baris JSON mulai dar
 `;
 
 export default async function handler(req: any, res: any) {
-  applyCors(res);
-  if (handleOptions(req, res)) return;
+  if (!guardApi(req, res, { rateLimit: RATE_LIMITS.chat, requireOrigin: true })) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });

@@ -1,10 +1,14 @@
-const { getDb, applyCors, toStatus } = require('../../_helpers/firebase');
+const { getDb, toStatus } = require('../../_helpers/firebase');
+const { guardApi, RATE_LIMITS } = require('../../_helpers/security');
 
 module.exports = async function handler(req, res) {
-  applyCors(res);
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
+  const isWrite = req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE';
+  if (
+    !guardApi(req, res, {
+      rateLimit: isWrite ? RATE_LIMITS.dbWrite : RATE_LIMITS.dbRead,
+      requireOrigin: isWrite,
+    })
+  ) {
     return;
   }
 

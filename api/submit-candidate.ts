@@ -1,4 +1,5 @@
-import { applyCors, handleOptions } from '../lib/api-cors';
+import { guardApi } from '../lib/api-cors';
+import { RATE_LIMITS } from '../lib/api-rate-limit';
 import {
   CandidatePayload,
   isCompleteCandidateData,
@@ -8,8 +9,7 @@ import { isAdminConfigured } from '../lib/firebase-admin';
 import { formatFirebaseError, toHttpStatus } from '../lib/firebase-errors';
 
 export default async function handler(req: any, res: any) {
-  applyCors(res);
-  if (handleOptions(req, res)) return;
+  if (!guardApi(req, res, { rateLimit: RATE_LIMITS.submit, requireOrigin: true })) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });

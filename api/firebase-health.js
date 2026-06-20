@@ -1,12 +1,8 @@
-const { readAdminEnv, missingEnvKeys, getDb, applyCors } = require('./_helpers/firebase');
+const { readAdminEnv, missingEnvKeys, getDb } = require('./_helpers/firebase');
+const { guardApi, RATE_LIMITS } = require('./_helpers/security');
 
 module.exports = async function handler(req, res) {
-  applyCors(res);
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (!guardApi(req, res, { rateLimit: RATE_LIMITS.dbRead })) return;
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
