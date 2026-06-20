@@ -230,14 +230,18 @@ export const VacanciesPage: React.FC = () => {
             className="mt-2 space-y-4"
             renderItem={(job, display: JobDisplayFields) => {
               const isBookmarked = bookmarkedJobs.includes(job.id);
-              const tagLabel = display.department.toUpperCase();
+              const title = display.title || job.title || 'Lowongan';
+              const department = display.department || job.department || 'Umum';
+              const location = display.location || job.location || 'Lokasi belum diisi';
+              const jobType = display.type || job.type || 'Contract';
+              const tagLabel = department.toUpperCase();
 
               return (
                 <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-xs transition duration-240 hover:shadow-md">
                   
                   {/* Tag and Bookmark Row */}
                   <div className="flex justify-between items-start mb-3">
-                    <span className="inline-block px-3 py-1 rounded-lg bg-blue-50 text-blue-800 text-[10px] font-black tracking-wider uppercase">
+                    <span className="job-card-dept inline-block rounded-lg px-3 py-1">
                       {tagLabel}
                     </span>
                     <button 
@@ -254,27 +258,27 @@ export const VacanciesPage: React.FC = () => {
 
                   {/* Title and Client */}
                   <div className="mb-3.5">
-                    <h2 className="mb-1 text-base font-black leading-tight text-slate-900">{display.title}</h2>
-                    <p className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                    <h2 className="job-card-title mb-1">{title}</h2>
+                    <p className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
                       🏢 {getClientName(job.clientId)}
                     </p>
                   </div>
 
                   {/* High Quality Specification Pills */}
                   <div className="mb-4 mt-3.5 flex flex-wrap gap-2">
-                    <div className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-[#F8FAFC] px-3 py-1.5 text-[10px] font-bold text-slate-600">
-                      <MapPin className="h-3.5 w-3.5 text-blue-500" />
-                      <span>{display.location}</span>
+                    <div className="job-card-meta flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-hidden />
+                      <span>{location}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-[#F8FAFC] px-3 py-1.5 text-[10px] font-bold text-slate-600">
-                      <Briefcase className="h-3.5 w-3.5 text-orange-400" />
-                      <span>{display.type}</span>
+                    <div className="job-card-meta flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                      <Briefcase className="h-3.5 w-3.5 shrink-0 text-orange-500" aria-hidden />
+                      <span>{jobType}</span>
                     </div>
                   </div>
 
                   {/* Description */}
                   {display.description && (
-                    <p className="mb-4 text-xs leading-relaxed text-slate-500">
+                    <p className="job-card-desc mb-4">
                       {display.description}
                     </p>
                   )}
@@ -299,7 +303,7 @@ export const VacanciesPage: React.FC = () => {
                     
                     {/* Maps */}
                     <button
-                      onClick={() => handleOpenMap(job.latitude, job.longitude, display.location)}
+                      onClick={() => handleOpenMap(job.latitude, job.longitude, location)}
                       className="flex-1 py-3 bg-[#EBF5FF] hover:bg-blue-100 active:scale-[0.98] text-blue-700 font-black rounded-2xl text-[11px] tracking-wide transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Map className="h-3.5 w-3.5" />
@@ -308,7 +312,7 @@ export const VacanciesPage: React.FC = () => {
 
                     {/* Apply now */}
                     <Link
-                      to={`/apply?position=${encodeURIComponent(display.title)}`}
+                      to={`/apply?position=${encodeURIComponent(title)}`}
                       className="flex-1.5 py-3 bg-[#0462E9] hover:bg-blue-700 active:scale-[0.98] text-white font-black rounded-2xl text-[11px] tracking-wide text-center transition duration-150 flex items-center justify-center gap-1.5 shadow-xs"
                     >
                       <Send className="h-3.5 w-3.5" />

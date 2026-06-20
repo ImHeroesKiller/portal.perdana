@@ -57,28 +57,55 @@ function parseJobType(value: unknown): JobVacancy['type'] {
   return JOB_TYPES.includes(raw as JobVacancy['type']) ? (raw as JobVacancy['type']) : 'Contract';
 }
 
+function mergeNestedFields(raw: Record<string, unknown>): Record<string, unknown> {
+  const nested = raw.data;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    return { ...raw, ...(nested as Record<string, unknown>) };
+  }
+  return raw;
+}
+
+function pickField(raw: Record<string, unknown>, keys: string[], fallback = ''): string {
+  for (const key of keys) {
+    const value = raw[key];
+    if (value != null && String(value).trim()) return String(value).trim();
+  }
+  return fallback;
+}
+
 /** Normalize Firestore job doc for frontend (JobVacancy type). */
 export function normalizeJobFromFirestore(raw: Record<string, unknown>): JobVacancy {
-  const id = String(raw.id ?? raw._id ?? '');
+  const merged = mergeNestedFields(raw);
+  const id = String(merged.id ?? merged._id ?? raw.id ?? '');
 
   return {
     id,
-    title: String(raw.title ?? raw.name ?? raw.position ?? raw.jobTitle ?? 'Lowongan'),
-    department: String(raw.department ?? raw.dept ?? raw.sector ?? 'Umum'),
-    location: String(raw.location ?? raw.lokasi ?? raw.site ?? ''),
-    latitude: raw.latitude != null && raw.latitude !== '' ? Number(raw.latitude) : undefined,
-    longitude: raw.longitude != null && raw.longitude !== '' ? Number(raw.longitude) : undefined,
-    clientId: raw.clientId != null && raw.clientId !== '' ? String(raw.clientId) : undefined,
-    projectId: raw.projectId != null && raw.projectId !== '' ? String(raw.projectId) : undefined,
-    type: parseJobType(raw.type),
-    description: String(raw.description ?? ''),
-    requirements: parseStringArray(raw.requirements),
-    salaryRange: raw.salaryRange != null ? String(raw.salaryRange) : undefined,
-    isActive: parseBool(raw.isActive, true),
-    createdAt: parseCreatedAt(raw.createdAt),
-    minEducation: raw.minEducation != null ? String(raw.minEducation) : undefined,
-    maxAge: raw.maxAge != null && raw.maxAge !== '' ? Number(raw.maxAge) : undefined,
-    genderPreference: raw.genderPreference as JobVacancy['genderPreference'],
-    requiredSkillsList: parseStringArray(raw.requiredSkillsList ?? raw.requiredSkills),
+    title: pickField(merged, [
+      'title',
+      'name',
+      'position',
+      'jobTitle',
+      'nama',
+      'judul',
+      'namaLowongan',
+      'positionName',
+      'role',
+    ], 'Lowongan'),
+    department: pickField(merged, ['department', 'dept', 'sector', 'divisi', 'division', 'category'], 'Umum'),
+    location: pickField(merged, ['location', 'lokasi', 'site', 'placement', 'workLocation', 'penempatan', 'city']),
+    latitude: merged.latitude != null && merged.latitude !== '' ? Number(merged.latitude) : undefined,
+    longitude: merged.longitude != null && merged.longitude !== '' ? Number(merged.longitude) : undefined,
+    clientId: merged.clientId != null && merged.clientId !== '' ? String(merged.clientId) : undefined,
+    projectId: merged.projectId != null && merged.projectId !== '' ? String(merged.projectId) : undefined,
+    type: parseJobType(merged.type),
+    description: pickField(merged, ['description', 'desc', 'deskripsi', 'summary', 'jobDescription']),
+    requirements: parseStringArray(merged.requirements ?? merged.kualifikasi ?? merged.qualifications),
+    salaryRange: merged.salaryRange != null ? String(merged.salaryRange) : undefined,
+    isActive: parseBool(merged.isActive, true),
+    createdAt: parseCreatedAt(merged.createdAt),
+    minEducation: merged.minEducation != null ? String(merged.minEducation) : undefined,
+    maxAge: merged.maxAge != null && merged.maxAge !== '' ? Number(merged.maxAge) : undefined,
+    genderPreference: merged.genderPreference as JobVacancy['genderPreference'],
+    requiredSkillsList: parseStringArray(merged.requiredSkillsList ?? merged.requiredSkills),
   };
 }

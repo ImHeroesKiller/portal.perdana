@@ -53,9 +53,10 @@ export const JobList: React.FC<JobListProps> = ({
           index,
           key,
           id: display.id,
-          title: display.title,
-          department: display.department,
-          location: display.location,
+          title: display.title || job.title,
+          department: display.department || job.department,
+          location: display.location || job.location,
+          rawTitle: job.title,
           isActive: job.isActive,
         });
 

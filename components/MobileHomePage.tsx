@@ -120,39 +120,45 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               jobs={filteredJobs}
               showCount
               className="space-y-3"
-              renderItem={(job, display: JobDisplayFields) => (
+              renderItem={(job, display: JobDisplayFields) => {
+                const title = display.title || job.title || 'Lowongan';
+                const department = display.department || job.department || 'Umum';
+                const location = display.location || job.location || 'Lokasi belum diisi';
+                const jobType = display.type || job.type || 'Contract';
+
+                return (
                 <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                  <span className="inline-block rounded-lg bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-800">
-                    {display.department}
+                  <span className="job-card-dept inline-block rounded-lg px-2 py-0.5">
+                    {department}
                   </span>
-                  <h3 className="mt-2 text-sm font-extrabold text-slate-900">{display.title}</h3>
-                  <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-500">
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-blue-500" />
-                      {display.location}
+                  <h3 className="job-card-title mt-2 text-sm">{title}</h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="job-card-meta inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3 shrink-0 text-blue-500" aria-hidden />
+                      {location}
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Briefcase className="h-3 w-3 text-orange-500" />
-                      {display.type}
+                    <span className="job-card-meta inline-flex items-center gap-1">
+                      <Briefcase className="h-3 w-3 shrink-0 text-orange-500" aria-hidden />
+                      {jobType}
                     </span>
                   </div>
                   <div className="mt-3 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => openMap(job.latitude, job.longitude, display.location)}
+                      onClick={() => openMap(job.latitude, job.longitude, location)}
                       className="flex-1 rounded-xl bg-slate-100 py-2 text-[10px] font-bold text-slate-700"
                     >
                       Peta
                     </button>
                     <Link
-                      to={`/apply?position=${encodeURIComponent(display.title)}`}
+                      to={`/apply?position=${encodeURIComponent(title)}`}
                       className="flex-1 rounded-xl bg-[#0056C6] py-2 text-center text-[10px] font-bold text-white"
                     >
                       Lamar
                     </Link>
                   </div>
                 </div>
-              )}
+              )}}
             />
           </DataFetchState>
         </div>

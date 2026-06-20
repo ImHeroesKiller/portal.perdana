@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fallback teks kartu lowongan — tetap terbaca jika utility Tailwind gagal */
+.job-card-title {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.job-card-dept {
+  color: #1e40af;
+  background-color: #eff6ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.job-card-meta {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.job-card-desc {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}

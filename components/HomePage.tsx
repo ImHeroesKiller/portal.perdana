@@ -173,6 +173,10 @@ export const HomePage: React.FC = () => {
               showCount
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {
+                const title = display.title || job.title || 'Lowongan';
+                const department = display.department || job.department || 'Umum';
+                const location = display.location || job.location || 'Lokasi belum diisi';
+                const jobType = display.type || job.type || 'Contract';
                 const isExpanded = expandedRequirements[job.id];
                 const displayedRequirements = isExpanded
                   ? display.requirements
@@ -184,10 +188,10 @@ export const HomePage: React.FC = () => {
                   <div className="flex-1 p-6">
                     <div className="flex items-start justify-between">
                         <div>
-                            <span className="mb-2 inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-sm font-medium text-blue-800">
-                                {display.department}
+                            <span className="job-card-dept mb-2 inline-flex items-center rounded-full px-3 py-0.5 text-sm">
+                                {department}
                             </span>
-                            <h3 className="text-xl font-bold text-gray-900">{display.title}</h3>
+                            <h3 className="job-card-title text-xl">{title}</h3>
                             {job.clientId && (
                                 <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                                     <BuildingOfficeIcon className="h-4 w-4" /> 
@@ -197,19 +201,19 @@ export const HomePage: React.FC = () => {
                         </div>
                     </div>
                     
-                    <div className="mt-4 space-y-2 text-sm text-gray-500">
-                         <div className="flex items-center gap-2">
-                             <MapPinIcon className="h-4 w-4 text-gray-400" />
-                             <span>{display.location}</span>
+                    <div className="mt-4 space-y-2 text-sm">
+                         <div className="job-card-meta flex items-center gap-2 text-sm">
+                             <MapPinIcon className="h-4 w-4 shrink-0 text-blue-500" aria-hidden />
+                             <span>{location}</span>
                          </div>
-                         <div className="flex items-center gap-2">
-                             <BriefcaseIcon className="h-4 w-4 text-gray-400" />
-                             <span>{display.type}</span>
+                         <div className="job-card-meta flex items-center gap-2 text-sm">
+                             <BriefcaseIcon className="h-4 w-4 shrink-0 text-orange-500" aria-hidden />
+                             <span>{jobType}</span>
                          </div>
                     </div>
 
                     <div className="mt-4">
-                        <p className="line-clamp-3 text-sm text-gray-600">{display.description}</p>
+                        <p className="job-card-desc line-clamp-3">{display.description}</p>
                     </div>
 
                     <div className="mt-4">
@@ -241,13 +245,13 @@ export const HomePage: React.FC = () => {
                   </div>
                   <div className="p-6 bg-gray-50 border-t border-gray-100 mt-auto flex gap-3">
                     <button
-                        onClick={() => openMap(job.latitude, job.longitude, display.location)}
+                        onClick={() => openMap(job.latitude, job.longitude, location)}
                         className="flex-1 text-center bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded transition-colors text-sm"
                     >
                         {t('home_btn_location')}
                     </button>
                     <Link
-                      to={`/apply?position=${encodeURIComponent(display.title)}`}
+                      to={`/apply?position=${encodeURIComponent(title)}`}
                       className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors text-sm"
                     >
                       {t('home_btn_apply')}
