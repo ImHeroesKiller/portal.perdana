@@ -1,4 +1,5 @@
 import { QueryClient, focusManager, onlineManager } from '@tanstack/react-query';
+import { DEFAULT_QUERY_OPTIONS } from './queryOptions';
 
 let queryListenersConfigured = false;
 
@@ -32,14 +33,7 @@ setupQueryListeners();
 
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-      refetchOnMount: true,
-      retry: 2,
-    },
+    queries: DEFAULT_QUERY_OPTIONS,
     mutations: {
       retry: 1,
     },

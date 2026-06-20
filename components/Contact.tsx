@@ -15,17 +15,7 @@ import {
   PageHero,
   PageTopBar,
 } from './layout/MarketingPageLayout';
-
-declare const L: {
-  map: (el: HTMLElement) => {
-    setView: (coords: [number, number], zoom: number) => unknown;
-    remove: () => void;
-  };
-  tileLayer: (url: string, opts: { attribution: string }) => { addTo: (map: unknown) => unknown };
-  marker: (coords: [number, number]) => {
-    addTo: (map: unknown) => { bindPopup: (html: string) => { openPopup: () => void } };
-  };
-};
+import { loadLeaflet } from '../lib/loadLeaflet';
 
 export const Contact: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -38,6 +28,8 @@ export const Contact: React.FC = () => {
   useEffect(() => {
     if (!mapRef.current) return;
 
+    let cancelled = false;
+
     if (mapInstance.current) {
       mapInstance.current.remove();
       mapInstance.current = null;
@@ -45,23 +37,31 @@ export const Contact: React.FC = () => {
 
     const mainBranch = settings.branches[0] || { lat: -2.8227, lng: 122.1462 };
 
-    try {
-      const map = L.map(mapRef.current).setView([mainBranch.lat, mainBranch.lng], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map);
+    void loadLeaflet()
+      .then((L) => {
+        if (cancelled || !mapRef.current) return;
 
-      settings.branches.forEach((branch) => {
-        L.marker([branch.lat, branch.lng])
-          .addTo(map)
-          .bindPopup(`<b>${settings.companyName}</b><br>${branch.name}`)
-          .openPopup();
+        const map = L.map(mapRef.current).setView([mainBranch.lat, mainBranch.lng], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map);
+
+        settings.branches.forEach((branch) => {
+          L.marker([branch.lat, branch.lng])
+            .addTo(map)
+            .bindPopup(`<b>${settings.companyName}</b><br>${branch.name}`)
+            .openPopup();
+        });
+
+        mapInstance.current = map;
+      })
+      .catch((err) => {
+        console.error('Leaflet initialization error:', err);
       });
 
-      mapInstance.current = map as { remove: () => void };
-    } catch (err) {
-      console.error('Leaflet initialization error:', err);
-    }
+    return () => {
+      cancelled = true;
+    };
   }, [settings]);
 
   const handleSubmit = (e: React.FormEvent) => {

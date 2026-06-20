@@ -59,7 +59,7 @@ export const About: React.FC = () => {
             </>
           }
           subtitle="PT Perdana Adi Yuda berkomitmen menyediakan layanan alih daya terbaik melalui proses rekrutmen yang profesional, pelatihan berkualitas, dan penempatan tenaga kerja yang tepat."
-          imageSrc="/assets/site_workers.jpg"
+          imageSrc="/assets/hero/site_workers.jpg"
           imageAlt="Tim lapangan Perdana"
         />
 
@@ -83,9 +83,11 @@ export const About: React.FC = () => {
             </div>
             <div className="relative h-64 w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 md:w-64">
               <img
-                src="/assets/site_bricklaying.jpg"
+                src="/assets/hero/site_bricklaying.jpg"
                 alt="Perwakilan lapangan Perdana"
                 className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute bottom-3 left-3 right-3 rounded-xl border border-white/10 bg-slate-900/80 p-3 text-center text-white backdrop-blur-sm">

@@ -1,25 +1,39 @@
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-import { RecruitmentForm } from './components/RecruitmentForm';
-import { AdminDashboard } from './components/AdminDashboard';
 import { HomePage } from './components/HomePage';
 import { Login } from './components/Login';
-import { Register } from './components/Register';
-import { Settings } from './components/Settings';
-import { Help } from './components/Help';
 import { About } from './components/About';
 import { Contact } from './components/Contact';
 import { Services } from './components/Services';
-import { AIInterviewSession } from './components/AIInterviewSession';
-import { EmployeePortal } from './components/EmployeePortal';
 import { VacanciesPage } from './components/VacanciesPage';
 import { JobDetailPage } from './components/jobs/JobDetailPage';
 import { NavBar } from './components/NavBar';
 import { BottomNavigation } from './components/BottomNavigation';
+import { RouteFallback } from './components/layout/RouteFallback';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { LanguageProvider } from './services/i18n';
+
+const RecruitmentForm = lazy(() =>
+  import('./components/RecruitmentForm').then((m) => ({ default: m.RecruitmentForm }))
+);
+const AdminDashboard = lazy(() =>
+  import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const Register = lazy(() =>
+  import('./components/Register').then((m) => ({ default: m.Register }))
+);
+const Settings = lazy(() =>
+  import('./components/Settings').then((m) => ({ default: m.Settings }))
+);
+const Help = lazy(() => import('./components/Help').then((m) => ({ default: m.Help })));
+const AIInterviewSession = lazy(() =>
+  import('./components/AIInterviewSession').then((m) => ({ default: m.AIInterviewSession }))
+);
+const EmployeePortal = lazy(() =>
+  import('./components/EmployeePortal').then((m) => ({ default: m.EmployeePortal }))
+);
 
 const MOBILE_BOTTOM_PAD = 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]';
 
@@ -46,22 +60,24 @@ function AppShell() {
           isMobile ? MOBILE_BOTTOM_PAD : ''
         }`}
       >
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/vacancies" element={<VacanciesPage />} />
-          <Route path="/vacancies/:jobId" element={<JobDetailPage />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/apply" element={<RecruitmentForm />} />
-          <Route path="/portal" element={<EmployeePortal />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/interview-session/:employeeId" element={<AIInterviewSession />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/vacancies" element={<VacanciesPage />} />
+            <Route path="/vacancies/:jobId" element={<JobDetailPage />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/apply" element={<RecruitmentForm />} />
+            <Route path="/portal" element={<EmployeePortal />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/interview-session/:employeeId" element={<AIInterviewSession />} />
+          </Routes>
+        </Suspense>
       </main>
       <BottomNavigation />
     </>

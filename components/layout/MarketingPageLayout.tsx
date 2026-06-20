@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface PageTopBarProps {
   badge?: string;
@@ -56,11 +57,12 @@ export const PageHero: React.FC<PageHeroProps> = ({
   <div className="relative overflow-hidden rounded-2xl bg-[#003087] text-white shadow-sm">
     {imageSrc && (
       <div className="absolute inset-0" aria-hidden>
-        <img
+        <OptimizedImage
           src={imageSrc}
           alt=""
           className="h-full w-full object-cover opacity-25"
           referrerPolicy="no-referrer"
+          loading="lazy"
         />
       </div>
     )}
@@ -83,11 +85,12 @@ export const PageHero: React.FC<PageHeroProps> = ({
       </div>
       {imageSrc && (
         <div className="h-40 w-full shrink-0 overflow-hidden rounded-xl border border-white/20 md:h-44 md:w-56">
-          <img
+          <OptimizedImage
             src={imageSrc}
             alt={imageAlt || ''}
             className="h-full w-full object-cover"
             referrerPolicy="no-referrer"
+            loading="lazy"
           />
         </div>
       )}

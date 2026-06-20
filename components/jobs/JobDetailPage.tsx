@@ -157,7 +157,7 @@ export const JobDetailPage: React.FC = () => {
                 eyebrow={fields.department}
                 title={fields.title}
                 subtitle={heroSubtitle}
-                imageSrc="/assets/site_workers.jpg"
+                imageSrc="/assets/hero/site_workers.jpg"
                 imageAlt={fields.title}
               />
 

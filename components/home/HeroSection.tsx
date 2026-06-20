@@ -6,12 +6,14 @@ import {
   BriefcaseIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '../../services/i18n';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
+/** Compressed hero assets (~70% smaller than originals) */
 const HERO_IMAGES = [
-  '/assets/site_workers.jpg',
-  '/assets/site_scaffolding.jpg',
-  '/assets/site_bricklaying.jpg',
-  '/assets/site_shoveling.jpg',
+  '/assets/hero/site_workers.jpg',
+  '/assets/hero/site_scaffolding.jpg',
+  '/assets/hero/site_bricklaying.jpg',
+  '/assets/hero/site_shoveling.jpg',
 ];
 
 const SLIDE_INTERVAL_MS = 6000;
@@ -46,10 +48,13 @@ function HeroBrand({
             : 'mb-4 h-[6.25rem] w-[6.25rem] p-3.5 sm:h-[7.25rem] sm:w-[7.25rem] sm:p-4'
         }`}
       >
-        <img
+        <OptimizedImage
           src="/assets/logo.png"
           alt="Logo PT Perdana Adi Yuda"
           className="h-full w-full object-contain"
+          priority
+          width={256}
+          height={256}
         />
       </div>
       <p
@@ -208,11 +213,12 @@ function HeroBackground({
         {HERO_IMAGES.map((src, idx) => {
           const isActive = activeImageIdx === idx;
           return (
-            <img
+            <OptimizedImage
               key={src}
               src={src}
               alt=""
               aria-hidden="true"
+              priority={idx === 0}
               className={`absolute inset-0 z-0 h-full w-full object-cover object-center will-change-[opacity,transform] ${
                 isActive ? 'scale-100 opacity-100' : 'scale-[1.04] opacity-0'
               }`}
@@ -222,7 +228,6 @@ function HeroBackground({
                 transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
               }}
               referrerPolicy="no-referrer"
-              {...(idx === 0 ? { fetchpriority: 'high' as const } : {})}
             />
           );
         })}

@@ -19,19 +19,13 @@ import {
   updatePermanentEmployee,
 } from '../src/services/employeeService';
 import { queryKeys } from '../lib/queryKeys';
+import {
+  JOBS_QUERY_OPTIONS,
+  LIST_QUERY_OPTIONS,
+  STATIC_QUERY_OPTIONS,
+} from '../lib/queryOptions';
 import { applyPublicJobFilter, filterPublicJobs } from '../lib/job-filters';
 import type { JobVacancy, Employee, Client, Project } from '../types';
-
-const QUERY_OPTIONS = {
-  staleTime: 30_000,
-  gcTime: 5 * 60_000,
-  refetchOnWindowFocus: true,
-  refetchOnReconnect: true,
-  refetchOnMount: true,
-  retry: 2,
-};
-
-let homePageForceRefreshDone = false;
 
 type JobsQueryResult = UseQueryResult<JobVacancy[], Error> & {
   data: JobVacancy[];
@@ -47,7 +41,7 @@ export function useJobs(options?: { activeOnly?: boolean }): JobsQueryResult {
   const query = useQuery<JobVacancy[], Error>({
     queryKey: queryKeys.jobs,
     queryFn: () => getJobs(),
-    ...QUERY_OPTIONS,
+    ...JOBS_QUERY_OPTIONS,
   });
 
   const data = useMemo(() => {
@@ -87,7 +81,7 @@ export function useCandidates() {
   return useQuery<Employee[], Error>({
     queryKey: queryKeys.candidates,
     queryFn: () => getCandidates(),
-    ...QUERY_OPTIONS,
+    ...LIST_QUERY_OPTIONS,
   });
 }
 
@@ -95,7 +89,7 @@ export function usePermanentEmployees() {
   return useQuery<Employee[], Error>({
     queryKey: queryKeys.permanentEmployees,
     queryFn: getPermanentEmployees,
-    ...QUERY_OPTIONS,
+    ...LIST_QUERY_OPTIONS,
   });
 }
 
@@ -103,7 +97,7 @@ export function useActivePermanentEmployees() {
   return useQuery<Employee[], Error>({
     queryKey: [...queryKeys.permanentEmployees, 'active'] as const,
     queryFn: getActivePermanentEmployees,
-    ...QUERY_OPTIONS,
+    ...LIST_QUERY_OPTIONS,
   });
 }
 
@@ -115,7 +109,7 @@ export function useClients() {
   return useQuery<Client[], Error>({
     queryKey: queryKeys.clients,
     queryFn: getClients,
-    ...QUERY_OPTIONS,
+    ...STATIC_QUERY_OPTIONS,
   });
 }
 
@@ -123,22 +117,15 @@ export function useProjects() {
   return useQuery<Project[], Error>({
     queryKey: queryKeys.projects,
     queryFn: getProjects,
-    ...QUERY_OPTIONS,
+    ...STATIC_QUERY_OPTIONS,
   });
 }
 
 export function useHomePageData() {
-  const qc = useQueryClient();
   const jobsQuery = useJobs();
   const candidatesQuery = useCandidates();
   const clientsQuery = useClients();
   const projectsQuery = useProjects();
-
-  useEffect(() => {
-    if (homePageForceRefreshDone) return;
-    homePageForceRefreshDone = true;
-    void Promise.all([forceRefreshJobs(qc), forceRefreshCandidates(qc)]);
-  }, [qc]);
 
   const jobs = jobsQuery.data;
   const candidates = candidatesQuery.data ?? [];

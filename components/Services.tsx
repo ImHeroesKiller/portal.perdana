@@ -124,7 +124,7 @@ export const Services: React.FC = () => {
               ? 'Layanan pengelolaan tenaga kerja terintegrasi, profesional, dan andal untuk mendukung efisiensi operasional bisnis Anda.'
               : 'Integrated, professional, and reliable workforce management services to support your business operational efficiency.'
           }
-          imageSrc="/assets/site_scaffolding.jpg"
+          imageSrc="/assets/hero/site_scaffolding.jpg"
           imageAlt="Layanan konstruksi"
         />
 

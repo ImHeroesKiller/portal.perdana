@@ -996,38 +996,48 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({ activeEmployee
     }
   };
 
-  // Leaflet map renderer
+  // Leaflet map renderer (dynamic import — not loaded on public pages)
   useEffect(() => {
-    if (!window.L || !mapTarget || !mapTarget.latitude || !mapTarget.longitude) return;
+    if (!mapTarget || !mapTarget.latitude || !mapTarget.longitude) return;
 
-    // We locate the container div
     const elem = document.getElementById('map-absensi');
     if (!elem) return;
 
-    // Clear contents
+    let map: { remove: () => void } | null = null;
+    let cancelled = false;
+
     elem.innerHTML = '';
     const mapDiv = document.createElement('div');
     mapDiv.style.height = '100%';
     mapDiv.style.width = '100%';
     elem.appendChild(mapDiv);
 
-    try {
-      const map = window.L.map(mapDiv).setView([mapTarget.latitude, mapTarget.longitude], 13);
-      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+    void import('../../../lib/loadLeaflet')
+      .then(({ loadLeaflet }) => loadLeaflet())
+      .then((L) => {
+        if (cancelled) return;
+        const instance = L.map(mapDiv).setView([mapTarget.latitude!, mapTarget.longitude!], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(instance);
 
-      window.L.marker([mapTarget.latitude, mapTarget.longitude])
-        .addTo(map)
-        .bindPopup(`<b>${mapTarget.employeeName}</b><br/>Status: HADIR (${mapTarget.shift})<br/>Date: ${mapTarget.date}`)
-        .openPopup();
+        L.marker([mapTarget.latitude!, mapTarget.longitude!])
+          .addTo(instance)
+          .bindPopup(
+            `<b>${mapTarget.employeeName}</b><br/>Status: HADIR (${mapTarget.shift})<br/>Date: ${mapTarget.date}`
+          )
+          .openPopup();
 
-      return () => {
-        map.remove();
-      };
-    } catch (err) {
-      console.error("Leaflet map initialization error:", err);
-    }
+        map = instance;
+      })
+      .catch((err) => {
+        console.error('Leaflet map initialization error:', err);
+      });
+
+    return () => {
+      cancelled = true;
+      map?.remove();
+    };
   }, [mapTarget]);
 
   const handleSimulateCheckIn = async (e: React.FormEvent) => {
