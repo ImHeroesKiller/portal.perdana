@@ -11,7 +11,7 @@ import { DataFetchState } from '../src/components/DataFetchState';
 import { resolveJobTitle } from '../lib/job-display';
 import type { JobDisplayFields } from './jobs/JobList';
 import { ArrowRight, Megaphone, Calendar, MapPin, Briefcase } from 'lucide-react';
-import { useLanguage } from '../services/i18n';
+import { localeDateTag, useLanguage } from '../services/i18n';
 
 interface MobileHomePageProps {
   jobs: any[];
@@ -30,12 +30,9 @@ interface MobileHomePageProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   openMap: (lat?: number, lng?: number, title?: string) => void;
-  t: (key: string) => string;
-  language: 'id' | 'en';
 }
 
 export const MobileHomePage: React.FC<MobileHomePageProps> = ({
-  filteredJobs,
   previewJobs,
   totalFilteredJobs,
   stats,
@@ -48,10 +45,8 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   searchQuery,
   setSearchQuery,
   openMap,
-  t,
-  language,
 }) => {
-  const { tVars, tJobCountLabel } = useLanguage();
+  const { t, tVars, tJobCountLabel, language } = useLanguage();
   const navigate = useNavigate();
 
   const handleStatClick = (key: keyof typeof stats) => {
@@ -66,7 +61,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
     navigate('/vacancies');
   };
 
-  const newsDate = new Date().toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
+  const newsDate = new Date().toLocaleDateString(localeDateTag(language), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -85,7 +80,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
       />
 
       <main className="mt-8 flex flex-col gap-8 px-4">
-        <section aria-label="Statistik">
+        <section aria-label={t('mobile_section_stats')}>
           <StatsCards
             variant="mobile"
             stats={stats}
@@ -94,22 +89,21 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
           />
         </section>
 
-        <section aria-label="Menu utama">
+        <section aria-label={t('mobile_section_menu')}>
           <QuickAccessGrid variant="mobile" stats={stats} />
         </section>
 
-        <section aria-label="Sektor alih daya">
+        <section aria-label={t('mobile_section_sectors')}>
           <JobSectorsGrid variant="mobile" />
         </section>
 
-        {/* Daftar lowongan — mobile HomePage */}
-        <section aria-label="Lowongan terbaru">
+        <section aria-label={t('mobile_section_vacancies')}>
           <SectionHeader
             compact
             title={t('home_vac_title')}
             action={
               <Link to="/vacancies" className={sectionLinkClass}>
-                {language === 'id' ? 'Lihat semua' : 'See all'}
+                {t('home_see_all')}
                 <ArrowRight className="h-3 w-3" />
               </Link>
             }
@@ -125,7 +119,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
             isLoading={jobsLoading}
             error={fetchError}
             isEmpty={hasNoJobs}
-            emptyMessage="Saat ini belum ada lowongan yang tersedia."
+            emptyMessage={t('vacancies_empty')}
             onRetry={() => { void refetchJobs(); }}
           >
             <JobList
@@ -140,8 +134,10 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               className="space-y-3"
               renderItem={(job, display: JobDisplayFields) => {
                 const title = resolveJobTitle(job);
-                const department = display.department || job.department || 'Umum';
-                const location = display.location || job.location || 'Lokasi belum diisi';
+                const department =
+                  display.department || job.department || t('job_default_department');
+                const location =
+                  display.location || job.location || t('job_default_location');
                 const jobType = display.type || job.type || 'Contract';
 
                 return (
@@ -166,13 +162,13 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
                       onClick={() => openMap(job.latitude, job.longitude, location)}
                       className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-bold text-slate-700 transition active:scale-[0.98]"
                     >
-                      Peta
+                      {t('home_btn_map')}
                     </button>
                     <Link
                       to={`/apply?position=${encodeURIComponent(title)}`}
                       className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-[#003087] text-center text-[11px] font-bold text-white transition active:scale-[0.98]"
                     >
-                      Lamar
+                      {t('home_btn_apply')}
                     </Link>
                   </div>
                 </div>
@@ -190,8 +186,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
           </DataFetchState>
         </section>
 
-        {/* Informasi Terkini */}
-        <section aria-label="Informasi terkini">
+        <section aria-label={t('mobile_section_news')}>
           <SectionHeader
             compact
             title={t('home_news_section_title')}
@@ -201,7 +196,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
                 onClick={() => navigate('/about')}
                 className={sectionLinkClass}
               >
-                {language === 'id' ? 'Lihat semua' : 'See all'}
+                {t('home_see_all')}
                 <ArrowRight className="h-3 w-3" />
               </button>
             }

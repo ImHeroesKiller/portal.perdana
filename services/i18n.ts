@@ -87,6 +87,13 @@ export function tJobCountLabel(t: TFn, count: number): string {
   return tVars(t, 'home_jobs_found_many', { count });
 }
 
+/** BCP 47 tag for `toLocaleDateString` / `toLocaleString`. */
+export function localeDateTag(lang: AppLanguage): string {
+  if (lang === 'zh') return 'zh-CN';
+  if (lang === 'en') return 'en-US';
+  return 'id-ID';
+}
+
 function syncDocumentLang(lang: AppLanguage) {
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
 }

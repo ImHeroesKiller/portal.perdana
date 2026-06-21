@@ -39,7 +39,7 @@ export const HomePage: React.FC = () => {
   const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
-  const { t, tVars, tJobCountLabel, language } = useLanguage();
+  const { t, tVars, tJobCountLabel } = useLanguage();
 
   const jobsForList = allJobs.length > 0 ? allJobs : jobs;
 
@@ -75,7 +75,7 @@ export const HomePage: React.FC = () => {
 
   const openMap = (lat?: number, lng?: number, title?: string) => {
       if (lat && lng) {
-          setMapModalData({ lat, lng, title: title || 'Lokasi' });
+          setMapModalData({ lat, lng, title: title || t('vacancies_location_default') });
       } else {
           alert(t('home_location_unavailable'));
       }
@@ -107,8 +107,6 @@ export const HomePage: React.FC = () => {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         openMap={openMap}
-        t={t}
-        language={language}
       />
     );
   }
@@ -171,7 +169,7 @@ export const HomePage: React.FC = () => {
             isFetching={jobsLoading && allJobs.length > 0}
             error={fetchError}
             isEmpty={hasNoJobs}
-            emptyMessage="Saat ini belum ada lowongan yang tersedia."
+            emptyMessage={t('vacancies_empty')}
             onRetry={() => { void refetchJobs(); }}
           >
             <JobList
@@ -186,8 +184,8 @@ export const HomePage: React.FC = () => {
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {
                 const title = resolveJobTitle(job);
-                const department = display.department || job.department || 'Umum';
-                const location = display.location || job.location || 'Lokasi belum diisi';
+                const department = display.department || job.department || t('job_default_department');
+                const location = display.location || job.location || t('job_default_location');
                 const jobType = display.type || job.type || 'Contract';
                 const isExpanded = expandedRequirements[job.id];
                 const displayedRequirements = isExpanded
@@ -250,7 +248,9 @@ export const HomePage: React.FC = () => {
                                 <li key={idx}>{req}</li>
                             ))}
                             {!isExpanded && hasMore && (
-                                <li className="mt-1 list-none text-xs italic text-gray-400">... +{display.requirements.length - 3} lainnya</li>
+                                <li className="mt-1 list-none text-xs italic text-gray-400">
+                                  ... {tVars('job_card_more_requirements', { count: display.requirements.length - 3 })}
+                                </li>
                             )}
                         </ul>
                     </div>

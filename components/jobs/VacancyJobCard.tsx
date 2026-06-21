@@ -10,6 +10,7 @@ import {
   Building2,
 } from 'lucide-react';
 import type { JobDisplayFields } from '../../lib/job-display';
+import { useLanguage } from '../../services/i18n';
 
 export interface VacancyJobCardProps {
   title: string;
@@ -45,6 +46,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   maxRequirements,
   compact = false,
 }) => {
+  const { t, tVars } = useLanguage();
   const reqLimit = maxRequirements ?? (compact ? 2 : 3);
   const shownRequirements = requirements.slice(0, reqLimit);
   const hasMoreRequirements = requirements.length > reqLimit;
@@ -63,7 +65,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
           <button
             type="button"
             onClick={onToggleBookmark}
-            aria-label={isBookmarked ? 'Hapus bookmark' : 'Simpan lowongan'}
+            aria-label={isBookmarked ? t('job_bookmark_remove') : t('job_bookmark_save')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-50 active:scale-95"
           >
             {isBookmarked ? (
@@ -126,7 +128,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
         <div className={`border-t border-slate-100 ${compact ? 'mt-2.5 pt-2.5' : 'mt-3 pt-3'}`}>
           {!compact && (
             <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-800">
-              Kualifikasi
+              {t('home_qualifications')}
             </p>
           )}
           <ul className={`${compact ? 'space-y-0.5' : 'mt-1.5 space-y-1'} pl-0.5`}>
@@ -144,7 +146,9 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
             ))}
             {hasMoreRequirements && (
               <li className="text-[10px] font-semibold text-[#003087]">
-                +{requirements.length - reqLimit} lainnya
+                {tVars('job_card_more_requirements', {
+                  count: requirements.length - reqLimit,
+                })}
               </li>
             )}
           </ul>
@@ -159,7 +163,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
             to={detailHref}
             className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 transition hover:border-[#003087]/25 hover:bg-slate-50 active:scale-[0.98]"
           >
-            Detail
+            {t('job_card_detail')}
           </Link>
         )}
         {onOpenMap && !compact && (
@@ -169,7 +173,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
             className="flex min-h-[48px] flex-1 items-center justify-center gap-1 rounded-xl border border-[#003087]/15 bg-blue-50 text-[11px] font-bold text-[#003087] transition hover:bg-blue-100 active:scale-[0.98]"
           >
             <Map className="h-3.5 w-3.5" aria-hidden />
-            Peta
+            {t('home_btn_map')}
           </button>
         )}
         <Link
@@ -177,7 +181,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
           className="flex min-h-[48px] flex-[1.15] items-center justify-center gap-1 rounded-xl bg-[#003087] text-[11px] font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
         >
           <Send className="h-3.5 w-3.5" aria-hidden />
-          Lamar
+          {t('home_btn_apply')}
         </Link>
       </div>
     </article>
@@ -188,14 +192,26 @@ function safeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+type TranslateFn = (key: string) => string;
+
 /** Resolve field tampilan — prioritas display, fallback ke field mentah job */
 export function resolveVacancyCardFields(
   job: { title?: string; department?: string; location?: string; type?: string; clientId?: string },
-  display: JobDisplayFields
+  display: JobDisplayFields,
+  t?: TranslateFn
 ) {
-  const title = safeText(display.title) || safeText(job.title) || 'Lowongan';
-  const department = safeText(display.department) || safeText(job.department) || 'Umum';
-  const location = safeText(display.location) || safeText(job.location) || 'Lokasi belum diisi';
+  const fb = (key: string, fallback: string) => (t ? t(key) : fallback);
+
+  const title =
+    safeText(display.title) || safeText(job.title) || fb('job_default_title', 'Lowongan');
+  const department =
+    safeText(display.department) ||
+    safeText(job.department) ||
+    fb('job_default_department', 'Umum');
+  const location =
+    safeText(display.location) ||
+    safeText(job.location) ||
+    fb('job_default_location', 'Lokasi belum diisi');
   const jobType = safeText(display.type) || safeText(job.type) || 'Contract';
 
   return {

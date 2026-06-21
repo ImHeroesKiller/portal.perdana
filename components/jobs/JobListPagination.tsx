@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../services/i18n';
 
 export const VACANCIES_PAGE_SIZE = 10;
 
@@ -16,6 +17,7 @@ export const JobListPagination: React.FC<JobListPaginationProps> = ({
   totalItems,
   onPageChange,
 }) => {
+  const { t, tVars } = useLanguage();
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const canPrev = page > 1;
   const canNext = page < totalPages;
@@ -33,10 +35,10 @@ export const JobListPagination: React.FC<JobListPaginationProps> = ({
   return (
     <nav
       className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-between"
-      aria-label="Navigasi halaman lowongan"
+      aria-label={t('vacancies_pagination_aria')}
     >
       <p className="text-center text-[11px] font-semibold text-slate-500 sm:text-left">
-        Menampilkan {start}–{end} dari {totalItems} lowongan
+        {tVars('vacancies_pagination_range', { start, end, total: totalItems })}
       </p>
 
       <div className="flex items-center gap-2">
@@ -44,11 +46,11 @@ export const JobListPagination: React.FC<JobListPaginationProps> = ({
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={!canPrev}
-          aria-label="Halaman sebelumnya"
+          aria-label={t('vacancies_pagination_prev_aria')}
           className={`${btnBase} ${canPrev ? btnEnabled : btnDisabled}`}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
-          Previous
+          {t('vacancies_pagination_prev')}
         </button>
 
         <span className="min-w-[5.5rem] text-center text-xs font-bold text-[#003087]">
@@ -59,10 +61,10 @@ export const JobListPagination: React.FC<JobListPaginationProps> = ({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={!canNext}
-          aria-label="Halaman berikutnya"
+          aria-label={t('vacancies_pagination_next_aria')}
           className={`${btnBase} ${canNext ? btnEnabled : btnDisabled}`}
         >
-          Next
+          {t('vacancies_pagination_next')}
           <ChevronRight className="h-4 w-4" aria-hidden />
         </button>
       </div>

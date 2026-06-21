@@ -257,16 +257,20 @@ function SlideDots({
   count,
   activeIdx,
   onSelect,
+  t,
+  tVars,
 }: {
   count: number;
   activeIdx: number;
   onSelect: (idx: number) => void;
+  t: (key: string) => string;
+  tVars: (key: string, vars?: Record<string, string | number | undefined>) => string;
 }) {
   return (
     <div
       className="relative z-20 flex justify-center pb-7 pt-3 sm:pb-9"
       role="tablist"
-      aria-label="Hero slideshow"
+      aria-label={t('home_hero_slideshow_aria')}
     >
       <div className="flex items-center gap-2 rounded-full bg-slate-950/50 px-3 py-2 shadow-lg ring-1 ring-white/20 backdrop-blur-sm">
         {Array.from({ length: count }, (_, idx) => {
@@ -277,7 +281,7 @@ function SlideDots({
               type="button"
               role="tab"
               aria-selected={isActive}
-              aria-label={`Slide ${idx + 1}`}
+              aria-label={tVars('home_hero_slide_aria', { n: idx + 1 })}
               onClick={() => onSelect(idx)}
               className={`rounded-full transition-all duration-300 ease-out ${
                 isActive
@@ -327,6 +331,8 @@ function HeroSlideshow({
           count={HERO_IMAGES.length}
           activeIdx={activeImageIdx}
           onSelect={setActiveImageIdx}
+          t={t}
+          tVars={tVars}
         />
       </div>
     </section>

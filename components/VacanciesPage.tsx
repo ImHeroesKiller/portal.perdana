@@ -278,7 +278,7 @@ export const VacanciesPage: React.FC = () => {
               className="space-y-3"
               pagination={{ page: currentPage, onPageChange: handlePageChange }}
               renderItem={(job, display: JobDisplayFields) => {
-                const fields = resolveVacancyCardFields(job, display);
+                const fields = resolveVacancyCardFields(job, display, t);
                 const clientName = getClientName(job.clientId);
 
                 return (
@@ -406,7 +406,7 @@ export const VacanciesPage: React.FC = () => {
             </div>
             <div className="aspect-video w-full bg-slate-100">
               <iframe
-                title={`Peta ${mapModalData.title}`}
+                title={tVars('vacancies_map_iframe_title', { name: mapModalData.title })}
                 width="100%"
                 height="100%"
                 frameBorder="0"
