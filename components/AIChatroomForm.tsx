@@ -20,6 +20,7 @@ import { useJobs, createCandidate } from '../hooks/useDbQueries';
 import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
+import { SaraChatPanel } from './recruitment/SaraChatPanel';
 
 interface Message {
   id: string;
@@ -41,8 +42,8 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const welcomeMessage = initialPosition
-    ? `Selamat datang di Portal PT Perdana Adi Yuda! Saya Sara, AI Virtual Assistant rekrutmen Anda. Saya lihat Anda tertarik melamar posisi *${initialPosition}*. Saya akan memandu Anda mengisi formulir melalui obrolan santai. Pertama-tama, boleh tahu nama lengkap Anda sesuai KTP?`
-    : 'Selamat datang di Portal PT Perdana Adi Yuda! Saya Sara, AI Virtual Assistant rekrutmen Anda. Saya akan memandu Anda mengisi formulir pendaftaran ini melalui obrolan santai yang menyenangkan. Pertama-tama, boleh tahu siapa nama lengkap Anda serta posisi apa yang ingin Anda lamar?';
+    ? `Halo! 👋 Aku Sara, asisten rekrutmen PT Perdana Adi Yuda. Kamu mau lamar posisi *${initialPosition}*, ya? Aku bantu isi formulirnya lewat obrolan santai — gampang kok.\n\nBoleh mulai dengan nama lengkap kamu sesuai KTP?`
+    : 'Halo! 👋 Aku Sara, asisten rekrutmen PT Perdana Adi Yuda. Aku bantu kamu isi formulir lamaran lewat obrolan santai.\n\nKamu mau lamar posisi apa? Boleh sekalian nama lengkapnya?';
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -98,13 +99,7 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   const [finalId, setFinalId] = useState('');
   const [finalName, setFinalName] = useState('');
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  useEffect(() => {
-    // Scroll list on new messages
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loadingChat]);
 
   // Continuously scan chat messages to live-populate our checklist card on the right!
   // This extracts JSON snippets if they represent partial progress, or parses the full JSON
@@ -505,11 +500,24 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+            className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8"
             id="section_chatroom"
           >
-            {/* Real-time Dynamic Checklist (Left column) */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            {/* Chat first on mobile, checklist sidebar on desktop */}
+            <div className="order-1 lg:order-2 lg:col-span-2">
+              <SaraChatPanel
+                messages={messages}
+                loadingChat={loadingChat}
+                errorText={errorText}
+                inputText={inputText}
+                onInputChange={setInputText}
+                onSubmit={handleSendMessage}
+                positionHint={initialPosition || extractedData.positionApplied}
+              />
+            </div>
+
+            {/* Real-time Dynamic Checklist */}
+            <div className="order-2 flex flex-col gap-6 lg:order-1 lg:col-span-1">
               <div className="bg-white rounded-3xl border border-gray-100 shadow-md p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
                 
@@ -602,122 +610,6 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
                 </div>
               </div>
-            </div>
-
-            {/* Chatroom Panel (Right Column) */}
-            <div className="lg:col-span-2 flex flex-col h-[650px] bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden relative">
-              
-              {/* Virtual Assistant Title Profile */}
-              <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 flex items-center justify-between text-white">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-full border-2 border-blue-400 bg-white overflow-hidden flex items-center justify-center shadow-md">
-                      <img 
-                        src="https://img.freepik.com/free-photo/3d-render-young-businesswoman_1057-5126.jpg?t=st=1710000000~exp=1710003600~hmac=fakesignature" 
-                        alt="Sara AI Assistant" 
-                        className="w-full h-full object-cover scale-110"
-                        onError={(e) => { e.currentTarget.style.display='none'; }}
-                      />
-                    </div>
-                    {/* Pulsing online marker */}
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-indigo-900 rounded-full animate-pulse"></div>
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-sm tracking-wide">Sara</h4>
-                    <p className="text-[11px] text-blue-200 uppercase font-bold tracking-wider">Virtual HR Recruiter Assistant</p>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-xs bg-white/10 px-3 py-1.5 rounded-full border border-white/20 text-blue-150 font-bold">
-                    🛡️ Safe Session
-                  </span>
-                </div>
-              </div>
-
-              {/* Messages Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 flex flex-col">
-                <AnimatePresence initial={false}>
-                  {messages.map((m) => {
-                    const isAsst = m.role === 'assistant';
-                    return (
-                      <motion.div
-                        key={m.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${isAsst ? 'justify-start' : 'justify-end'} w-full`}
-                      >
-                        <div className={`flex gap-3 max-w-[85%] ${isAsst ? 'flex-row' : 'flex-row-reverse'}`}>
-                          
-                          {/* Assistant Avatar Thumbnail */}
-                          {isAsst && (
-                            <div className="w-8 h-8 rounded-full bg-blue-900 flex-shrink-0 flex items-center justify-center font-bold text-[10px] text-white overflow-hidden shadow-sm">
-                              SR
-                            </div>
-                          )}
-
-                          <div className={`p-4 rounded-2xl shadow-xs leading-relaxed text-sm ${
-                            isAsst 
-                              ? 'bg-white border border-gray-100 text-gray-800 rounded-tl-none' 
-                              : 'bg-blue-600 text-white rounded-tr-none font-medium'
-                          }`}>
-                            <p className="whitespace-pre-wrap">{m.content}</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-
-                  {/* Sara Thinking indicator */}
-                  {loadingChat && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex justify-start w-full"
-                    >
-                      <div className="flex gap-3 max-w-[80%] items-center">
-                        <div className="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center text-xs text-white">
-                          SR
-                        </div>
-                        <div className="bg-white border border-gray-150 p-4 rounded-2xl rounded-tl-none shadow-xs text-xs flex items-center gap-1">
-                          <span className="w-1.5 h-3.5 bg-blue-500 rounded-full animate-bounce"></span>
-                          <span className="w-1.5 h-4 bg-blue-500 rounded-full animate-bounce delay-75"></span>
-                          <span className="w-1.5 h-3 bg-blue-500 rounded-full animate-bounce delay-150"></span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Error Bar */}
-              {errorText && (
-                <div className="bg-red-50 border-y border-red-100 px-4 py-2 text-xs text-red-600 font-sans text-center">
-                  ⚠️ {errorText}
-                </div>
-              )}
-
-              {/* Chat Input Toolbar Footer */}
-              <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-100 flex gap-3">
-                <input 
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  disabled={loadingChat}
-                  placeholder={loadingChat ? 'Sara sedang mengetik tanggapan Anda...' : 'Balas Sara di sini...'}
-                  className="flex-1 bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-3 text-sm focus:outline-none transition-all disabled:opacity-50"
-                  id="chat_input_field"
-                />
-                <button
-                  type="submit"
-                  disabled={loadingChat || !inputText.trim()}
-                  className="px-5 py-3 bg-blue-900 hover:bg-indigo-950 text-white rounded-2xl font-bold flex items-center justify-center transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:scale-100"
-                  id="chat_submit_btn"
-                >
-                  Kirim
-                </button>
-              </form>
-
             </div>
           </motion.div>
         )}
