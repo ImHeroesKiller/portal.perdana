@@ -4,7 +4,7 @@ import { extractPureJsonReply, trySaveCandidateFromReply } from '../lib/candidat
 import { isAdminConfigured } from '../lib/firebase-admin';
 import { formatFirebaseError } from '../lib/firebase-errors';
 import {
-  callKomodoSaraChat,
+  callSaraChat,
   SaraKomodoError,
   saraKomodoErrorResponse,
   type SaraChatMessage,
@@ -29,12 +29,10 @@ export default async function handler(req: any, res: any) {
       content: String(m.content ?? ''),
     }));
 
-    let replyText = await callKomodoSaraChat(trimmedMessages);
+    const { reply: rawReply, model } = await callSaraChat(trimmedMessages);
 
-    const pureJson = extractPureJsonReply(replyText);
-    if (pureJson) {
-      replyText = pureJson;
-    }
+    const pureJson = extractPureJsonReply(rawReply);
+    const replyText = pureJson ?? rawReply;
 
     let savedCandidate: Awaited<ReturnType<typeof trySaveCandidateFromReply>> = null;
     let saveWarning: string | null = null;
@@ -60,12 +58,12 @@ export default async function handler(req: any, res: any) {
       collection: savedCandidate ? 'candidates' : null,
       isPureJson: Boolean(pureJson),
       saveWarning,
-      model: 'komodo-ai/Komodo-7B-Instruct',
+      model,
     });
   } catch (error: unknown) {
     if (error instanceof SaraKomodoError) {
       const { status, body } = saraKomodoErrorResponse(error);
-      console.error('Komodo HF Error:', error.code, error.message);
+      console.error('Sara chat error:', error.code, error.message);
       return res.status(status).json(body);
     }
 

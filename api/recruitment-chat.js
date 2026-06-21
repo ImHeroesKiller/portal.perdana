@@ -552,9 +552,10 @@ async function trySaveCandidateFromReply(replyText) {
 }
 
 // lib/sara-komodo-chat.ts
-var KOMODO_HF_MODEL = "komodo-ai/Komodo-7B-Instruct";
+var import_genai = require("@google/genai");
+var SARA_HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
+var SARA_GEMINI_MODEL = "gemini-2.5-flash";
 var HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
-var HF_SERVERLESS_CHAT_URL = `https://api-inference.huggingface.co/models/${KOMODO_HF_MODEL}/v1/chat/completions`;
 var SaraKomodoError = class extends Error {
   constructor(message, status, code) {
     super(message);
@@ -671,7 +672,10 @@ Skema JSON (isi semua field, gunakan string kosong "" jika tidak ada):
 INGAT: Jika checklist lengkap \u2192 respons Anda = HANYA satu baris JSON mulai dari { sampai }. Tanpa apa pun di luar itu.
 `.trim();
 function getIhkToken() {
-  const token = process.env.IHK_TOKEN?.trim();
+  let token = process.env.IHK_TOKEN?.trim() ?? "";
+  if (token.startsWith('"') && token.endsWith('"') || token.startsWith("'") && token.endsWith("'")) {
+    token = token.slice(1, -1).trim();
+  }
   if (!token) {
     throw new SaraKomodoError(
       "IHK_TOKEN belum dikonfigurasi di Vercel Environment Variables.",
@@ -679,13 +683,31 @@ function getIhkToken() {
       "TOKEN_MISSING"
     );
   }
+  if (/^https?:\/\//i.test(token) || !token.startsWith("hf_")) {
+    throw new SaraKomodoError(
+      "IHK_TOKEN tidak valid \u2014 gunakan token Hugging Face (format hf_...), bukan URL halaman settings.",
+      503,
+      "TOKEN_MISSING"
+    );
+  }
   return token;
+}
+function getGeminiApiKey() {
+  const apiKey = process.env.GEMINI_API_KEY?.trim() ?? "";
+  if (!apiKey) {
+    throw new SaraKomodoError(
+      "GEMINI_API_KEY belum dikonfigurasi di server.",
+      503,
+      "TOKEN_MISSING"
+    );
+  }
+  return apiKey;
 }
 function mapHfError(status, body) {
   const detail = typeof body === "object" && body !== null ? JSON.stringify(body) : String(body ?? "");
   if (status === 401 || status === 403) {
     return new SaraKomodoError(
-      "Token Hugging Face tidak valid atau tidak memiliki akses ke model Komodo.",
+      "Token Hugging Face tidak valid atau tidak memiliki akses ke model Qwen.",
       401,
       "AUTH_FAILED"
     );
@@ -700,7 +722,7 @@ function mapHfError(status, body) {
   if (status === 503) {
     const estimated = typeof body === "object" && body !== null && "estimated_time" in body && typeof body.estimated_time === "number" ? Math.ceil(body.estimated_time) : 20;
     const err = new SaraKomodoError(
-      `Model Komodo sedang dimuat di Hugging Face. Coba lagi sekitar ${estimated} detik.`,
+      `Model Qwen sedang dimuat di Hugging Face. Coba lagi sekitar ${estimated} detik.`,
       503,
       "MODEL_LOADING"
     );
@@ -725,7 +747,7 @@ function extractReplyText(data) {
   if (typeof record.generated_text === "string") return record.generated_text.trim();
   return "";
 }
-async function postKomodoChat(url, token, messages) {
+async function postHfChat(token, messages) {
   const hfMessages = [
     { role: "system", content: SARA_SYSTEM_INSTRUCTION },
     ...messages.map((m) => ({
@@ -733,14 +755,14 @@ async function postKomodoChat(url, token, messages) {
       content: m.content
     }))
   ];
-  const response = await fetch(url, {
+  const response = await fetch(HF_ROUTER_CHAT_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: KOMODO_HF_MODEL,
+      model: SARA_HF_MODEL,
       messages: hfMessages,
       temperature: 0.35,
       max_tokens: 2e3
@@ -759,23 +781,59 @@ async function postKomodoChat(url, token, messages) {
   const reply = extractReplyText(data);
   if (!reply) {
     throw new SaraKomodoError(
-      "Model Komodo mengembalikan respons kosong. Silakan coba lagi.",
+      "Model Qwen mengembalikan respons kosong. Silakan coba lagi.",
       502,
       "EMPTY_REPLY"
     );
   }
   return reply;
 }
-async function callKomodoSaraChat(messages) {
+async function callQwenSaraChat(messages) {
   const token = getIhkToken();
-  try {
-    return await postKomodoChat(HF_ROUTER_CHAT_URL, token, messages);
-  } catch (routerError) {
-    if (routerError instanceof SaraKomodoError && routerError.code !== "API_ERROR" && routerError.code !== "EMPTY_REPLY") {
-      throw routerError;
+  return postHfChat(token, messages);
+}
+async function callGeminiSaraChat(messages) {
+  const ai = new import_genai.GoogleGenAI({ apiKey: getGeminiApiKey() });
+  const response = await ai.models.generateContent({
+    model: SARA_GEMINI_MODEL,
+    contents: messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }]
+    })),
+    config: {
+      systemInstruction: SARA_SYSTEM_INSTRUCTION,
+      temperature: 0.35,
+      maxOutputTokens: 2e3
     }
-    console.warn("HF router chat failed, trying serverless endpoint:", routerError);
-    return postKomodoChat(HF_SERVERLESS_CHAT_URL, token, messages);
+  });
+  const reply = response.text?.trim();
+  if (!reply) {
+    throw new SaraKomodoError(
+      "Gemini mengembalikan respons kosong. Silakan coba lagi.",
+      502,
+      "EMPTY_REPLY"
+    );
+  }
+  return reply;
+}
+async function callSaraChat(messages) {
+  try {
+    const reply = await callQwenSaraChat(messages);
+    return { reply, model: SARA_HF_MODEL };
+  } catch (qwenError) {
+    console.warn("Sara Qwen HF failed, falling back to Gemini:", qwenError);
+    try {
+      const reply = await callGeminiSaraChat(messages);
+      return { reply, model: SARA_GEMINI_MODEL };
+    } catch (geminiError) {
+      if (geminiError instanceof SaraKomodoError) throw geminiError;
+      const message = geminiError instanceof Error ? geminiError.message : "Gagal memanggil Gemini.";
+      throw new SaraKomodoError(
+        `Maaf, layanan AI Sara tidak tersedia. ${message}`,
+        500,
+        "API_ERROR"
+      );
+    }
   }
 }
 function saraKomodoErrorResponse(err) {
@@ -800,11 +858,9 @@ async function handler(req, res) {
       role: m.role === "assistant" ? "assistant" : "user",
       content: String(m.content ?? "")
     }));
-    let replyText = await callKomodoSaraChat(trimmedMessages);
-    const pureJson = extractPureJsonReply(replyText);
-    if (pureJson) {
-      replyText = pureJson;
-    }
+    const { reply: rawReply, model } = await callSaraChat(trimmedMessages);
+    const pureJson = extractPureJsonReply(rawReply);
+    const replyText = pureJson ?? rawReply;
     let savedCandidate = null;
     let saveWarning = null;
     if (pureJson && !isAdminConfigured()) {
@@ -827,12 +883,12 @@ async function handler(req, res) {
       collection: savedCandidate ? "candidates" : null,
       isPureJson: Boolean(pureJson),
       saveWarning,
-      model: "komodo-ai/Komodo-7B-Instruct"
+      model
     });
   } catch (error) {
     if (error instanceof SaraKomodoError) {
       const { status, body } = saraKomodoErrorResponse(error);
-      console.error("Komodo HF Error:", error.code, error.message);
+      console.error("Sara chat error:", error.code, error.message);
       return res.status(status).json(body);
     }
     console.error("Recruitment chat error:", error);

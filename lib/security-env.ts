@@ -51,7 +51,8 @@ export function getEnvAuditChecklist(): EnvAuditResult {
     clientSafe: [...CLIENT_SAFE_VITE_KEYS],
     forbiddenInClient: [...FORBIDDEN_CLIENT_KEYS],
     vercelChecklist: [
-      'Set IHK_TOKEN (Hugging Face) — Sara recruitment chat, server only',
+      'Set IHK_TOKEN (Hugging Face) — Sara Qwen primary, server only',
+      'Set GEMINI_API_KEY — Sara Gemini 2.5 Flash fallback, server only',
       'Set GROK_API_KEY (opsional/legacy) — Server only, jangan VITE_',
       'Set GEMINI_API_KEY — Server only',
       'Set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID — Server only',

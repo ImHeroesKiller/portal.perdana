@@ -22,7 +22,7 @@ import { JOBS_COLLECTION, normalizeJobFromFirestore } from "./lib/job-record";
 import { initSentryServer, captureServerError } from "./lib/sentry-server";
 import { extractPureJsonReply } from "./lib/candidate";
 import {
-  callKomodoSaraChat,
+  callSaraChat,
   SaraKomodoError,
   saraKomodoErrorResponse,
   type SaraChatMessage,
@@ -89,7 +89,7 @@ async function startServer() {
     }
   });
 
-  // API route for recruitment AI chat assistant (Komodo-7B via Hugging Face)
+  // API route for recruitment AI chat assistant (Qwen HF → Gemini fallback)
   app.post("/api/recruitment-chat", async (req, res) => {
     if (!guardApi(req, res, { rateLimit: RATE_LIMITS.chat, requireOrigin: true })) return;
     const { messages } = req.body;
@@ -104,19 +104,19 @@ async function startServer() {
         content: String(m.content ?? ""),
       }));
 
-      let replyText = await callKomodoSaraChat(trimmedMessages);
+      const { reply: replyText, model } = await callSaraChat(trimmedMessages);
       const pureJson = extractPureJsonReply(replyText);
-      if (pureJson) replyText = pureJson;
+      const reply = pureJson ?? replyText;
 
       res.json({
-        reply: replyText,
+        reply,
         isPureJson: Boolean(pureJson),
-        model: "komodo-ai/Komodo-7B-Instruct",
+        model,
       });
     } catch (error: unknown) {
       if (error instanceof SaraKomodoError) {
         const { status, body } = saraKomodoErrorResponse(error);
-        console.error("Komodo HF Error:", error.code, error.message);
+        console.error("Sara chat error:", error.code, error.message);
         return res.status(status).json(body);
       }
       console.error("Recruitment chat error:", error);
