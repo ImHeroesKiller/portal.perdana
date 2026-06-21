@@ -1,7 +1,9 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { ExclamationTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { COMPANY_LOGO_PNG } from '../../lib/brand-assets';
 import { BRAND_NAVY } from '../home/homeContent';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 export const NAVY_BTN =
   'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white shadow-lg transition hover:bg-blue-900 hover:opacity-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60';
@@ -29,14 +31,29 @@ export function RecruitmentBackButton({
   );
 }
 
+export function GlassBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#003087]/40 bg-white/10 px-4 py-2 text-left text-xs font-semibold text-white shadow-[0_4px_24px_rgba(0,48,135,0.25)] backdrop-blur-md">
+      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-cyan-200/90">
+        {label}
+      </span>
+      <span className="truncate">{value}</span>
+    </span>
+  );
+}
+
 export function WizardHero({
   title,
   subtitle,
   position,
+  company,
+  showLogo = false,
 }: {
   title: string;
   subtitle: string;
   position?: string;
+  company?: string;
+  showLogo?: boolean;
 }) {
   return (
     <section className="relative overflow-hidden rounded-3xl shadow-xl ring-1 ring-[#003087]/15">
@@ -58,6 +75,19 @@ export function WizardHero({
       />
 
       <div className="relative z-10 px-7 py-8 text-center sm:px-10 sm:py-10">
+        {showLogo && (
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-white p-3 shadow-2xl ring-2 ring-white/50 sm:mb-5 sm:h-24 sm:w-24 sm:p-3.5">
+            <OptimizedImage
+              src={COMPANY_LOGO_PNG}
+              alt="Logo PT Perdana Adi Yuda"
+              className="h-full w-full object-contain"
+              priority
+              width={200}
+              height={200}
+            />
+          </div>
+        )}
+
         <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-cyan-200/90">
           PT Perdana Adi Yuda
         </p>
@@ -66,14 +96,10 @@ export function WizardHero({
         </h1>
         <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-slate-300/95">{subtitle}</p>
 
-        {position && (
-          <div className="mt-4 flex justify-center sm:mt-5">
-            <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#003087]/40 bg-white/10 px-4 py-2 text-left text-xs font-semibold text-white shadow-[0_4px_24px_rgba(0,48,135,0.25)] backdrop-blur-md">
-              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-cyan-200/90">
-                Posisi
-              </span>
-              <span className="truncate">{position}</span>
-            </span>
+        {(position || company) && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-5">
+            {position && <GlassBadge label="Posisi" value={position} />}
+            {company && <GlassBadge label="Perusahaan" value={company} />}
           </div>
         )}
       </div>
@@ -97,6 +123,33 @@ export function WizardCard({
         aria-hidden
       />
       {children}
+    </div>
+  );
+}
+
+export function CardSectionHeader({
+  label,
+  title,
+  subtitle,
+}: {
+  label?: string;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="mb-5">
+      {label && (
+        <span
+          className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
+          style={{ backgroundColor: BRAND_NAVY }}
+        >
+          {label}
+        </span>
+      )}
+      <h3 className={`text-lg font-black text-slate-900 sm:text-xl ${label ? 'mt-2.5' : ''}`}>
+        {title}
+      </h3>
+      {subtitle && <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{subtitle}</p>}
     </div>
   );
 }
