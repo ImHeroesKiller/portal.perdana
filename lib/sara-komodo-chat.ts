@@ -2,6 +2,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { buildSaraChatContext } from './sara-chat-extract';
+import type { SaraSession } from './sara-memory';
 
 export const SARA_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 export const SARA_GEMINI_MODEL = 'gemini-2.5-flash';
@@ -54,6 +55,20 @@ JSON (lengkap+valid): output HANYA satu object {…}, no teks/markdown. graduati
 
 function buildSaraSystemInstruction(messages: SaraChatMessage[]): string {
   return `${SARA_SYSTEM_INSTRUCTION}\n\n${buildSaraChatContext(messages)}`;
+}
+
+/** Map persisted session messages to Sara chat turns. */
+export function sessionToChatMessages(session: Pick<SaraSession, 'messages'>): SaraChatMessage[] {
+  return session.messages.map(({ role, content }) => ({
+    role: role === 'assistant' ? 'assistant' : 'user',
+    content,
+  }));
+}
+
+/** Call Sara using Firestore-backed session history (last 12 turns). */
+export async function callSaraChatForSession(session: SaraSession): Promise<SaraChatResult> {
+  const messages = sessionToChatMessages(session).slice(-12);
+  return callSaraChat(messages);
 }
 
 function getIhkToken(): string {

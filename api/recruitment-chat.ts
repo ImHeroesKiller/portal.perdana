@@ -4,11 +4,15 @@ import { extractPureJsonReply, trySaveCandidateFromReply } from '../lib/candidat
 import { isAdminConfigured } from '../lib/firebase-admin';
 import { formatFirebaseError } from '../lib/firebase-errors';
 import {
-  callSaraChat,
+  callSaraChatForSession,
   SaraKomodoError,
   saraKomodoErrorResponse,
-  type SaraChatMessage,
 } from '../lib/sara-komodo-chat';
+import {
+  addMessage,
+  isSaraMemoryEnabled,
+  prepareSaraSessionForTurn,
+} from '../lib/sara-memory';
 
 export default async function handler(req: any, res: any) {
   if (!guardApi(req, res, { rateLimit: RATE_LIMITS.chat, requireOrigin: true })) return;
@@ -17,22 +21,31 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { messages } = req.body;
+  const { sessionId, userId, message, messages } = req.body ?? {};
 
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Field 'messages' harus berupa array" });
+  const hasMessage = typeof message === 'string' && message.trim().length > 0;
+  const hasMessages = Array.isArray(messages) && messages.length > 0;
+
+  if (!hasMessage && !hasMessages) {
+    return res.status(400).json({
+      error: "Field 'message' atau 'messages' wajib diisi",
+    });
   }
 
   try {
-    const trimmedMessages: SaraChatMessage[] = messages.slice(-12).map((m: any) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: String(m.content ?? ''),
-    }));
+    let session = await prepareSaraSessionForTurn({
+      sessionId: typeof sessionId === 'string' ? sessionId : undefined,
+      userId: typeof userId === 'string' ? userId : undefined,
+      messages: hasMessages ? messages : undefined,
+      message: hasMessage ? message : undefined,
+    });
 
-    const { reply: rawReply, model } = await callSaraChat(trimmedMessages);
+    const { reply: rawReply, model } = await callSaraChatForSession(session);
 
     const pureJson = extractPureJsonReply(rawReply);
     const replyText = pureJson ?? rawReply;
+
+    session = await addMessage(session.sessionId, 'assistant', replyText);
 
     let savedCandidate: Awaited<ReturnType<typeof trySaveCandidateFromReply>> = null;
     let saveWarning: string | null = null;
@@ -53,6 +66,10 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({
       reply: replyText,
+      sessionId: session.sessionId,
+      candidateData: session.candidateData,
+      currentStep: session.currentStep,
+      memoryEnabled: isSaraMemoryEnabled(),
       saved: Boolean(savedCandidate),
       candidateId: savedCandidate?.id ?? null,
       collection: savedCandidate ? 'candidates' : null,

@@ -97,6 +97,7 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   const [uploadProgress, setUploadProgress] = useState(false);
 
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [saraSessionId, setSaraSessionId] = useState<string | null>(null);
   const [syncOpen, setSyncOpen] = useState(false);
   const [finalId, setFinalId] = useState('');
   const [finalName, setFinalName] = useState('');
@@ -157,17 +158,29 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
     setLoadingChat(true);
 
     try {
-      const payloadMessages = updatedMessages.map(m => ({
+      const currentUser = getCurrentUser();
+      const payloadMessages = updatedMessages.map((m) => ({
         role: m.role,
-        content: m.content
+        content: m.content,
       }));
+
+      const requestBody = saraSessionId
+        ? {
+            sessionId: saraSessionId,
+            message: userMessageContent,
+            userId: currentUser?.id,
+          }
+        : {
+            messages: payloadMessages,
+            userId: currentUser?.id,
+          };
 
       const res = await fetch('/api/recruitment-chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messages: payloadMessages })
+        body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
@@ -177,6 +190,21 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
       const resData = await res.json();
       const rawReply = resData.reply;
+
+      if (resData.sessionId) {
+        setSaraSessionId(resData.sessionId);
+      }
+      if (resData.candidateData && typeof resData.candidateData === 'object') {
+        setExtractedData((prev) => ({
+          ...prev,
+          ...resData.candidateData,
+          positionApplied:
+            resData.candidateData.positionApplied ||
+            prev.positionApplied ||
+            initialPosition ||
+            undefined,
+        }));
+      }
 
       // Check if this answer completed stage 1-3
       const potentialJson = findJsonInText(rawReply);

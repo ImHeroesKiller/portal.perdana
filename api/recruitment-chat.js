@@ -894,6 +894,9 @@ function applyCorrections(content, out) {
     if (parsed) out.fullName = parsed;
   }
 }
+function getNextMissingField(data) {
+  return COLLECTION_ORDER.find((f) => !f.filled(data)) ?? null;
+}
 function extractFieldsFromChat(messages) {
   const out = {};
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -1020,6 +1023,16 @@ function buildSaraSystemInstruction(messages) {
   return `${SARA_SYSTEM_INSTRUCTION}
 
 ${buildSaraChatContext(messages)}`;
+}
+function sessionToChatMessages(session) {
+  return session.messages.map(({ role, content }) => ({
+    role: role === "assistant" ? "assistant" : "user",
+    content
+  }));
+}
+async function callSaraChatForSession(session) {
+  const messages = sessionToChatMessages(session).slice(-12);
+  return callSaraChat(messages);
 }
 function getIhkToken() {
   let token = process.env.IHK_TOKEN?.trim() ?? "";
@@ -1193,24 +1206,183 @@ function saraKomodoErrorResponse(err) {
   return { status: err.status, body };
 }
 
+// lib/sara-memory.ts
+var import_crypto = require("crypto");
+var SARA_SESSIONS_COLLECTION = "sara_sessions";
+var localStore = /* @__PURE__ */ new Map();
+function nowIso() {
+  return (/* @__PURE__ */ new Date()).toISOString();
+}
+function normalizeRole(role) {
+  return role === "assistant" ? "assistant" : "user";
+}
+function resolveCurrentStep(messages, candidateData) {
+  const turns = messages.map((m) => ({ role: m.role, content: m.content }));
+  const data = Object.keys(candidateData).length > 0 ? candidateData : extractFieldsFromChat(turns);
+  const next = getNextMissingField(data);
+  return next?.label ?? "complete";
+}
+function recomputeSession(session) {
+  const turns = session.messages.map((m) => ({ role: m.role, content: m.content }));
+  session.candidateData = extractFieldsFromChat(turns);
+  session.currentStep = resolveCurrentStep(session.messages, session.candidateData);
+  session.lastUpdated = nowIso();
+  return session;
+}
+function cloneSession(session) {
+  return {
+    ...session,
+    messages: session.messages.map((m) => ({ ...m })),
+    candidateData: { ...session.candidateData }
+  };
+}
+async function persistSession(session) {
+  localStore.set(session.sessionId, cloneSession(session));
+  if (!isAdminConfigured()) return;
+  const db = await getAdminDb();
+  const { sessionId, ...data } = session;
+  await db.collection(SARA_SESSIONS_COLLECTION).doc(sessionId).set(data, { merge: true });
+}
+function docToSession(sessionId, data) {
+  const messages = Array.isArray(data.messages) ? data.messages.map((m) => ({
+    role: normalizeRole(String(m.role)),
+    content: String(m.content ?? ""),
+    timestamp: String(m.timestamp ?? nowIso())
+  })) : [];
+  return {
+    sessionId,
+    userId: typeof data.userId === "string" ? data.userId : void 0,
+    createdAt: String(data.createdAt ?? nowIso()),
+    lastUpdated: String(data.lastUpdated ?? nowIso()),
+    messages,
+    candidateData: data.candidateData ?? {},
+    currentStep: String(data.currentStep ?? "start")
+  };
+}
+function isSaraMemoryEnabled() {
+  return isAdminConfigured() || localStore.size > 0;
+}
+async function createSession(userId, initialMessages = []) {
+  const sessionId = (0, import_crypto.randomUUID)();
+  const now = nowIso();
+  const session = {
+    sessionId,
+    userId: userId?.trim() || void 0,
+    createdAt: now,
+    lastUpdated: now,
+    messages: initialMessages.map((m) => ({
+      role: normalizeRole(m.role),
+      content: String(m.content),
+      timestamp: m.timestamp || now
+    })),
+    candidateData: {},
+    currentStep: "start"
+  };
+  recomputeSession(session);
+  await persistSession(session);
+  return cloneSession(session);
+}
+async function getSession(sessionId) {
+  const cached = localStore.get(sessionId);
+  if (cached) return cloneSession(cached);
+  if (!isAdminConfigured()) return null;
+  const db = await getAdminDb();
+  const snap = await db.collection(SARA_SESSIONS_COLLECTION).doc(sessionId).get();
+  if (!snap.exists) return null;
+  const session = docToSession(sessionId, snap.data());
+  localStore.set(sessionId, cloneSession(session));
+  return cloneSession(session);
+}
+async function addMessage(sessionId, role, content) {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error(`Sara session not found: ${sessionId}`);
+  }
+  session.messages.push({
+    role,
+    content: String(content),
+    timestamp: nowIso()
+  });
+  recomputeSession(session);
+  await persistSession(session);
+  return cloneSession(session);
+}
+async function syncSessionMessages(sessionId, clientMessages) {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error(`Sara session not found: ${sessionId}`);
+  }
+  const normalized = clientMessages.map((m) => ({
+    role: normalizeRole(m.role),
+    content: String(m.content ?? ""),
+    timestamp: nowIso()
+  }));
+  if (normalized.length >= session.messages.length) {
+    session.messages = normalized;
+    recomputeSession(session);
+    await persistSession(session);
+  }
+  return cloneSession(session);
+}
+function toMemoryMessages(messages) {
+  const now = nowIso();
+  return messages.map((m) => ({
+    role: normalizeRole(m.role),
+    content: String(m.content ?? ""),
+    timestamp: now
+  }));
+}
+async function prepareSaraSessionForTurn(options) {
+  const { sessionId, userId, messages, message } = options;
+  if (sessionId) {
+    let session = await getSession(sessionId);
+    if (!session) {
+      session = await createSession(userId, messages ? toMemoryMessages(messages) : []);
+      return session;
+    }
+    if (message?.trim()) {
+      return addMessage(sessionId, "user", message.trim());
+    }
+    if (messages?.length) {
+      return syncSessionMessages(sessionId, messages);
+    }
+    return session;
+  }
+  if (messages?.length) {
+    return createSession(userId, toMemoryMessages(messages));
+  }
+  if (message?.trim()) {
+    const session = await createSession(userId);
+    return addMessage(session.sessionId, "user", message.trim());
+  }
+  return createSession(userId);
+}
+
 // api/recruitment-chat.ts
 async function handler(req, res) {
   if (!guardApi(req, res, { rateLimit: RATE_LIMITS.chat, requireOrigin: true })) return;
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
-  const { messages } = req.body;
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Field 'messages' harus berupa array" });
+  const { sessionId, userId, message, messages } = req.body ?? {};
+  const hasMessage = typeof message === "string" && message.trim().length > 0;
+  const hasMessages = Array.isArray(messages) && messages.length > 0;
+  if (!hasMessage && !hasMessages) {
+    return res.status(400).json({
+      error: "Field 'message' atau 'messages' wajib diisi"
+    });
   }
   try {
-    const trimmedMessages = messages.slice(-12).map((m) => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: String(m.content ?? "")
-    }));
-    const { reply: rawReply, model } = await callSaraChat(trimmedMessages);
+    let session = await prepareSaraSessionForTurn({
+      sessionId: typeof sessionId === "string" ? sessionId : void 0,
+      userId: typeof userId === "string" ? userId : void 0,
+      messages: hasMessages ? messages : void 0,
+      message: hasMessage ? message : void 0
+    });
+    const { reply: rawReply, model } = await callSaraChatForSession(session);
     const pureJson = extractPureJsonReply(rawReply);
     const replyText = pureJson ?? rawReply;
+    session = await addMessage(session.sessionId, "assistant", replyText);
     let savedCandidate = null;
     let saveWarning = null;
     if (pureJson && !isAdminConfigured()) {
@@ -1228,6 +1400,10 @@ async function handler(req, res) {
     }
     return res.status(200).json({
       reply: replyText,
+      sessionId: session.sessionId,
+      candidateData: session.candidateData,
+      currentStep: session.currentStep,
+      memoryEnabled: isSaraMemoryEnabled(),
       saved: Boolean(savedCandidate),
       candidateId: savedCandidate?.id ?? null,
       collection: savedCandidate ? "candidates" : null,
