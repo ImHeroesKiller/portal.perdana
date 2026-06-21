@@ -100,6 +100,7 @@ export function getAdminDb(): Firestore {
     const app = getOrInitApp();
     const { databaseId } = getAdminEnv();
     cachedDb = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+    cachedDb.settings({ ignoreUndefinedProperties: true });
     return cachedDb;
   } catch (error) {
     if (error instanceof FirebaseConfigError) throw error;

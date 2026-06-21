@@ -63,14 +63,35 @@ function cloneSession(session: SaraSession): SaraSession {
   };
 }
 
+/** Firestore rejects undefined field values — strip before write. */
+function stripUndefined<T>(value: T): T {
+  if (value === undefined) return value;
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as T;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    if (val !== undefined) out[key] = stripUndefined(val);
+  }
+  return out as T;
+}
+
 async function persistSession(session: SaraSession): Promise<void> {
   localStore.set(session.sessionId, cloneSession(session));
 
   if (!isAdminConfigured()) return;
 
-  const db = await getAdminDb();
-  const { sessionId, ...data } = session;
-  await db.collection(SARA_SESSIONS_COLLECTION).doc(sessionId).set(data, { merge: true });
+  try {
+    const db = await getAdminDb();
+    const { sessionId, ...data } = session;
+    await db
+      .collection(SARA_SESSIONS_COLLECTION)
+      .doc(sessionId)
+      .set(stripUndefined(data), { merge: true });
+  } catch (error) {
+    console.warn('Sara session Firestore persist failed (using in-memory cache):', error);
+  }
 }
 
 function docToSession(sessionId: string, data: Record<string, unknown>): SaraSession {
@@ -248,12 +269,15 @@ export async function prepareSaraSessionForTurn(options: {
     let session = await getSession(sessionId);
 
     if (!session) {
-      session = await createSession(userId, messages ? toMemoryMessages(messages) : []);
-      return session;
+      const fresh = await createSession(userId, messages ? toMemoryMessages(messages) : []);
+      if (message?.trim()) {
+        return addMessage(fresh.sessionId, 'user', message.trim());
+      }
+      return fresh;
     }
 
     if (message?.trim()) {
-      return addMessage(sessionId, 'user', message.trim());
+      return addMessage(session.sessionId, 'user', message.trim());
     }
 
     if (messages?.length) {

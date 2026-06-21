@@ -335,6 +335,7 @@ function getAdminDb() {
     const app = getOrInitApp();
     const { databaseId } = getAdminEnv();
     cachedDb = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+    cachedDb.settings({ ignoreUndefinedProperties: true });
     return cachedDb;
   } catch (error) {
     if (error instanceof FirebaseConfigError) throw error;
@@ -1236,12 +1237,28 @@ function cloneSession(session) {
     candidateData: { ...session.candidateData }
   };
 }
+function stripUndefined(value) {
+  if (value === void 0) return value;
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item));
+  }
+  const out = {};
+  for (const [key, val] of Object.entries(value)) {
+    if (val !== void 0) out[key] = stripUndefined(val);
+  }
+  return out;
+}
 async function persistSession(session) {
   localStore.set(session.sessionId, cloneSession(session));
   if (!isAdminConfigured()) return;
-  const db = await getAdminDb();
-  const { sessionId, ...data } = session;
-  await db.collection(SARA_SESSIONS_COLLECTION).doc(sessionId).set(data, { merge: true });
+  try {
+    const db = await getAdminDb();
+    const { sessionId, ...data } = session;
+    await db.collection(SARA_SESSIONS_COLLECTION).doc(sessionId).set(stripUndefined(data), { merge: true });
+  } catch (error) {
+    console.warn("Sara session Firestore persist failed (using in-memory cache):", error);
+  }
 }
 function docToSession(sessionId, data) {
   const messages = Array.isArray(data.messages) ? data.messages.map((m) => ({
@@ -1337,11 +1354,14 @@ async function prepareSaraSessionForTurn(options) {
   if (sessionId) {
     let session = await getSession(sessionId);
     if (!session) {
-      session = await createSession(userId, messages ? toMemoryMessages(messages) : []);
-      return session;
+      const fresh = await createSession(userId, messages ? toMemoryMessages(messages) : []);
+      if (message?.trim()) {
+        return addMessage(fresh.sessionId, "user", message.trim());
+      }
+      return fresh;
     }
     if (message?.trim()) {
-      return addMessage(sessionId, "user", message.trim());
+      return addMessage(session.sessionId, "user", message.trim());
     }
     if (messages?.length) {
       return syncSessionMessages(sessionId, messages);
