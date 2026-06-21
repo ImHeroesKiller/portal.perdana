@@ -94,7 +94,8 @@ async function optimizeWithSharp(sharp) {
   if (logoSrc) {
     const logoHero = join(heroDir, 'logo.png');
     const logoRoot = join(assetsDir, 'logo.png');
-    const logoWebp = join(heroDir, 'logo.webp');
+    const logoWebpHero = join(heroDir, 'logo.webp');
+    const logoWebpRoot = join(assetsDir, 'logo.webp');
     const logoTmp = join(heroDir, 'logo.tmp.png');
 
     await sharp(logoSrc)
@@ -102,9 +103,11 @@ async function optimizeWithSharp(sharp) {
       .png({ compressionLevel: 9 })
       .toFile(logoTmp);
     renameSync(logoTmp, logoHero);
-    await sharp(logoHero).webp({ quality: 90 }).toFile(logoWebp);
+    const webpBuffer = await sharp(logoHero).webp({ quality: 90 }).toBuffer();
+    writeFileSync(logoWebpHero, webpBuffer);
+    writeFileSync(logoWebpRoot, webpBuffer);
     await sharp(logoHero).toFile(logoRoot);
-    console.log('  ✓ logo.png + logo.webp');
+    console.log('  ✓ logo.png + logo.webp (assets/ + assets/hero/)');
   }
 }
 

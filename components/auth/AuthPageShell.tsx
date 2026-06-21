@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { COMPANY_LOGO_PNG } from '../../lib/brand-assets';
 import { OptimizedImage } from '../ui/OptimizedImage';
 const AUTH_BG_IMAGE = '/assets/hero/site_scaffolding.jpg';
 
@@ -42,7 +43,7 @@ export const AuthPageShell: React.FC<AuthPageShellProps> = ({
         <div className="mb-6 flex flex-col items-center text-center">
           <div className="mb-3.5 flex h-[5.5rem] w-[5.5rem] items-center justify-center rounded-2xl bg-white p-3.5 shadow-2xl ring-2 ring-white/40 sm:h-24 sm:w-24 sm:p-4">
             <OptimizedImage
-              src="/assets/logo.png"
+              src={COMPANY_LOGO_PNG}
               alt={`Logo ${companyName}`}
               className="h-full w-full object-contain"
               priority

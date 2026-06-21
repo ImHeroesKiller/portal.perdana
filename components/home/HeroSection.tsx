@@ -6,6 +6,7 @@ import {
   BriefcaseIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '../../services/i18n';
+import { COMPANY_LOGO_PNG } from '../../lib/brand-assets';
 import { OptimizedImage } from '../ui/OptimizedImage';
 
 /** Compressed hero assets (~70% smaller than originals) */
@@ -49,7 +50,7 @@ function HeroBrand({
         }`}
       >
         <OptimizedImage
-          src="/assets/logo.png"
+          src={COMPANY_LOGO_PNG}
           alt="Logo PT Perdana Adi Yuda"
           className="h-full w-full object-contain"
           priority
