@@ -1,6 +1,7 @@
 /** Sara recruitment assistant — Qwen via Hugging Face, Gemini 2.5 Flash fallback. */
 
 import { GoogleGenAI } from '@google/genai';
+import { extractFieldsFromChat, formatKnownFieldsContext } from './sara-chat-extract';
 
 export const SARA_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 export const SARA_GEMINI_MODEL = 'gemini-2.5-flash';
@@ -31,7 +32,8 @@ Tone: aku/kamu, hangat, natural, mengalir. Sopan tapi nggak kaku. Hindari: "Sila
 
 CHAT (data belum lengkap/valid):
 - Satu topik per pesan, maks 2 pertanyaan
-- WAJIB: konfirmasi/ringkas data baru dulu ("Oke Budi, operator ya ✓") baru lanjut — pelan, jangan buru-buru
+- WAJIB: konfirmasi data baru dulu baru lanjut — pelan. Pakai nama HANYA jika user sudah menyebutkannya di chat (lihat KONTEKS CHAT). Sebelum ada nama: panggil "kamu"
+- DILARANG pakai nama contoh/dummy (Budi, Santoso, dll) — itu bukan data pelamar
 - Awal: sapaan hangat + posisi + nama lengkap
 - Off-topic: respon singkat, arahkan pelan
 - No JSON
@@ -46,12 +48,15 @@ Urutan:
 JSON (semua wajib terisi & valid):
 Wajib: positionApplied, fullName, nik, kkNumber, email, whatsappNumber, addressLine atau provinsi/kabupaten/kecamatan/desa, lastEducation, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
 
-Output HANYA satu object JSON — mulai { akhiri }, tanpa teks/markdown/emoji. graduationYear = number. Kosong = "". Semua key:
+Output HANYA satu object JSON — mulai { akhiri }, tanpa teks/markdown/emoji. graduationYear = number. Kosong = "". Isi nilai ASLI dari chat (KONTEKS CHAT), bukan contoh. Semua key:
 
 positionApplied, fullName, nik, kkNumber, npwp, placeOfBirth, dateOfBirth, gender, maritalStatus, religion, willingToRelocate, certifications, email, whatsappNumber, addressLine, provinsi, kabupaten, kecamatan, desa, rt, rw, latitude, longitude, lastEducation, institutionName, major, graduationYear, skills, workExperience, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
-
-Contoh: {"positionApplied":"Operator Produksi","fullName":"Budi Santoso","nik":"1234567890123456","kkNumber":"1234567890123457","npwp":"12.345.678.9-012.000","placeOfBirth":"Palu","dateOfBirth":"1995-03-15","gender":"Laki-laki","maritalStatus":"Belum Menikah","religion":"Islam","willingToRelocate":"Ya","certifications":"Sertifikat K3","email":"budi.santoso@email.com","whatsappNumber":"+6281234567890","addressLine":"Jl. Merdeka No. 10","provinsi":"Sulawesi Tengah","kabupaten":"Kota Palu","kecamatan":"Palu Barat","desa":"Besusu Barat","rt":"001","rw":"002","latitude":"-0.9489","longitude":"119.8707","lastEducation":"SMA/SMK","institutionName":"SMK Negeri 1 Palu","major":"Teknik Mesin","graduationYear":2013,"skills":"Las, forklift, safety","workExperience":"2 tahun operator pabrik","bankName":"BCA","accountNumber":"1234567890","emergencyName":"Siti Aminah","emergencyRelation":"Istri","emergencyPhone":"+6289876543210"}
 `.trim();
+
+function buildSaraSystemInstruction(messages: SaraChatMessage[]): string {
+  const known = extractFieldsFromChat(messages);
+  return `${SARA_SYSTEM_INSTRUCTION}\n\n${formatKnownFieldsContext(known)}`;
+}
 
 function getIhkToken(): string {
   let token = process.env.IHK_TOKEN?.trim() ?? '';
@@ -161,7 +166,7 @@ async function postHfChat(
   messages: SaraChatMessage[]
 ): Promise<string> {
   const hfMessages = [
-    { role: 'system', content: SARA_SYSTEM_INSTRUCTION },
+    { role: 'system', content: buildSaraSystemInstruction(messages) },
     ...messages.map((m) => ({
       role: m.role,
       content: m.content,
@@ -221,7 +226,7 @@ async function callGeminiSaraChat(messages: SaraChatMessage[]): Promise<string> 
       parts: [{ text: m.content }],
     })),
     config: {
-      systemInstruction: SARA_SYSTEM_INSTRUCTION,
+      systemInstruction: buildSaraSystemInstruction(messages),
       temperature: 0.35,
       maxOutputTokens: 2000,
     },

@@ -555,6 +555,206 @@ async function trySaveCandidateFromReply(replyText) {
 
 // lib/sara-komodo-chat.ts
 var import_genai = require("@google/genai");
+
+// lib/sara-chat-extract.ts
+function inferExpectedField(assistantText) {
+  const t = assistantText.toLowerCase();
+  const asksName = /nama lengkap|nama sesuai|nama kamu|siapa nama|kenalan|sekalian nama|nama.*ktp/i.test(
+    t
+  );
+  const asksPosition = /posisi|melamar|lamar/i.test(t);
+  if (asksName && asksPosition) return null;
+  if (asksName) return "fullName";
+  if (/nomor kk|no\.?\s*kk|kartu keluarga/i.test(t)) return "kkNumber";
+  if (/\bnik\b/i.test(t)) return "nik";
+  if (asksPosition) return "positionApplied";
+  if (/e-?mail/i.test(t)) return "email";
+  if (/whatsapp|\bwa\b|nomor hp|no\.?\s*hp|telepon|handphone/i.test(t)) return "whatsappNumber";
+  if (/\bnpwp\b/i.test(t)) return "npwp";
+  if (/tempat lahir/i.test(t)) return "placeOfBirth";
+  if (/tanggal lahir|tgl\.?\s*lahir/i.test(t)) return "dateOfBirth";
+  if (/jenis kelamin/i.test(t)) return "gender";
+  if (/\bagama\b/i.test(t)) return "religion";
+  if (/status (nikah|perkawinan)|belum menikah|menikah/i.test(t)) return "maritalStatus";
+  if (/relokasi|pindah (kerja|domisili)/i.test(t)) return "willingToRelocate";
+  if (/sertifikat/i.test(t)) return "certifications";
+  if (/\bprovinsi\b/i.test(t)) return "provinsi";
+  if (/\bkabupaten\b|\bkota\b/i.test(t)) return "kabupaten";
+  if (/\bkecamatan\b|\bkec\.?\b/i.test(t)) return "kecamatan";
+  if (/\bdesa\b|\bkelurahan\b/i.test(t)) return "desa";
+  if (/\balamat\b/i.test(t)) return "addressLine";
+  if (/pendidikan terakhir|pendidikan/i.test(t)) return "lastEducation";
+  if (/nama (sekolah|institusi|kampus)/i.test(t)) return "institutionName";
+  if (/jurusan|prodi/i.test(t)) return "major";
+  if (/tahun lulus/i.test(t)) return "graduationYear";
+  if (/keahlian|\bskill/i.test(t)) return "skills";
+  if (/pengalaman kerja|pengalaman/i.test(t)) return "workExperience";
+  if (/nama bank|\bbank\b/i.test(t)) return "bankName";
+  if (/nomor rekening|no\.?\s*rekening|rekening/i.test(t)) return "accountNumber";
+  if (/nama.*darurat|kontak darurat/i.test(t)) return "emergencyName";
+  if (/hubungan.*darurat/i.test(t)) return "emergencyRelation";
+  if (/telepon darurat|hp darurat|nomor darurat/i.test(t)) return "emergencyPhone";
+  return null;
+}
+function parseName(raw) {
+  let s = raw.trim();
+  s = s.replace(/^(nama (lengkap )?(saya |aku )?|aku |saya |ini )/i, "").trim();
+  s = s.replace(/[.,!?~]+$/g, "").trim();
+  if (s.length < 2 || /^\d+$/.test(s) || /@/.test(s) || /^\+?\d{10,}$/.test(s.replace(/\s/g, ""))) {
+    return null;
+  }
+  return s;
+}
+function parsePhone(raw) {
+  const digits = raw.replace(/[^\d+]/g, "");
+  if (digits.startsWith("+62") && digits.length >= 11) return digits;
+  if (digits.startsWith("62") && digits.length >= 11) return `+${digits}`;
+  if (digits.startsWith("08") && digits.length >= 10) return `+62${digits.slice(1)}`;
+  return null;
+}
+function parseDate(raw) {
+  const iso = raw.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  if (iso) return iso[1];
+  const dmy = raw.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  return null;
+}
+function normalizeFieldValue(field, content, assistantContext) {
+  const trimmed = content.trim();
+  if (!field || !trimmed) return null;
+  switch (field) {
+    case "fullName":
+      return parseName(trimmed);
+    case "nik":
+    case "kkNumber": {
+      const digits = trimmed.replace(/\D/g, "");
+      return digits.length === 16 ? digits : null;
+    }
+    case "email": {
+      const match = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      return match ? match[0] : null;
+    }
+    case "whatsappNumber":
+    case "emergencyPhone":
+      return parsePhone(trimmed);
+    case "dateOfBirth":
+      return parseDate(trimmed);
+    case "graduationYear": {
+      const year = trimmed.match(/\b(19|20)\d{2}\b/);
+      return year ? Number(year[0]) : null;
+    }
+    case "positionApplied": {
+      const fromMsg = trimmed.match(
+        /(?:lamar|melamar|posisi|jadi|untuk)\s+(.+?)(?:\.|,|$)/i
+      );
+      if (fromMsg) return fromMsg[1].trim();
+      if (!/^(nama|saya|aku)\b/i.test(trimmed) && trimmed.length < 80) return trimmed;
+      return null;
+    }
+    default:
+      if (/^(ya|tidak|laki|perempuan|islam|kristen|katolik|hindu|buddha)$/i.test(trimmed)) {
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+      }
+      return trimmed.length > 0 && trimmed.length < 200 ? trimmed : null;
+  }
+}
+function opportunisticExtract(content, out) {
+  if (!out.email) {
+    const email = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (email) out.email = email[0];
+  }
+  if (!out.whatsappNumber) {
+    const phone = parsePhone(content);
+    if (phone) out.whatsappNumber = phone;
+  }
+  if (!out.nik) {
+    const digits = content.replace(/\D/g, "");
+    if (digits.length === 16 && /nik/i.test(content)) out.nik = digits;
+    else if (/^\d{16}$/.test(content.replace(/\s/g, ""))) out.nik = content.replace(/\s/g, "");
+  }
+  if (!out.fullName) {
+    const intro = content.match(
+      /nama (?:saya |aku )?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.-]{1,60}?)(?=\s*(?:,|\.|dan |mau |ingin |lamar |$))/i
+    );
+    if (intro) {
+      const name = parseName(intro[1]);
+      if (name) out.fullName = name;
+    }
+  }
+  if (!out.positionApplied) {
+    const pos = content.match(
+      /(?:mau |ingin )?(?:lamar|jadi|melamar)\s+(?:posisi\s+)?(.+?)(?:\.|,|$)/i
+    );
+    if (pos) out.positionApplied = pos[1].trim();
+  }
+}
+function extractFieldsFromChat(messages) {
+  const out = {};
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role !== "assistant") continue;
+    const json = findJsonInText(messages[i].content);
+    if (!json) continue;
+    try {
+      Object.assign(out, JSON.parse(json));
+      break;
+    } catch {
+    }
+  }
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.role !== "user") continue;
+    const content = msg.content.trim();
+    if (!content) continue;
+    let prevAssistant = "";
+    for (let j = i - 1; j >= 0; j--) {
+      if (messages[j].role === "assistant") {
+        prevAssistant = messages[j].content;
+        break;
+      }
+    }
+    const field = inferExpectedField(prevAssistant);
+    const value = normalizeFieldValue(field, content, prevAssistant);
+    if (field && value != null && value !== "") {
+      out[field] = value;
+    }
+    opportunisticExtract(content, out);
+  }
+  return out;
+}
+var CONTEXT_LABELS = {
+  positionApplied: "posisi",
+  fullName: "nama",
+  nik: "NIK",
+  kkNumber: "no KK",
+  email: "email",
+  whatsappNumber: "WhatsApp",
+  provinsi: "provinsi",
+  desa: "desa",
+  lastEducation: "pendidikan",
+  bankName: "bank"
+};
+function formatKnownFieldsContext(data) {
+  const lines = Object.keys(CONTEXT_LABELS).filter((key) => {
+    const v = data[key];
+    return typeof v === "string" ? v.trim().length > 0 : v != null && v !== "";
+  }).map((key) => `- ${CONTEXT_LABELS[key]}: ${data[key]}`);
+  if (lines.length === 0) {
+    return [
+      "KONTEKS CHAT: Belum ada nama atau data dari user.",
+      'Panggil pelamar dengan "kamu" saja \u2014 JANGAN pakai nama contoh dari prompt (Budi, Santoso, dll).'
+    ].join("\n");
+  }
+  return [
+    "KONTEKS CHAT (dari input user \u2014 WAJIB dipakai, jangan nama/dummy lain):",
+    ...lines,
+    "Saat konfirmasi, pakai nama di atas jika ada. Jangan sebut nama yang tidak ada di konteks ini."
+  ].join("\n");
+}
+
+// lib/sara-komodo-chat.ts
 var SARA_HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
 var SARA_GEMINI_MODEL = "gemini-2.5-flash";
 var HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
@@ -575,7 +775,8 @@ Tone: aku/kamu, hangat, natural, mengalir. Sopan tapi nggak kaku. Hindari: "Sila
 
 CHAT (data belum lengkap/valid):
 - Satu topik per pesan, maks 2 pertanyaan
-- WAJIB: konfirmasi/ringkas data baru dulu ("Oke Budi, operator ya \u2713") baru lanjut \u2014 pelan, jangan buru-buru
+- WAJIB: konfirmasi data baru dulu baru lanjut \u2014 pelan. Pakai nama HANYA jika user sudah menyebutkannya di chat (lihat KONTEKS CHAT). Sebelum ada nama: panggil "kamu"
+- DILARANG pakai nama contoh/dummy (Budi, Santoso, dll) \u2014 itu bukan data pelamar
 - Awal: sapaan hangat + posisi + nama lengkap
 - Off-topic: respon singkat, arahkan pelan
 - No JSON
@@ -590,12 +791,16 @@ Urutan:
 JSON (semua wajib terisi & valid):
 Wajib: positionApplied, fullName, nik, kkNumber, email, whatsappNumber, addressLine atau provinsi/kabupaten/kecamatan/desa, lastEducation, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
 
-Output HANYA satu object JSON \u2014 mulai { akhiri }, tanpa teks/markdown/emoji. graduationYear = number. Kosong = "". Semua key:
+Output HANYA satu object JSON \u2014 mulai { akhiri }, tanpa teks/markdown/emoji. graduationYear = number. Kosong = "". Isi nilai ASLI dari chat (KONTEKS CHAT), bukan contoh. Semua key:
 
 positionApplied, fullName, nik, kkNumber, npwp, placeOfBirth, dateOfBirth, gender, maritalStatus, religion, willingToRelocate, certifications, email, whatsappNumber, addressLine, provinsi, kabupaten, kecamatan, desa, rt, rw, latitude, longitude, lastEducation, institutionName, major, graduationYear, skills, workExperience, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
-
-Contoh: {"positionApplied":"Operator Produksi","fullName":"Budi Santoso","nik":"1234567890123456","kkNumber":"1234567890123457","npwp":"12.345.678.9-012.000","placeOfBirth":"Palu","dateOfBirth":"1995-03-15","gender":"Laki-laki","maritalStatus":"Belum Menikah","religion":"Islam","willingToRelocate":"Ya","certifications":"Sertifikat K3","email":"budi.santoso@email.com","whatsappNumber":"+6281234567890","addressLine":"Jl. Merdeka No. 10","provinsi":"Sulawesi Tengah","kabupaten":"Kota Palu","kecamatan":"Palu Barat","desa":"Besusu Barat","rt":"001","rw":"002","latitude":"-0.9489","longitude":"119.8707","lastEducation":"SMA/SMK","institutionName":"SMK Negeri 1 Palu","major":"Teknik Mesin","graduationYear":2013,"skills":"Las, forklift, safety","workExperience":"2 tahun operator pabrik","bankName":"BCA","accountNumber":"1234567890","emergencyName":"Siti Aminah","emergencyRelation":"Istri","emergencyPhone":"+6289876543210"}
 `.trim();
+function buildSaraSystemInstruction(messages) {
+  const known = extractFieldsFromChat(messages);
+  return `${SARA_SYSTEM_INSTRUCTION}
+
+${formatKnownFieldsContext(known)}`;
+}
 function getIhkToken() {
   let token = process.env.IHK_TOKEN?.trim() ?? "";
   if (token.startsWith('"') && token.endsWith('"') || token.startsWith("'") && token.endsWith("'")) {
@@ -674,7 +879,7 @@ function extractReplyText(data) {
 }
 async function postHfChat(token, messages) {
   const hfMessages = [
-    { role: "system", content: SARA_SYSTEM_INSTRUCTION },
+    { role: "system", content: buildSaraSystemInstruction(messages) },
     ...messages.map((m) => ({
       role: m.role,
       content: m.content
@@ -726,7 +931,7 @@ async function callGeminiSaraChat(messages) {
       parts: [{ text: m.content }]
     })),
     config: {
-      systemInstruction: SARA_SYSTEM_INSTRUCTION,
+      systemInstruction: buildSaraSystemInstruction(messages),
       temperature: 0.35,
       maxOutputTokens: 2e3
     }

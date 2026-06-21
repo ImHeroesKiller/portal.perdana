@@ -207,3 +207,39 @@ export function isReadyForPreview(data: Partial<CandidatePayload>): boolean {
       data.bankName
   );
 }
+
+const CONTEXT_LABELS: Partial<Record<keyof CandidatePayload, string>> = {
+  positionApplied: 'posisi',
+  fullName: 'nama',
+  nik: 'NIK',
+  kkNumber: 'no KK',
+  email: 'email',
+  whatsappNumber: 'WhatsApp',
+  provinsi: 'provinsi',
+  desa: 'desa',
+  lastEducation: 'pendidikan',
+  bankName: 'bank',
+};
+
+/** Inject into Sara system prompt so the model uses real user data, not examples. */
+export function formatKnownFieldsContext(data: Partial<CandidatePayload>): string {
+  const lines = (Object.keys(CONTEXT_LABELS) as (keyof CandidatePayload)[])
+    .filter((key) => {
+      const v = data[key];
+      return typeof v === 'string' ? v.trim().length > 0 : v != null && v !== '';
+    })
+    .map((key) => `- ${CONTEXT_LABELS[key]}: ${data[key]}`);
+
+  if (lines.length === 0) {
+    return [
+      'KONTEKS CHAT: Belum ada nama atau data dari user.',
+      'Panggil pelamar dengan "kamu" saja — JANGAN pakai nama contoh dari prompt (Budi, Santoso, dll).',
+    ].join('\n');
+  }
+
+  return [
+    'KONTEKS CHAT (dari input user — WAJIB dipakai, jangan nama/dummy lain):',
+    ...lines,
+    'Saat konfirmasi, pakai nama di atas jika ada. Jangan sebut nama yang tidak ada di konteks ini.',
+  ].join('\n');
+}
