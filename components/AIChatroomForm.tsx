@@ -42,8 +42,8 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const welcomeMessage = initialPosition
-    ? `Halo! 👋 Aku Sara, asisten rekrutmen PT Perdana Adi Yuda. Kamu mau lamar posisi *${initialPosition}*, ya? Aku bantu isi formulirnya lewat obrolan santai — gampang kok.\n\nBoleh mulai dengan nama lengkap kamu sesuai KTP?`
-    : 'Halo! 👋 Aku Sara, asisten rekrutmen PT Perdana Adi Yuda. Aku bantu kamu isi formulir lamaran lewat obrolan santai.\n\nKamu mau lamar posisi apa? Boleh sekalian nama lengkapnya?';
+    ? `Hai! 👋 Aku Sara — asisten rekrutmen di PT Perdana Adi Yuda. Kamu mau lamar *${initialPosition}*, kan? Tenang aja, kita isi formulirnya sambil ngobrol, gampang kok.\n\nBoleh kenalan dulu? Nama lengkap kamu sesuai KTP apa ya?`
+    : 'Hai! 👋 Aku Sara — asisten rekrutmen di PT Perdana Adi Yuda. Kita isi formulir lamaran sambil ngobrol aja, santai.\n\nKamu mau lamar posisi apa? Sekalian nama lengkapnya boleh juga~';
 
   const [messages, setMessages] = useState<Message[]>([
     {
