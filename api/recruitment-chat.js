@@ -594,8 +594,8 @@ var COLLECTION_ORDER = [
   {
     key: "npwp",
     label: "NPWP",
-    filled: (d) => Boolean(d.npwp?.trim()),
-    display: (d) => d.npwp || ""
+    filled: (d) => isNikValid(d.npwp),
+    display: (d) => String(d.npwp || "")
   },
   {
     key: "placeOfBirth",
@@ -806,6 +806,7 @@ function normalizeFieldValue(field, content) {
       return parseName(trimmed);
     case "nik":
     case "kkNumber":
+    case "npwp":
       return parseSixteenDigitId(trimmed);
     case "email": {
       const match = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
@@ -981,253 +982,68 @@ function buildSaraChatContext(messages) {
   return parts.join("\n\n");
 }
 
-// lib/sara-komodo-chat.ts
-var SARA_HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
-var SARA_GEMINI_MODEL = "gemini-2.5-flash";
-var HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
-var SaraKomodoError = class extends Error {
-  constructor(message, status, code) {
-    super(message);
-    this.status = status;
-    this.code = code;
-    this.name = "SaraKomodoError";
-  }
-  status;
-  code;
-};
-var SARA_COMPANY_FACTS = `Lokasi/kontak (jawab singkat jika ditanya): outsourcing proyek industri \xB7 kantor pusat Bekasi (Summarecon) \xB7 cabang Morowali Sulteng \xB7 penempatan ikut site lowongan \xB7 perada.net \xB7 0858 9366 1683`;
-var SARA_SYSTEM_INSTRUCTION = `
-Kamu adalah Sara, asisten rekrutmen ramah dan santai dari PT Perdana Adi Yuda.
-
-Gaya bicara:
-- Gunakan "aku", "kamu", "ya", "sip", "oke", "noted", "gapapa"
-- Santai, suportif, tidak kaku
-- Maksimal 2-3 kalimat + 1 pertanyaan saja per respons
-- Hindari: "Silakan", "Mohon", "Harap", "Untuk melanjutkan"
-
-Aturan Memory & Anti-Repeat (PENTING!):
-- Selalu baca candidateData / blok SUDAH TERISI di bawah sebelum menjawab
-- Jika field sudah terisi dan valid (terutama NIK, KK, NPWP 16 digit), JANGAN tanya ulang
-- Jika user bilang "sudah", "iya sudah", "tadi", "kan sudah" \u2192 langsung anggap sudah terisi dan lanjut ke field berikutnya
-- Jangan ulangi validasi "harus 16 digit" berkali-kali
-- Jika user mengoreksi, update memory dan konfirmasi singkat ("oke sip, noted")
-- User tanya \u2192 jawab dulu, baru 1 pertanyaan data
-- User gk tahu/lupa/ragu \u2192 sabar, jangan skip, jangan nebak
-- Relokasi: willingToRelocate HANYA setelah Ya/Tidak eksplisit
-- Nama dari memory saja; tanpa nama pakai "kamu". Dilarang nama dummy
-
-Urutan pengisian yang ideal:
-1. Nama lengkap
-2. Posisi (jika sudah diketahui, skip)
-3. NIK (16 digit)
-4. Nomor KK (16 digit)
-5. NPWP (16 digit)
-6. Tempat & Tanggal Lahir
-7. Gender, Agama, Status pernikahan, Relokasi
-8. Email, WhatsApp, Alamat (prov/kab/kec/desa, RT/RW)
-9. Pendidikan, Jurusan, Tahun lulus, Skills, Pengalaman
-10. Bank & rekening, Kontak darurat
-
-Jika user sudah jawab sebuah field, catat di memory dan jangan tanya lagi kecuali dia minta koreksi.
-Ikuti LANJUTKAN di bawah \u2014 tanya HANYA 1 field berikutnya yang belum terisi.
-
-${SARA_COMPANY_FACTS}
-
-CHAT (belum lengkap): no JSON
-Validasi: NIK/KK/NPWP tepat 16 digit angka \xB7 WA +62 \xB7 lahir YYYY-MM-DD
-JSON (lengkap+valid): output HANYA satu object {\u2026}, no teks/markdown. graduationYear=number. Nilai ASLI dari memory/candidateData. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
-`.trim();
-function buildSaraSystemInstruction(messages) {
-  return `${SARA_SYSTEM_INSTRUCTION}
-
-${buildSaraChatContext(messages)}`;
-}
-function sessionToChatMessages(session) {
-  return session.messages.map(({ role, content }) => ({
-    role: role === "assistant" ? "assistant" : "user",
-    content
-  }));
-}
-async function callSaraChatForSession(session) {
-  const messages = sessionToChatMessages(session).slice(-12);
-  return callSaraChat(messages);
-}
-function getIhkToken() {
-  let token = process.env.IHK_TOKEN?.trim() ?? "";
-  if (token.startsWith('"') && token.endsWith('"') || token.startsWith("'") && token.endsWith("'")) {
-    token = token.slice(1, -1).trim();
-  }
-  if (!token) {
-    throw new SaraKomodoError(
-      "IHK_TOKEN belum dikonfigurasi di Vercel Environment Variables.",
-      503,
-      "TOKEN_MISSING"
-    );
-  }
-  if (/^https?:\/\//i.test(token) || !token.startsWith("hf_")) {
-    throw new SaraKomodoError(
-      "IHK_TOKEN tidak valid \u2014 gunakan token Hugging Face (format hf_...), bukan URL halaman settings.",
-      503,
-      "TOKEN_MISSING"
-    );
-  }
-  return token;
-}
-function getGeminiApiKey() {
-  const apiKey = process.env.GEMINI_API_KEY?.trim() ?? "";
-  if (!apiKey) {
-    throw new SaraKomodoError(
-      "GEMINI_API_KEY belum dikonfigurasi di server.",
-      503,
-      "TOKEN_MISSING"
-    );
-  }
-  return apiKey;
-}
-function mapHfError(status, body) {
-  const detail = typeof body === "object" && body !== null ? JSON.stringify(body) : String(body ?? "");
-  if (status === 401 || status === 403) {
-    return new SaraKomodoError(
-      "Token Hugging Face tidak valid atau tidak memiliki akses ke model Qwen.",
-      401,
-      "AUTH_FAILED"
-    );
-  }
-  if (status === 402 || status === 429) {
-    return new SaraKomodoError(
-      "Maaf, kuota Hugging Face Inference sedang habis. Silakan coba lagi dalam beberapa saat.",
-      429,
-      "QUOTA_EXCEEDED"
-    );
-  }
-  if (status === 503) {
-    const estimated = typeof body === "object" && body !== null && "estimated_time" in body && typeof body.estimated_time === "number" ? Math.ceil(body.estimated_time) : 20;
-    const err = new SaraKomodoError(
-      `Model Qwen sedang dimuat di Hugging Face. Coba lagi sekitar ${estimated} detik.`,
-      503,
-      "MODEL_LOADING"
-    );
-    err.retryAfter = estimated;
-    return err;
-  }
-  return new SaraKomodoError(
-    `Gangguan Hugging Face Inference (${status}). ${detail.slice(0, 200)}`,
-    502,
-    "API_ERROR"
-  );
-}
-function extractReplyText(data) {
-  if (!data || typeof data !== "object") return "";
-  const record = data;
-  const chatContent = record.choices?.[0]?.message?.content;
-  if (typeof chatContent === "string") return chatContent.trim();
-  if (Array.isArray(record)) {
-    const first = record[0];
-    if (typeof first?.generated_text === "string") return first.generated_text.trim();
-  }
-  if (typeof record.generated_text === "string") return record.generated_text.trim();
-  return "";
-}
-async function postHfChat(token, messages) {
-  const hfMessages = [
-    { role: "system", content: buildSaraSystemInstruction(messages) },
-    ...messages.map((m) => ({
-      role: m.role,
-      content: m.content
-    }))
-  ];
-  const response = await fetch(HF_ROUTER_CHAT_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: SARA_HF_MODEL,
-      messages: hfMessages,
-      temperature: 0.35,
-      max_tokens: 512
-    })
-  });
-  const raw = await response.text();
-  let data = {};
-  try {
-    data = raw ? JSON.parse(raw) : {};
-  } catch {
-    data = { error: raw };
-  }
-  if (!response.ok) {
-    throw mapHfError(response.status, data);
-  }
-  const reply = extractReplyText(data);
-  if (!reply) {
-    throw new SaraKomodoError(
-      "Model Qwen mengembalikan respons kosong. Silakan coba lagi.",
-      502,
-      "EMPTY_REPLY"
-    );
-  }
-  return reply;
-}
-async function callQwenSaraChat(messages) {
-  const token = getIhkToken();
-  return postHfChat(token, messages);
-}
-async function callGeminiSaraChat(messages) {
-  const ai = new import_genai.GoogleGenAI({ apiKey: getGeminiApiKey() });
-  const response = await ai.models.generateContent({
-    model: SARA_GEMINI_MODEL,
-    contents: messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }]
-    })),
-    config: {
-      systemInstruction: buildSaraSystemInstruction(messages),
-      temperature: 0.35,
-      maxOutputTokens: 512
-    }
-  });
-  const reply = response.text?.trim();
-  if (!reply) {
-    throw new SaraKomodoError(
-      "Gemini mengembalikan respons kosong. Silakan coba lagi.",
-      502,
-      "EMPTY_REPLY"
-    );
-  }
-  return reply;
-}
-async function callSaraChat(messages) {
-  try {
-    const reply = await callQwenSaraChat(messages);
-    return { reply, model: SARA_HF_MODEL };
-  } catch (qwenError) {
-    console.warn("Sara Qwen HF failed, falling back to Gemini:", qwenError);
-    try {
-      const reply = await callGeminiSaraChat(messages);
-      return { reply, model: SARA_GEMINI_MODEL };
-    } catch (geminiError) {
-      if (geminiError instanceof SaraKomodoError) throw geminiError;
-      const message = geminiError instanceof Error ? geminiError.message : "Gagal memanggil Gemini.";
-      throw new SaraKomodoError(
-        `Maaf, layanan AI Sara tidak tersedia. ${message}`,
-        500,
-        "API_ERROR"
-      );
-    }
-  }
-}
-function saraKomodoErrorResponse(err) {
-  const body = { error: err.message, code: err.code };
-  const retryAfter = err.retryAfter;
-  if (retryAfter) body.retryAfter = retryAfter;
-  return { status: err.status, body };
-}
-
 // lib/sara-memory.ts
 var import_crypto = require("crypto");
 var SARA_SESSIONS_COLLECTION = "sara_sessions";
 var localStore = /* @__PURE__ */ new Map();
+function isValidSixteenDigitField(value) {
+  if (value == null) return false;
+  return parseSixteenDigitId(String(value)) !== null;
+}
+function getSessionIdSkipFlags(candidate) {
+  return {
+    alreadyHasNik: isValidSixteenDigitField(candidate.nik),
+    alreadyHasKk: isValidSixteenDigitField(candidate.kkNumber),
+    alreadyHasNpwp: isValidSixteenDigitField(candidate.npwp)
+  };
+}
+function buildSaraSessionContext(session) {
+  const candidate = session.candidateData || {};
+  const turns = session.messages.map((m) => ({ role: m.role, content: m.content }));
+  const fromChat = extractFieldsFromChat(turns);
+  const merged = { ...fromChat, ...candidate };
+  const { alreadyHasNik, alreadyHasKk, alreadyHasNpwp } = getSessionIdSkipFlags(candidate);
+  let context = formatKnownFieldsContext(merged);
+  const idLines = [];
+  if (alreadyHasNik) {
+    idLines.push(`\u2713 NIK: ${parseSixteenDigitId(String(candidate.nik))}`);
+  }
+  if (alreadyHasKk) {
+    idLines.push(`\u2713 Nomor KK: ${parseSixteenDigitId(String(candidate.kkNumber))}`);
+  }
+  if (alreadyHasNpwp) {
+    idLines.push(`\u2713 NPWP: ${parseSixteenDigitId(String(candidate.npwp))}`);
+  }
+  if (idLines.length > 0) {
+    context += "\n\nIDENTITAS SUDAH VALID (jangan tanya & jangan validasi ulang):";
+    context += `
+${idLines.join("\n")}`;
+  }
+  const skipLabels = [];
+  if (alreadyHasNik) skipLabels.push("NIK");
+  if (alreadyHasKk) skipLabels.push("Nomor KK");
+  if (alreadyHasNpwp) skipLabels.push("NPWP");
+  if (skipLabels.length > 0) {
+    context += `
+SKIP (sudah terisi valid): ${skipLabels.join(", ")}`;
+  }
+  const validation = formatLastTurnValidationHint(turns);
+  if (validation) {
+    const skipNikHint = alreadyHasNik && /NIK/i.test(validation);
+    const skipKkHint = alreadyHasKk && /\bKK\b/i.test(validation);
+    if (!skipNikHint && !skipKkHint) {
+      context += `
+
+${validation}`;
+    }
+  }
+  if (session.currentStep && session.currentStep !== "complete") {
+    context += `
+
+LANJUTKAN DARI MEMORY: "${session.currentStep}"`;
+  }
+  return context;
+}
 function nowIso() {
   return (/* @__PURE__ */ new Date()).toISOString();
 }
@@ -1393,6 +1209,251 @@ async function prepareSaraSessionForTurn(options) {
     return addMessage(session.sessionId, "user", message.trim());
   }
   return createSession(userId);
+}
+
+// lib/sara-komodo-chat.ts
+var SARA_HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
+var SARA_GEMINI_MODEL = "gemini-2.5-flash";
+var HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
+var SaraKomodoError = class extends Error {
+  constructor(message, status, code) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.name = "SaraKomodoError";
+  }
+  status;
+  code;
+};
+var SARA_COMPANY_FACTS = `Lokasi/kontak (jawab singkat jika ditanya): outsourcing proyek industri \xB7 kantor pusat Bekasi (Summarecon) \xB7 cabang Morowali Sulteng \xB7 penempatan ikut site lowongan \xB7 perada.net \xB7 0858 9366 1683`;
+var SARA_SYSTEM_INSTRUCTION = `
+Kamu adalah Sara, asisten rekrutmen ramah dan santai dari PT Perdana Adi Yuda.
+
+Gaya bicara:
+- Gunakan "aku", "kamu", "ya", "sip", "oke", "noted", "gapapa"
+- Santai, suportif, tidak kaku
+- Maksimal 2-3 kalimat + 1 pertanyaan saja per respons
+- Hindari: "Silakan", "Mohon", "Harap", "Untuk melanjutkan"
+
+Aturan Memory & Anti-Repeat (PENTING!):
+- Selalu baca candidateData / blok SUDAH TERISI di bawah sebelum menjawab
+- Jika field sudah terisi dan valid (terutama NIK, KK, NPWP 16 digit), JANGAN tanya ulang
+- Jika user bilang "sudah", "iya sudah", "tadi", "kan sudah" \u2192 langsung anggap sudah terisi dan lanjut ke field berikutnya
+- Jangan ulangi validasi "harus 16 digit" berkali-kali
+- Jika user mengoreksi, update memory dan konfirmasi singkat ("oke sip, noted")
+- User tanya \u2192 jawab dulu, baru 1 pertanyaan data
+- User gk tahu/lupa/ragu \u2192 sabar, jangan skip, jangan nebak
+- Relokasi: willingToRelocate HANYA setelah Ya/Tidak eksplisit
+- Nama dari memory saja; tanpa nama pakai "kamu". Dilarang nama dummy
+
+Urutan pengisian yang ideal:
+1. Nama lengkap
+2. Posisi (jika sudah diketahui, skip)
+3. NIK (16 digit)
+4. Nomor KK (16 digit)
+5. NPWP (16 digit)
+6. Tempat & Tanggal Lahir
+7. Gender, Agama, Status pernikahan, Relokasi
+8. Email, WhatsApp, Alamat (prov/kab/kec/desa, RT/RW)
+9. Pendidikan, Jurusan, Tahun lulus, Skills, Pengalaman
+10. Bank & rekening, Kontak darurat
+
+Jika user sudah jawab sebuah field, catat di memory dan jangan tanya lagi kecuali dia minta koreksi.
+Ikuti LANJUTKAN di bawah \u2014 tanya HANYA 1 field berikutnya yang belum terisi.
+
+${SARA_COMPANY_FACTS}
+
+CHAT (belum lengkap): no JSON
+Validasi: NIK/KK/NPWP tepat 16 digit angka \xB7 WA +62 \xB7 lahir YYYY-MM-DD
+JSON (lengkap+valid): output HANYA satu object {\u2026}, no teks/markdown. graduationYear=number. Nilai ASLI dari memory/candidateData. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
+`.trim();
+function buildSaraSystemInstruction(messages, contextOverride) {
+  const context = contextOverride ?? buildSaraChatContext(messages);
+  return `${SARA_SYSTEM_INSTRUCTION}
+
+${context}`;
+}
+function sessionToChatMessages(session) {
+  return session.messages.map(({ role, content }) => ({
+    role: role === "assistant" ? "assistant" : "user",
+    content
+  }));
+}
+async function callSaraChatForSession(session) {
+  const messages = sessionToChatMessages(session).slice(-12);
+  const sessionContext = buildSaraSessionContext(session);
+  return callSaraChat(messages, sessionContext);
+}
+function getIhkToken() {
+  let token = process.env.IHK_TOKEN?.trim() ?? "";
+  if (token.startsWith('"') && token.endsWith('"') || token.startsWith("'") && token.endsWith("'")) {
+    token = token.slice(1, -1).trim();
+  }
+  if (!token) {
+    throw new SaraKomodoError(
+      "IHK_TOKEN belum dikonfigurasi di Vercel Environment Variables.",
+      503,
+      "TOKEN_MISSING"
+    );
+  }
+  if (/^https?:\/\//i.test(token) || !token.startsWith("hf_")) {
+    throw new SaraKomodoError(
+      "IHK_TOKEN tidak valid \u2014 gunakan token Hugging Face (format hf_...), bukan URL halaman settings.",
+      503,
+      "TOKEN_MISSING"
+    );
+  }
+  return token;
+}
+function getGeminiApiKey() {
+  const apiKey = process.env.GEMINI_API_KEY?.trim() ?? "";
+  if (!apiKey) {
+    throw new SaraKomodoError(
+      "GEMINI_API_KEY belum dikonfigurasi di server.",
+      503,
+      "TOKEN_MISSING"
+    );
+  }
+  return apiKey;
+}
+function mapHfError(status, body) {
+  const detail = typeof body === "object" && body !== null ? JSON.stringify(body) : String(body ?? "");
+  if (status === 401 || status === 403) {
+    return new SaraKomodoError(
+      "Token Hugging Face tidak valid atau tidak memiliki akses ke model Qwen.",
+      401,
+      "AUTH_FAILED"
+    );
+  }
+  if (status === 402 || status === 429) {
+    return new SaraKomodoError(
+      "Maaf, kuota Hugging Face Inference sedang habis. Silakan coba lagi dalam beberapa saat.",
+      429,
+      "QUOTA_EXCEEDED"
+    );
+  }
+  if (status === 503) {
+    const estimated = typeof body === "object" && body !== null && "estimated_time" in body && typeof body.estimated_time === "number" ? Math.ceil(body.estimated_time) : 20;
+    const err = new SaraKomodoError(
+      `Model Qwen sedang dimuat di Hugging Face. Coba lagi sekitar ${estimated} detik.`,
+      503,
+      "MODEL_LOADING"
+    );
+    err.retryAfter = estimated;
+    return err;
+  }
+  return new SaraKomodoError(
+    `Gangguan Hugging Face Inference (${status}). ${detail.slice(0, 200)}`,
+    502,
+    "API_ERROR"
+  );
+}
+function extractReplyText(data) {
+  if (!data || typeof data !== "object") return "";
+  const record = data;
+  const chatContent = record.choices?.[0]?.message?.content;
+  if (typeof chatContent === "string") return chatContent.trim();
+  if (Array.isArray(record)) {
+    const first = record[0];
+    if (typeof first?.generated_text === "string") return first.generated_text.trim();
+  }
+  if (typeof record.generated_text === "string") return record.generated_text.trim();
+  return "";
+}
+async function postHfChat(token, messages, contextOverride) {
+  const hfMessages = [
+    { role: "system", content: buildSaraSystemInstruction(messages, contextOverride) },
+    ...messages.map((m) => ({
+      role: m.role,
+      content: m.content
+    }))
+  ];
+  const response = await fetch(HF_ROUTER_CHAT_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: SARA_HF_MODEL,
+      messages: hfMessages,
+      temperature: 0.35,
+      max_tokens: 512
+    })
+  });
+  const raw = await response.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    data = { error: raw };
+  }
+  if (!response.ok) {
+    throw mapHfError(response.status, data);
+  }
+  const reply = extractReplyText(data);
+  if (!reply) {
+    throw new SaraKomodoError(
+      "Model Qwen mengembalikan respons kosong. Silakan coba lagi.",
+      502,
+      "EMPTY_REPLY"
+    );
+  }
+  return reply;
+}
+async function callQwenSaraChat(messages, contextOverride) {
+  const token = getIhkToken();
+  return postHfChat(token, messages, contextOverride);
+}
+async function callGeminiSaraChat(messages, contextOverride) {
+  const ai = new import_genai.GoogleGenAI({ apiKey: getGeminiApiKey() });
+  const response = await ai.models.generateContent({
+    model: SARA_GEMINI_MODEL,
+    contents: messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }]
+    })),
+    config: {
+      systemInstruction: buildSaraSystemInstruction(messages, contextOverride),
+      temperature: 0.35,
+      maxOutputTokens: 512
+    }
+  });
+  const reply = response.text?.trim();
+  if (!reply) {
+    throw new SaraKomodoError(
+      "Gemini mengembalikan respons kosong. Silakan coba lagi.",
+      502,
+      "EMPTY_REPLY"
+    );
+  }
+  return reply;
+}
+async function callSaraChat(messages, contextOverride) {
+  try {
+    const reply = await callQwenSaraChat(messages, contextOverride);
+    return { reply, model: SARA_HF_MODEL };
+  } catch (qwenError) {
+    console.warn("Sara Qwen HF failed, falling back to Gemini:", qwenError);
+    try {
+      const reply = await callGeminiSaraChat(messages, contextOverride);
+      return { reply, model: SARA_GEMINI_MODEL };
+    } catch (geminiError) {
+      if (geminiError instanceof SaraKomodoError) throw geminiError;
+      const message = geminiError instanceof Error ? geminiError.message : "Gagal memanggil Gemini.";
+      throw new SaraKomodoError(
+        `Maaf, layanan AI Sara tidak tersedia. ${message}`,
+        500,
+        "API_ERROR"
+      );
+    }
+  }
+}
+function saraKomodoErrorResponse(err) {
+  const body = { error: err.message, code: err.code };
+  const retryAfter = err.retryAfter;
+  if (retryAfter) body.retryAfter = retryAfter;
+  return { status: err.status, body };
 }
 
 // api/recruitment-chat.ts

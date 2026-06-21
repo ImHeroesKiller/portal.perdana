@@ -5,7 +5,13 @@
 
 import { randomUUID } from 'crypto';
 import type { CandidatePayload } from './candidate-payload';
-import { extractFieldsFromChat, getNextMissingField } from './sara-chat-extract';
+import {
+  extractFieldsFromChat,
+  formatKnownFieldsContext,
+  formatLastTurnValidationHint,
+  getNextMissingField,
+  parseSixteenDigitId,
+} from './sara-chat-extract';
 import { getAdminDb, isAdminConfigured } from './firebase-admin';
 
 export const SARA_SESSIONS_COLLECTION = 'sara_sessions';
@@ -27,6 +33,83 @@ export interface SaraSession {
 }
 
 const localStore = new Map<string, SaraSession>();
+
+export type SessionIdSkipFlags = {
+  alreadyHasNik: boolean;
+  alreadyHasKk: boolean;
+  alreadyHasNpwp: boolean;
+};
+
+/** True when value is exactly 16 numeric digits (NIK/KK/NPWP). */
+export function isValidSixteenDigitField(value: unknown): boolean {
+  if (value == null) return false;
+  return parseSixteenDigitId(String(value)) !== null;
+}
+
+/** Skip flags from persisted candidateData — used before sending prompt to model. */
+export function getSessionIdSkipFlags(
+  candidate: Partial<CandidatePayload>
+): SessionIdSkipFlags {
+  return {
+    alreadyHasNik: isValidSixteenDigitField(candidate.nik),
+    alreadyHasKk: isValidSixteenDigitField(candidate.kkNumber),
+    alreadyHasNpwp: isValidSixteenDigitField(candidate.npwp),
+  };
+}
+
+/**
+ * Build prompt context from session memory (candidateData + chat).
+ * Prioritises candidateData; marks valid 16-digit IDs as do-not-ask.
+ */
+export function buildSaraSessionContext(session: SaraSession): string {
+  const candidate = session.candidateData || {};
+  const turns = session.messages.map((m) => ({ role: m.role, content: m.content }));
+  const fromChat = extractFieldsFromChat(turns);
+  const merged: Partial<CandidatePayload> = { ...fromChat, ...candidate };
+
+  const { alreadyHasNik, alreadyHasKk, alreadyHasNpwp } = getSessionIdSkipFlags(candidate);
+
+  let context = formatKnownFieldsContext(merged);
+
+  const idLines: string[] = [];
+  if (alreadyHasNik) {
+    idLines.push(`✓ NIK: ${parseSixteenDigitId(String(candidate.nik))}`);
+  }
+  if (alreadyHasKk) {
+    idLines.push(`✓ Nomor KK: ${parseSixteenDigitId(String(candidate.kkNumber))}`);
+  }
+  if (alreadyHasNpwp) {
+    idLines.push(`✓ NPWP: ${parseSixteenDigitId(String(candidate.npwp))}`);
+  }
+
+  if (idLines.length > 0) {
+    context += '\n\nIDENTITAS SUDAH VALID (jangan tanya & jangan validasi ulang):';
+    context += `\n${idLines.join('\n')}`;
+  }
+
+  const skipLabels: string[] = [];
+  if (alreadyHasNik) skipLabels.push('NIK');
+  if (alreadyHasKk) skipLabels.push('Nomor KK');
+  if (alreadyHasNpwp) skipLabels.push('NPWP');
+  if (skipLabels.length > 0) {
+    context += `\nSKIP (sudah terisi valid): ${skipLabels.join(', ')}`;
+  }
+
+  const validation = formatLastTurnValidationHint(turns);
+  if (validation) {
+    const skipNikHint = alreadyHasNik && /NIK/i.test(validation);
+    const skipKkHint = alreadyHasKk && /\bKK\b/i.test(validation);
+    if (!skipNikHint && !skipKkHint) {
+      context += `\n\n${validation}`;
+    }
+  }
+
+  if (session.currentStep && session.currentStep !== 'complete') {
+    context += `\n\nLANJUTKAN DARI MEMORY: "${session.currentStep}"`;
+  }
+
+  return context;
+}
 
 function nowIso(): string {
   return new Date().toISOString();

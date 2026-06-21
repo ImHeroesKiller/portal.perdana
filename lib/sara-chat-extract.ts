@@ -48,8 +48,8 @@ const COLLECTION_ORDER: FieldSpec[] = [
   {
     key: 'npwp',
     label: 'NPWP',
-    filled: (d) => Boolean(d.npwp?.trim()),
-    display: (d) => d.npwp || '',
+    filled: (d) => isNikValid(d.npwp),
+    display: (d) => String(d.npwp || ''),
   },
   {
     key: 'placeOfBirth',
@@ -279,6 +279,7 @@ function normalizeFieldValue(
       return parseName(trimmed);
     case 'nik':
     case 'kkNumber':
+    case 'npwp':
       return parseSixteenDigitId(trimmed);
     case 'email': {
       const match = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);

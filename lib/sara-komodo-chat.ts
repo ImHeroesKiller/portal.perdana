@@ -2,7 +2,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { buildSaraChatContext } from './sara-chat-extract';
-import type { SaraSession } from './sara-memory';
+import { buildSaraSessionContext, type SaraSession } from './sara-memory';
 
 export const SARA_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 export const SARA_GEMINI_MODEL = 'gemini-2.5-flash';
@@ -70,8 +70,12 @@ Validasi: NIK/KK/NPWP tepat 16 digit angka · WA +62 · lahir YYYY-MM-DD
 JSON (lengkap+valid): output HANYA satu object {…}, no teks/markdown. graduationYear=number. Nilai ASLI dari memory/candidateData. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
 `.trim();
 
-function buildSaraSystemInstruction(messages: SaraChatMessage[]): string {
-  return `${SARA_SYSTEM_INSTRUCTION}\n\n${buildSaraChatContext(messages)}`;
+function buildSaraSystemInstruction(
+  messages: SaraChatMessage[],
+  contextOverride?: string
+): string {
+  const context = contextOverride ?? buildSaraChatContext(messages);
+  return `${SARA_SYSTEM_INSTRUCTION}\n\n${context}`;
 }
 
 /** Map persisted session messages to Sara chat turns. */
@@ -82,10 +86,11 @@ export function sessionToChatMessages(session: Pick<SaraSession, 'messages'>): S
   }));
 }
 
-/** Call Sara using Firestore-backed session history (last 12 turns). */
+/** Call Sara using Firestore-backed session history + memory context. */
 export async function callSaraChatForSession(session: SaraSession): Promise<SaraChatResult> {
   const messages = sessionToChatMessages(session).slice(-12);
-  return callSaraChat(messages);
+  const sessionContext = buildSaraSessionContext(session);
+  return callSaraChat(messages, sessionContext);
 }
 
 function getIhkToken(): string {
@@ -193,10 +198,11 @@ function extractReplyText(data: unknown): string {
 
 async function postHfChat(
   token: string,
-  messages: SaraChatMessage[]
+  messages: SaraChatMessage[],
+  contextOverride?: string
 ): Promise<string> {
   const hfMessages = [
-    { role: 'system', content: buildSaraSystemInstruction(messages) },
+    { role: 'system', content: buildSaraSystemInstruction(messages, contextOverride) },
     ...messages.map((m) => ({
       role: m.role,
       content: m.content,
@@ -241,12 +247,18 @@ async function postHfChat(
   return reply;
 }
 
-async function callQwenSaraChat(messages: SaraChatMessage[]): Promise<string> {
+async function callQwenSaraChat(
+  messages: SaraChatMessage[],
+  contextOverride?: string
+): Promise<string> {
   const token = getIhkToken();
-  return postHfChat(token, messages);
+  return postHfChat(token, messages, contextOverride);
 }
 
-async function callGeminiSaraChat(messages: SaraChatMessage[]): Promise<string> {
+async function callGeminiSaraChat(
+  messages: SaraChatMessage[],
+  contextOverride?: string
+): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: getGeminiApiKey() });
 
   const response = await ai.models.generateContent({
@@ -256,7 +268,7 @@ async function callGeminiSaraChat(messages: SaraChatMessage[]): Promise<string> 
       parts: [{ text: m.content }],
     })),
     config: {
-      systemInstruction: buildSaraSystemInstruction(messages),
+      systemInstruction: buildSaraSystemInstruction(messages, contextOverride),
       temperature: 0.35,
       maxOutputTokens: 512,
     },
@@ -275,15 +287,18 @@ async function callGeminiSaraChat(messages: SaraChatMessage[]): Promise<string> 
 }
 
 /** Primary: Qwen on HF. Fallback: Gemini 2.5 Flash. */
-export async function callSaraChat(messages: SaraChatMessage[]): Promise<SaraChatResult> {
+export async function callSaraChat(
+  messages: SaraChatMessage[],
+  contextOverride?: string
+): Promise<SaraChatResult> {
   try {
-    const reply = await callQwenSaraChat(messages);
+    const reply = await callQwenSaraChat(messages, contextOverride);
     return { reply, model: SARA_HF_MODEL };
   } catch (qwenError) {
     console.warn('Sara Qwen HF failed, falling back to Gemini:', qwenError);
 
     try {
-      const reply = await callGeminiSaraChat(messages);
+      const reply = await callGeminiSaraChat(messages, contextOverride);
       return { reply, model: SARA_GEMINI_MODEL };
     } catch (geminiError) {
       if (geminiError instanceof SaraKomodoError) throw geminiError;
