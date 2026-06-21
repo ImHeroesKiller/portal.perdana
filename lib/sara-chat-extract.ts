@@ -1,4 +1,4 @@
-import { findJsonInText, type CandidatePayload } from './candidate';
+import { findJsonInText, type CandidatePayload } from './candidate-payload';
 
 export type SaraChatTurn = { role: 'user' | 'assistant'; content: string };
 

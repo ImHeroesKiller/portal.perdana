@@ -20,7 +20,7 @@ import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
 import { extractFieldsFromChat, isReadyForPreview } from '../lib/sara-chat-extract';
-import { findJsonInText } from '../lib/candidate';
+import { findJsonInText } from '../lib/candidate-payload';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
 import { SaraLiveDataSync } from './recruitment/SaraLiveDataSync';
 
