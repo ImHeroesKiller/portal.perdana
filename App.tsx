@@ -56,12 +56,13 @@ export default function App() {
   return (
     <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <LanguageUrlSync />
-      <AppShell />
+      <AppRoutes />
     </HashRouter>
   );
 }
 
-function AppShell() {
+/** Must render inside HashRouter — useGoogleAnalytics depends on useLocation(). */
+function AppRoutes() {
   useGoogleAnalytics();
   const isMobile = useIsMobile();
 
