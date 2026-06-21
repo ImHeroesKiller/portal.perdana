@@ -34,7 +34,9 @@ import { WizardStepper } from './recruitment/WizardStepper';
 import {
   ApplySuccessPage,
   type ApplySuccessData,
+  ErrorState,
   FormErrorBanner,
+  FormStepSkeleton,
   NAVY_BTN,
   NAVY_BTN_OUTLINE,
   RecruitmentBackButton,
@@ -56,7 +58,13 @@ export const RecruitmentForm: React.FC = () => {
   const [formMode, setFormMode] = useState<ApplyFormMode>('manual');
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<FormDataState>(INITIAL_FORM_STATE);
-  const { data: availableJobs = [] } = useJobs({ activeOnly: true });
+  const {
+    data: availableJobs = [],
+    isLoading: jobsLoading,
+    isError: jobsError,
+    error: jobsFetchError,
+    refetch: refetchJobs,
+  } = useJobs({ activeOnly: true });
   const [files, setFiles] = useState<FileState>({
     applicationLetter: null,
     cv: null,
@@ -317,7 +325,17 @@ export const RecruitmentForm: React.FC = () => {
                 {error && <FormErrorBanner message={error} />}
 
                 <div className="min-h-[320px]">
-                  {currentStep === 1 && (
+                  {currentStep === 1 && jobsLoading && availableJobs.length === 0 && (
+                    <FormStepSkeleton fields={6} />
+                  )}
+                  {currentStep === 1 && jobsError && jobsFetchError && (
+                    <ErrorState
+                      title="Gagal memuat daftar posisi"
+                      message={jobsFetchError.message}
+                      onRetry={() => { void refetchJobs(); }}
+                    />
+                  )}
+                  {currentStep === 1 && !(jobsLoading && availableJobs.length === 0) && !jobsError && (
                     <StepIdentity
                       formData={formData}
                       onChange={handleChange}

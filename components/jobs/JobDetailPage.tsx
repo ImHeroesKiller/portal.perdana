@@ -23,6 +23,7 @@ import { BRAND_NAVY } from '../home/homeContent';
 import { MarketingPageShell } from '../layout/MarketingPageLayout';
 import {
   CardSectionHeader,
+  JobDetailPageSkeleton,
   NAVY_BTN,
   RecruitmentBackButton,
   WizardCard,
@@ -178,6 +179,12 @@ export const JobDetailPage: React.FC = () => {
           void refetch();
         }}
         minHeight="16rem"
+        loadingMessage="Memuat detail lowongan..."
+        skeleton={
+          <MarketingPageShell className="gap-5 px-6 pb-10 pt-6 sm:gap-6 sm:px-6 sm:py-8">
+            <JobDetailPageSkeleton />
+          </MarketingPageShell>
+        }
       >
         {job && fields ? (
           <>

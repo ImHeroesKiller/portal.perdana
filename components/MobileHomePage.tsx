@@ -8,6 +8,7 @@ import { JobSectorsGrid } from './home/JobSectorsGrid';
 import { SectionHeader } from './home/SectionHeader';
 import { JobList } from './jobs/JobList';
 import { DataFetchState } from '../src/components/DataFetchState';
+import { VacanciesListSkeleton } from './recruitment/recruitmentUi';
 import { resolveJobTitle } from '../lib/job-display';
 import type { JobDisplayFields } from './jobs/JobList';
 import { ArrowRight, Megaphone, Calendar, MapPin, Briefcase } from 'lucide-react';
@@ -121,6 +122,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
             isEmpty={hasNoJobs}
             emptyMessage={t('vacancies_empty')}
             onRetry={() => { void refetchJobs(); }}
+            skeleton={<VacanciesListSkeleton count={3} />}
           >
             <JobList
               source="MobileHomePage"

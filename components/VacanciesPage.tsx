@@ -19,27 +19,14 @@ import { appLangToSeoLocale, useLanguage } from '../services/i18n';
 import { MarketingPageShell } from './layout/MarketingPageLayout';
 import {
   CardSectionHeader,
-  NAVY_BTN,
+  ErrorState,
   NAVY_BTN_OUTLINE,
   RecruitmentBackButton,
+  VacanciesListSkeleton,
   WizardCard,
   WizardHero,
 } from './recruitment/recruitmentUi';
-import { BRAND_NAVY } from './home/homeContent';
 import { Search, SlidersHorizontal, FileText, Briefcase, Loader2 } from 'lucide-react';
-import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-
-function VacanciesLoadingCard() {
-  return (
-    <WizardCard className="flex min-h-[14rem] flex-col items-center justify-center gap-4 p-8">
-      <ArrowPathIcon className="h-10 w-10 animate-spin text-[#003087]" aria-hidden />
-      <div className="text-center">
-        <p className="text-sm font-black text-slate-900">Memuat lowongan...</p>
-        <p className="mt-1 text-xs text-slate-500">Mohon tunggu sebentar</p>
-      </div>
-    </WizardCard>
-  );
-}
 
 function VacanciesEmptyCard({
   title,
@@ -66,32 +53,6 @@ function VacanciesEmptyCard({
           className={`${NAVY_BTN_OUTLINE} mt-5`}
         >
           {actionLabel}
-        </button>
-      )}
-    </WizardCard>
-  );
-}
-
-function VacanciesErrorCard({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry?: () => void;
-}) {
-  return (
-    <WizardCard className="p-7 text-center sm:p-8">
-      <ExclamationTriangleIcon className="mx-auto h-10 w-10 text-red-500" aria-hidden />
-      <h3 className="mt-3 text-lg font-black text-slate-900">Gagal memuat data</h3>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-red-600">{message}</p>
-      {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className={`${NAVY_BTN} mt-5`}
-          style={{ backgroundColor: BRAND_NAVY }}
-        >
-          Coba Lagi
         </button>
       )}
     </WizardCard>
@@ -292,10 +253,10 @@ export const VacanciesPage: React.FC = () => {
           </div>
         )}
 
-        {showLoading && <VacanciesLoadingCard />}
+        {showLoading && <VacanciesListSkeleton count={3} />}
 
         {isError && error && (
-          <VacanciesErrorCard message={error.message} onRetry={() => { void refetch(); }} />
+          <ErrorState message={error.message} onRetry={() => { void refetch(); }} />
         )}
 
         {hasJobsButFilteredEmpty && (

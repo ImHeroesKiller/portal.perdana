@@ -15,7 +15,7 @@ import { JobList } from './jobs/JobList';
 import { VacancyJobCard, resolveVacancyCardFields } from './jobs/VacancyJobCard';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { BRAND_NAVY } from './home/homeContent';
-import { CardSectionHeader, NAVY_BTN } from './recruitment/recruitmentUi';
+import { CardSectionHeader, JobCardSkeleton, NAVY_BTN } from './recruitment/recruitmentUi';
 import { useLanguage } from '../services/i18n';
 import { MobileHomePage } from './MobileHomePage';
 import { HeroSection } from './home/HeroSection';
@@ -174,6 +174,13 @@ export const HomePage: React.FC = () => {
             isEmpty={hasNoJobs}
             emptyMessage={t('vacancies_empty')}
             onRetry={() => { void refetchJobs(); }}
+            skeleton={
+              <div className="grid gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <JobCardSkeleton key={i} compact />
+                ))}
+              </div>
+            }
           >
             <JobList
               source="HomePage"
