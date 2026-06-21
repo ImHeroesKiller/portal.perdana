@@ -5,7 +5,6 @@ import {
   User, 
   Phone, 
   GraduationCap, 
-  CheckCircle2, 
   Paperclip,
   ChevronLeft,
   MapPin,
@@ -21,8 +20,10 @@ import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
 import { extractFieldsFromChat, isReadyForPreview } from '../lib/sara-chat-extract';
 import { findJsonInText } from '../lib/candidate-payload';
+import { MarketingPageShell } from './layout/MarketingPageLayout';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
 import { SaraLiveDataSync, computeSyncProgress } from './recruitment/SaraLiveDataSync';
+import { ApplySuccessPage, type ApplySuccessData } from './recruitment/recruitmentUi';
 
 interface Message {
   id: string;
@@ -99,8 +100,7 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   const [errorText, setErrorText] = useState<string | null>(null);
   const [saraSessionId, setSaraSessionId] = useState<string | null>(null);
   const [syncOpen, setSyncOpen] = useState(false);
-  const [finalId, setFinalId] = useState('');
-  const [finalName, setFinalName] = useState('');
+  const [successData, setSuccessData] = useState<ApplySuccessData | null>(null);
 
   const syncPct = useMemo(() => computeSyncProgress(extractedData).pct, [extractedData]);
 
@@ -398,8 +398,14 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
         await sendTelegramMessage(finalPayload.telegramId, `🔴 *Pendaftaran Baru via AI Chatroom*\n\nSelamat ${finalPayload.fullName}!\nLamaran Anda sebagai *${finalPayload.positionApplied}* berhasil kami rekam di database PT Perdana Adi Yuda.\n\n_Asisten Sara_`);
       }
 
-      setFinalId(result.id);
-      setFinalName(finalPayload.fullName);
+      setSuccessData({
+        fullName: finalPayload.fullName || '',
+        position: finalPayload.positionApplied,
+        nik: finalPayload.nik,
+        email: finalPayload.email,
+        whatsapp: finalPayload.whatsappNumber,
+        referenceId: result.id,
+      });
       setFormStage('success');
     } catch (err: any) {
       console.error(err);
@@ -419,6 +425,21 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
     if (onSwitchToManual) onSwitchToManual();
     else navigate(-1);
   };
+
+  if (formStage === 'success' && successData) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans antialiased">
+        <MarketingPageShell className="px-6 pb-10 pt-6 sm:px-6 sm:py-8">
+          <ApplySuccessPage
+            data={successData}
+            onViewStatus={() => navigate('/portal')}
+            onApplyOther={() => navigate('/vacancies')}
+            onGoHome={() => navigate('/')}
+          />
+        </MarketingPageShell>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -467,59 +488,6 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
       <AnimatePresence mode="wait">
         
-        {/* SUCCESS PANEL */}
-        {formStage === 'success' && (
-          <motion.div 
-            key="success-form"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="max-w-2xl mx-auto text-center bg-white p-10 rounded-3xl border border-gray-100 shadow-xl"
-            id="section_success"
-          >
-            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="h-12 w-12 text-green-500" />
-            </div>
-            <h2 className="text-3xl font-extrabold text-gray-900">Pendaftaran Berhasil!</h2>
-            <p className="text-gray-500 mt-3 max-w-md mx-auto leading-relaxed">
-              Selamat <b>{finalName}</b>, data profil Anda telah berhasil disimpan di database rekrutmen PT Perdana Adi Yuda.
-            </p>
-            
-            <div className="mt-8 p-6 bg-gray-50 rounded-2xl text-left border border-gray-100 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-gray-400 block">Nomor ID Pendaftaran</span>
-                  <span className="font-mono text-gray-900 font-bold text-lg">#{finalId.toUpperCase()}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 block">Status Lamaran</span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full mt-1 border border-blue-100">
-                    SCREENING ATS
-                  </span>
-                </div>
-              </div>
-              <p className="mt-4 text-xs text-gray-500 italic">
-                *Silakan pantau status pendaftaran Anda secara berkala di Dashboard Portal Saya atau nantikan WhatsApp notifikasi resmi dari PT Perdana Adi Yuda.
-              </p>
-            </div>
-
-            <div className="mt-8 flex justify-center gap-4">
-              <button 
-                onClick={() => navigate('/portal')} 
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md transition-all active:scale-95"
-              >
-                Masuk ke Portal Saya 💼
-              </button>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="px-6 py-3 border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold rounded-2xl transition-all"
-              >
-                Kembali
-              </button>
-            </div>
-          </motion.div>
-        )}
-
         {/* CHAT — full-height immersive layout */}
         {formStage === 'chat' && (
           <motion.div

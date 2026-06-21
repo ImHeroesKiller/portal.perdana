@@ -244,6 +244,171 @@ export function ChoicePill({
   );
 }
 
+export type ApplySuccessData = {
+  fullName: string;
+  position?: string;
+  nik?: string;
+  email?: string;
+  whatsapp?: string;
+  referenceId: string;
+  credentials?: { email: string; password: string; isNew: boolean } | null;
+};
+
+function ReferenceBadge({ referenceId }: { referenceId: string }) {
+  const ref = referenceId.toUpperCase();
+  return (
+    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#003087]/20 bg-gradient-to-r from-blue-50 to-cyan-50/60 px-4 py-2.5 shadow-sm ring-1 ring-[#003087]/10">
+      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#003087]">
+        No. Referensi
+      </span>
+      <span className="truncate font-mono text-sm font-black text-[#003087]">#{ref}</span>
+    </span>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-black leading-snug text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+export function ApplySuccessPage({
+  data,
+  onViewStatus,
+  onApplyOther,
+  onGoHome,
+}: {
+  data: ApplySuccessData;
+  onViewStatus: () => void;
+  onApplyOther: () => void;
+  onGoHome: () => void;
+}) {
+  const summaryRows = [
+    { label: 'Nama Lengkap', value: data.fullName },
+    { label: 'Posisi Dilamar', value: data.position },
+    { label: 'NIK', value: data.nik },
+    { label: 'Email', value: data.email },
+    { label: 'WhatsApp', value: data.whatsapp },
+  ].filter((row): row is { label: string; value: string } => Boolean(row.value?.trim()));
+
+  return (
+    <div className="flex flex-col gap-5 sm:gap-6">
+      <WizardHero
+        showLogo
+        title="Lamaran Terkirim!"
+        subtitle="Data lamaran Anda sudah kami terima dengan aman"
+        company="PT Perdana Adi Yuda"
+      />
+
+      <WizardCard className="p-7 sm:p-8">
+        <div className="text-center">
+          <div className="relative mx-auto mb-6 w-fit animate-success-pop">
+            <div
+              className="pointer-events-none absolute -inset-4 rounded-full bg-cyan-400/25 animate-success-glow"
+              aria-hidden
+            />
+            <span
+              className="absolute -right-1 top-1 h-2 w-2 rounded-full bg-cyan-400"
+              aria-hidden
+            />
+            <span
+              className="absolute -left-1 bottom-2 h-1.5 w-1.5 rounded-full bg-emerald-400"
+              aria-hidden
+            />
+            <span
+              className="absolute right-0 top-6 h-1.5 w-1.5 rounded-full bg-amber-400"
+              aria-hidden
+            />
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-4 ring-cyan-400/35 sm:h-[5.5rem] sm:w-[5.5rem]">
+              <CheckCircleIcon className="h-11 w-11 text-emerald-600 sm:h-12 sm:w-12" aria-hidden />
+            </div>
+          </div>
+
+          <h2 className="text-xl font-black text-slate-900 sm:text-2xl">
+            Terima kasih, {data.fullName.split(' ')[0]}!
+          </h2>
+          <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-slate-500">
+            Lamaran Anda untuk posisi{' '}
+            <strong className="text-slate-700">{data.position || 'yang dipilih'}</strong> telah
+            tersimpan. Tim rekrutmen akan meninjau berkas Anda segera.
+          </p>
+
+          <div className="mt-5 flex justify-center">
+            <ReferenceBadge referenceId={data.referenceId} />
+          </div>
+
+          <p className="mt-3 text-xs text-slate-400">
+            Simpan nomor referensi ini untuk melacak status lamaran Anda.
+          </p>
+        </div>
+
+        {summaryRows.length > 0 && (
+          <div className="mt-7">
+            <CardSectionHeader
+              label="Ringkasan"
+              title="Data yang Terkirim"
+              subtitle="Pastikan informasi berikut sudah sesuai"
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {summaryRows.map((row) => (
+                <SummaryRow key={row.label} label={row.label} value={row.value} />
+              ))}
+            </div>
+            <div className="mt-3 flex justify-start sm:justify-end">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200/80 bg-cyan-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
+                Status: Screening ATS
+              </span>
+            </div>
+          </div>
+        )}
+
+        {data.credentials && (
+          <div className="mt-7 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left sm:p-5">
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-[#003087]">
+              <InformationCircleIcon className="h-4 w-4" aria-hidden />
+              Akun Portal Anda
+            </div>
+            <CredentialRow label="Email (username)" value={data.credentials.email} />
+            <CredentialRow
+              label="Password sementara"
+              value={data.credentials.password}
+              className="mt-2"
+            />
+            <p className="mt-3 text-[11px] font-medium text-amber-700">
+              Simpan kredensial ini sekarang. Kami juga mengirimkannya ke email Anda jika tersedia.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-8 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={onViewStatus}
+            className={`${NAVY_BTN} w-full`}
+            style={{ backgroundColor: BRAND_NAVY }}
+          >
+            Lihat Status Lamaran
+          </button>
+          <button type="button" onClick={onApplyOther} className={`${NAVY_BTN_OUTLINE} w-full`}>
+            Lamar Posisi Lain
+          </button>
+          <button
+            type="button"
+            onClick={onGoHome}
+            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[#003087] active:scale-[0.98]"
+          >
+            Kembali ke Beranda
+          </button>
+        </div>
+      </WizardCard>
+    </div>
+  );
+}
+
+/** @deprecated Use ApplySuccessPage */
 export function ApplySuccessView({
   submittedName,
   credentials,
@@ -256,48 +421,16 @@ export function ApplySuccessView({
   onNewApplication: () => void;
 }) {
   return (
-    <div className="relative mx-auto max-w-lg overflow-hidden rounded-3xl border border-slate-100 bg-white p-7 text-center shadow-lg sm:p-8">
-      <div
-        className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-70"
-        aria-hidden
-      />
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 ring-2 ring-emerald-100">
-        <CheckCircleIcon className="h-10 w-10 text-emerald-600" aria-hidden />
-      </div>
-      <h2 className="text-2xl font-black text-slate-900">Lamaran Terkirim!</h2>
-      <p className="mt-2 text-sm leading-relaxed text-slate-500">
-        Terima kasih <strong className="text-slate-700">{submittedName}</strong>, data lamaran Anda
-        telah tersimpan di sistem rekrutmen PT Perdana Adi Yuda.
-      </p>
-
-      {credentials && (
-        <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left">
-          <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-[#003087]">
-            <InformationCircleIcon className="h-4 w-4" aria-hidden />
-            Akun Portal Anda
-          </div>
-          <CredentialRow label="Email (username)" value={credentials.email} />
-          <CredentialRow label="Password sementara" value={credentials.password} className="mt-2" />
-          <p className="mt-3 text-[11px] font-medium text-amber-700">
-            Simpan kredensial ini sekarang. Kami juga mengirimkannya ke email Anda jika tersedia.
-          </p>
-        </div>
-      )}
-
-      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
-        <button
-          type="button"
-          onClick={onLogin}
-          className={NAVY_BTN}
-          style={{ backgroundColor: BRAND_NAVY }}
-        >
-          Lacak Progres Lamaran
-        </button>
-        <button type="button" onClick={onNewApplication} className={NAVY_BTN_OUTLINE}>
-          Lamar Posisi Lain
-        </button>
-      </div>
-    </div>
+    <ApplySuccessPage
+      data={{
+        fullName: submittedName,
+        referenceId: '—',
+        credentials,
+      }}
+      onViewStatus={onLogin}
+      onApplyOther={onNewApplication}
+      onGoHome={onNewApplication}
+    />
   );
 }
 

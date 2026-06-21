@@ -32,7 +32,8 @@ import { AIChatroomForm } from './AIChatroomForm';
 import type { ApplyFormMode } from './recruitment/FormModeSwitcher';
 import { WizardStepper } from './recruitment/WizardStepper';
 import {
-  ApplySuccessView,
+  ApplySuccessPage,
+  type ApplySuccessData,
   FormErrorBanner,
   NAVY_BTN,
   NAVY_BTN_OUTLINE,
@@ -69,15 +70,9 @@ export const RecruitmentForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [submittedName, setSubmittedName] = useState('');
+  const [successData, setSuccessData] = useState<ApplySuccessData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [createdCredentials, setCreatedCredentials] = useState<{
-    email: string;
-    password: string;
-    isNew: boolean;
-  } | null>(null);
-
   const gwSettings = getCompanySettings().googleWorkspace;
   const googleFormUrl = gwSettings?.formEmbedUrl || '';
   const currentUser = getCurrentUser();
@@ -212,10 +207,9 @@ export const RecruitmentForm: React.FC = () => {
         certificatePath: filePaths.certificatePath,
       };
 
-      await createCandidate(payload, 'manual');
+      const result = await createCandidate(payload, 'manual');
 
       const credentials = createCredentialsForCandidateSubmit(payload.email, payload.whatsappNumber);
-      setCreatedCredentials(credentials);
 
       try {
         await sendCandidateCredentialsNotification(
@@ -233,7 +227,15 @@ export const RecruitmentForm: React.FC = () => {
         await sendTelegramMessage(payload.telegramId, `*Lamaran Terkirim*\nPosisi: ${payload.positionApplied}`);
       }
 
-      setSubmittedName(formData.fullName);
+      setSuccessData({
+        fullName: formData.fullName,
+        position: formData.positionApplied,
+        nik: formData.nik,
+        email: formData.email,
+        whatsapp: finalWA,
+        referenceId: result.id,
+        credentials,
+      });
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
@@ -251,17 +253,17 @@ export const RecruitmentForm: React.FC = () => {
     return qs ? `/apply/start?${qs}` : '/apply/start';
   })();
 
-  if (success) {
+  if (success && successData) {
     return (
       <div className="min-h-screen bg-slate-50 font-sans antialiased">
         <MarketingPageShell className="px-6 pb-10 pt-6 sm:px-6 sm:py-8">
-          <ApplySuccessView
-            submittedName={submittedName}
-            credentials={createdCredentials}
-            onLogin={() =>
-              navigate(`/login?email=${encodeURIComponent(createdCredentials?.email || '')}`)
+          <ApplySuccessPage
+            data={successData}
+            onViewStatus={() =>
+              navigate(`/login?email=${encodeURIComponent(successData.credentials?.email || successData.email || '')}`)
             }
-            onNewApplication={() => window.location.reload()}
+            onApplyOther={() => navigate('/vacancies')}
+            onGoHome={() => navigate('/')}
           />
         </MarketingPageShell>
       </div>
