@@ -23,7 +23,7 @@ import { findJsonInText } from '../lib/candidate-payload';
 import { MarketingPageShell } from './layout/MarketingPageLayout';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
 import { SaraLiveDataSync, computeSyncProgress } from './recruitment/SaraLiveDataSync';
-import { ApplySuccessPage, type ApplySuccessData } from './recruitment/recruitmentUi';
+import { ApplySuccessPage, RecruitmentBackButton, type ApplySuccessData } from './recruitment/recruitmentUi';
 
 interface Message {
   id: string;
@@ -430,6 +430,7 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
     return (
       <div className="min-h-screen bg-slate-50 font-sans antialiased">
         <MarketingPageShell className="px-6 pb-10 pt-6 sm:px-6 sm:py-8">
+          <RecruitmentBackButton onClick={() => navigate('/')} />
           <ApplySuccessPage
             data={successData}
             onViewStatus={() => navigate('/portal')}

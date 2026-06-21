@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, FileText, MessageCircle, Sparkles } from 'lucide-react';
+import { ChevronRight, FileText, MessageCircle, Sparkles } from 'lucide-react';
 import { buildApplyFormHref } from '../../lib/job-display';
 import { COMPANY_LOGO_PNG } from '../../lib/brand-assets';
 import { BRAND_NAVY } from '../home/homeContent';
 import { OptimizedImage } from '../ui/OptimizedImage';
 import { MarketingPageShell } from '../layout/MarketingPageLayout';
-import { NAVY_BTN } from './recruitmentUi';
+import { NAVY_BTN, RecruitmentBackButton } from './recruitmentUi';
 
 type ApplyOption = {
   id: 'manual' | 'ai';
@@ -92,16 +92,7 @@ export const RecruitmentStartPage: React.FC = () => {
 
   return (
     <MarketingPageShell className="px-6 pb-10 pt-6 sm:px-6 sm:py-8">
-      <button
-        type="button"
-        onClick={() => navigate(backHref)}
-        className="group mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-200/90 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-[#003087]/20 hover:text-[#003087] hover:shadow-md active:scale-[0.98]"
-      >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 text-[#003087] transition group-hover:bg-blue-50">
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-        </span>
-        Kembali
-      </button>
+      <RecruitmentBackButton onClick={() => navigate(backHref)} />
 
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl shadow-xl ring-1 ring-[#003087]/15">

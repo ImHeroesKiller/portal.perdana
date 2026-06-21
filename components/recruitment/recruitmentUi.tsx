@@ -12,20 +12,23 @@ export const NAVY_BTN_OUTLINE =
   'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-[#003087]/25 bg-white px-5 text-sm font-bold text-[#003087] transition hover:bg-blue-50/80 active:scale-[0.98]';
 
 export const BACK_BTN =
-  'group mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-200/90 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-[#003087]/20 hover:text-[#003087] hover:shadow-md active:scale-[0.98]';
+  'group -ml-1 mb-5 inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100/80 hover:text-[#003087] active:scale-[0.98]';
 
 export function RecruitmentBackButton({
   onClick,
   label = 'Kembali',
+  className = '',
 }: {
   onClick: () => void;
   label?: string;
+  className?: string;
 }) {
   return (
-    <button type="button" onClick={onClick} className={BACK_BTN}>
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 text-[#003087] transition group-hover:bg-blue-50">
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-      </span>
+    <button type="button" onClick={onClick} className={`${BACK_BTN} ${className}`}>
+      <ArrowLeft
+        className="h-4 w-4 shrink-0 transition group-hover:-translate-x-0.5"
+        aria-hidden
+      />
       {label}
     </button>
   );

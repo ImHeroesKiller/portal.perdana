@@ -257,6 +257,7 @@ export const RecruitmentForm: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 font-sans antialiased">
         <MarketingPageShell className="px-6 pb-10 pt-6 sm:px-6 sm:py-8">
+          <RecruitmentBackButton onClick={() => navigate('/')} />
           <ApplySuccessPage
             data={successData}
             onViewStatus={() =>
