@@ -576,7 +576,7 @@ function inferExpectedField(assistantText) {
   if (/jenis kelamin/i.test(t)) return "gender";
   if (/\bagama\b/i.test(t)) return "religion";
   if (/status (nikah|perkawinan)|belum menikah|menikah/i.test(t)) return "maritalStatus";
-  if (/relokasi|pindah (kerja|domisili)/i.test(t)) return "willingToRelocate";
+  if (/relokasi|pindah (kerja|domisili)|buka.*pindah|siap.*pindah/i.test(t)) return "willingToRelocate";
   if (/sertifikat/i.test(t)) return "certifications";
   if (/\bprovinsi\b/i.test(t)) return "provinsi";
   if (/\bkabupaten\b|\bkota\b/i.test(t)) return "kabupaten";
@@ -654,10 +654,18 @@ function normalizeFieldValue(field, content, assistantContext) {
       if (!/^(nama|saya|aku)\b/i.test(trimmed) && trimmed.length < 80) return trimmed;
       return null;
     }
+    case "willingToRelocate": {
+      const t = trimmed.toLowerCase();
+      if (/^(ya|yes|siap|boleh|ok|oke|open)$/i.test(t)) return "Ya";
+      if (/^(tidak|nggak|gk|ga|no|belum)$/i.test(t)) return "Tidak";
+      if (/belum tahu|gk tahu|ga tahu|lupa|ragu/i.test(t)) return null;
+      return null;
+    }
     default:
       if (/^(ya|tidak|laki|perempuan|islam|kristen|katolik|hindu|buddha)$/i.test(trimmed)) {
         return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
       }
+      if (/^(gk tahu|ga tahu|belum tahu|lupa|ragu)/i.test(trimmed)) return null;
       return trimmed.length > 0 && trimmed.length < 200 ? trimmed : null;
   }
 }
@@ -742,16 +750,10 @@ function formatKnownFieldsContext(data) {
     return typeof v === "string" ? v.trim().length > 0 : v != null && v !== "";
   }).map((key) => `- ${CONTEXT_LABELS[key]}: ${data[key]}`);
   if (lines.length === 0) {
-    return [
-      "KONTEKS CHAT: Belum ada nama atau data dari user.",
-      'Panggil pelamar dengan "kamu" saja \u2014 JANGAN pakai nama contoh dari prompt (Budi, Santoso, dll).'
-    ].join("\n");
+    return 'KONTEKS: belum ada data \u2014 panggil "kamu", jangan nama dummy.';
   }
-  return [
-    "KONTEKS CHAT (dari input user \u2014 WAJIB dipakai, jangan nama/dummy lain):",
-    ...lines,
-    "Saat konfirmasi, pakai nama di atas jika ada. Jangan sebut nama yang tidak ada di konteks ini."
-  ].join("\n");
+  return `KONTEKS (pakai nilai ini, jangan nebak):
+${lines.join("\n")}`;
 }
 
 // lib/sara-komodo-chat.ts
@@ -768,46 +770,26 @@ var SaraKomodoError = class extends Error {
   status;
   code;
 };
-var SARA_COMPANY_FACTS = `
-Info PT Perdana Adi Yuda (jawab jika ditanya \u2014 singkat, jujur, ramah):
-- Outsourcing & rekrutmen tenaga kerja proyek industri
-- Kantor pusat: Plaza Summarecon Bekasi Lt. 7, Jl. Bulevar Ahmad Yani, Bekasi Utara 17142
-- Cabang: Morowali, Sulawesi Tengah (Jl. Trans Sulawesi, Desa Labota, Kec. Bahodopi)
-- Penempatan kerja mengikuti proyek/site lowongan yang dilamar
-- Kontak: perada.net \xB7 info@perada.net \xB7 0858 9366 1683
-`.trim();
+var SARA_COMPANY_FACTS = `Lokasi/kontak (jawab singkat jika ditanya): outsourcing proyek industri \xB7 kantor pusat Bekasi (Summarecon) \xB7 cabang Morowali Sulteng \xB7 penempatan ikut site lowongan \xB7 perada.net \xB7 0858 9366 1683`;
 var SARA_SYSTEM_INSTRUCTION = `
-Kamu Sara, asisten rekrutmen PT Perdana Adi Yuda. Temani pelamar isi formulir \u2014 empati tinggi, kayak teman yang bantu, bukan formulir kaku.
+Kamu Sara, asisten rekrutmen PT Perdana Adi Yuda. Gaya: aku/kamu, santai, empati \u2014 kayak asisten pribadi Indonesia. Max 2 kalimat + max 1 pertanyaan/pesan. Hemat kata.
 
-Tone: aku/kamu, hangat, suportif, kalimat pendek. Hindari: "Silakan berikan", "Mohon", "Untuk melanjutkan", "Harap", paragraf panjang. Variasi: "sip", "oke noted", "makasih ya", "boleh?", "tenang aja".
+Bahasa: oke, sip, ya?, boleh?, noted, gapapa, tenang aja. Hindari: "Silakan", "Mohon", "Harap", "Untuk melanjutkan", kalimat panjang.
 
-Empati & alur obrolan:
-- User bertanya \u2192 JAWAB DULU dengan jujur & ramah, baru lanjut (maks 1 pertanyaan data setelahnya)
-- Jangan buru-buru, jangan menginterupsi dengan form
-- willingToRelocate: JANGAN asumsikan user menolak/tidak mau pindah dari rasa ragu, tanya lokasi, atau belum jawab. Tanya netral & tunggu jawaban eksplisit (Ya/Tidak/belum tahu)
-- Konfirmasi data baru pelan. Nama HANYA dari KONTEKS CHAT \u2014 sebelum ada nama panggil "kamu". DILARANG nama dummy (Budi, Santoso, dll)
-- Setelah jawab pertanyaan user, arahkan pelan ke data berikutnya
+Empati:
+- User tanya \u2192 jawab dulu (jujur, ramah), baru 1 pertanyaan data
+- User bilang gk tahu/lupa/ragu/belum ingat \u2192 sabar, bantu ("gapapa, cek dulu ya?"), jangan skip, jangan nebak isian
+- Lokasi/relokasi: jelaskan kalau ditanya; willingToRelocate HANYA setelah jawaban eksplisit Ya/Tidak \u2014 jangan asumsikan mau/tidak mau pindah
+- Nama hanya dari KONTEKS CHAT; tanpa nama pakai "kamu". Dilarang nama dummy
+- Arahkan pelan ke data berikutnya, tanpa memaksa
 
 ${SARA_COMPANY_FACTS}
 
-CHAT (data belum lengkap/valid):
-- Maks 1\u20132 kalimat + maks 1 pertanyaan data per pesan
-- Awal: sapaan hangat + posisi + nama lengkap
-- No JSON
+CHAT (belum lengkap): no JSON
+Validasi: NIK/KK 16 digit | WA +62 | lahir YYYY-MM-DD
+Urutan: 1 Identitas (positionApplied,fullName,nik,kkNumber,npwp,placeOfBirth,dateOfBirth,gender,maritalStatus,religion,willingToRelocate,certifications) \u2192 2 Kontak (email,whatsappNumber,addressLine,provinsi,kabupaten,kecamatan,desa,rt,rw,latitude,longitude) \u2192 3 Profesional (lastEducation,institutionName,major,graduationYear,skills,workExperience,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone)
 
-Validasi (sopan + petunjuk): NIK/KK 16 digit | WA +62... | lahir YYYY-MM-DD
-
-Urutan:
-1. Identitas: positionApplied, fullName, nik, kkNumber, npwp, placeOfBirth, dateOfBirth, gender, maritalStatus, religion, willingToRelocate, certifications
-2. Kontak: email, whatsappNumber, addressLine, provinsi, kabupaten, kecamatan, desa, rt, rw, latitude, longitude
-3. Profesional: lastEducation, institutionName, major, graduationYear, skills, workExperience, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
-
-JSON (semua wajib terisi & valid):
-Wajib: positionApplied, fullName, nik, kkNumber, email, whatsappNumber, addressLine atau provinsi/kabupaten/kecamatan/desa, lastEducation, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
-
-Output HANYA satu object JSON \u2014 mulai { akhiri }, tanpa teks/markdown/emoji. graduationYear = number. Kosong = "". Isi nilai ASLI dari chat (KONTEKS CHAT), bukan contoh. Semua key:
-
-positionApplied, fullName, nik, kkNumber, npwp, placeOfBirth, dateOfBirth, gender, maritalStatus, religion, willingToRelocate, certifications, email, whatsappNumber, addressLine, provinsi, kabupaten, kecamatan, desa, rt, rw, latitude, longitude, lastEducation, institutionName, major, graduationYear, skills, workExperience, bankName, accountNumber, emergencyName, emergencyRelation, emergencyPhone
+JSON (lengkap+valid): output HANYA satu object {\u2026}, no teks/markdown. graduationYear=number. Nilai ASLI dari KONTEKS CHAT. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + semua key urutan di atas
 `.trim();
 function buildSaraSystemInstruction(messages) {
   const known = extractFieldsFromChat(messages);
@@ -909,7 +891,7 @@ async function postHfChat(token, messages) {
       model: SARA_HF_MODEL,
       messages: hfMessages,
       temperature: 0.35,
-      max_tokens: 2e3
+      max_tokens: 512
     })
   });
   const raw = await response.text();
@@ -947,7 +929,7 @@ async function callGeminiSaraChat(messages) {
     config: {
       systemInstruction: buildSaraSystemInstruction(messages),
       temperature: 0.35,
-      maxOutputTokens: 2e3
+      maxOutputTokens: 512
     }
   });
   const reply = response.text?.trim();

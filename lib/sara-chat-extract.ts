@@ -23,7 +23,7 @@ function inferExpectedField(assistantText: string): keyof CandidatePayload | nul
   if (/jenis kelamin/i.test(t)) return 'gender';
   if (/\bagama\b/i.test(t)) return 'religion';
   if (/status (nikah|perkawinan)|belum menikah|menikah/i.test(t)) return 'maritalStatus';
-  if (/relokasi|pindah (kerja|domisili)/i.test(t)) return 'willingToRelocate';
+  if (/relokasi|pindah (kerja|domisili)|buka.*pindah|siap.*pindah/i.test(t)) return 'willingToRelocate';
   if (/sertifikat/i.test(t)) return 'certifications';
   if (/\bprovinsi\b/i.test(t)) return 'provinsi';
   if (/\bkabupaten\b|\bkota\b/i.test(t)) return 'kabupaten';
@@ -111,10 +111,18 @@ function normalizeFieldValue(
       if (!/^(nama|saya|aku)\b/i.test(trimmed) && trimmed.length < 80) return trimmed;
       return null;
     }
+    case 'willingToRelocate': {
+      const t = trimmed.toLowerCase();
+      if (/^(ya|yes|siap|boleh|ok|oke|open)$/i.test(t)) return 'Ya';
+      if (/^(tidak|nggak|gk|ga|no|belum)$/i.test(t)) return 'Tidak';
+      if (/belum tahu|gk tahu|ga tahu|lupa|ragu/i.test(t)) return null;
+      return null;
+    }
     default:
       if (/^(ya|tidak|laki|perempuan|islam|kristen|katolik|hindu|buddha)$/i.test(trimmed)) {
         return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
       }
+      if (/^(gk tahu|ga tahu|belum tahu|lupa|ragu)/i.test(trimmed)) return null;
       return trimmed.length > 0 && trimmed.length < 200 ? trimmed : null;
   }
 }
@@ -231,15 +239,8 @@ export function formatKnownFieldsContext(data: Partial<CandidatePayload>): strin
     .map((key) => `- ${CONTEXT_LABELS[key]}: ${data[key]}`);
 
   if (lines.length === 0) {
-    return [
-      'KONTEKS CHAT: Belum ada nama atau data dari user.',
-      'Panggil pelamar dengan "kamu" saja — JANGAN pakai nama contoh dari prompt (Budi, Santoso, dll).',
-    ].join('\n');
+    return 'KONTEKS: belum ada data — panggil "kamu", jangan nama dummy.';
   }
 
-  return [
-    'KONTEKS CHAT (dari input user — WAJIB dipakai, jangan nama/dummy lain):',
-    ...lines,
-    'Saat konfirmasi, pakai nama di atas jika ada. Jangan sebut nama yang tidak ada di konteks ini.',
-  ].join('\n');
+  return `KONTEKS (pakai nilai ini, jangan nebak):\n${lines.join('\n')}`;
 }

@@ -44,8 +44,8 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const welcomeMessage = initialPosition
-    ? `Hai! 👋 Aku Sara — asisten rekrutmen di PT Perdana Adi Yuda. Kamu mau lamar *${initialPosition}*, kan? Tenang aja, kita isi formulirnya sambil ngobrol, gampang kok.\n\nBoleh kenalan dulu? Nama lengkap kamu sesuai KTP apa ya?`
-    : 'Hai! 👋 Aku Sara — asisten rekrutmen di PT Perdana Adi Yuda. Kita isi formulir lamaran sambil ngobrol aja, santai.\n\nKamu mau lamar posisi apa? Sekalian nama lengkapnya boleh juga~';
+    ? `Hai! 👋 Aku Sara dari PT Perdana Adi Yuda. Kamu mau lamar *${initialPosition}*, ya? Kita isi formulirnya sambil ngobrol aja — santai.\n\nBoleh kenalan? Nama lengkap kamu siapa?`
+    : 'Hai! 👋 Aku Sara dari PT Perdana Adi Yuda. Kita isi lamaran sambil ngobrol ya, gampang kok.\n\nKamu mau lamar posisi apa? Sekalian nama lengkapnya boleh~';
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -64,7 +64,6 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   
   // Parsed structured data
   const [extractedData, setExtractedData] = useState<Partial<NewEmployee>>({
-    willingToRelocate: 'Ya',
     ...(initialPosition ? { positionApplied: initialPosition } : {}),
   });
 
@@ -317,7 +316,7 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
         gender: extractedData.gender || 'Laki-laki',
         religion: extractedData.religion || 'Islam',
         maritalStatus: extractedData.maritalStatus || 'Belum Menikah',
-        willingToRelocate: extractedData.willingToRelocate || 'Ya',
+        willingToRelocate: extractedData.willingToRelocate || '',
         certifications: extractedData.certifications || '',
         
         email: extractedData.email || '',
