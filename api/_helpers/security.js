@@ -3,6 +3,8 @@ const buckets = new Map();
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://portal.perada.net',
   'https://www.portal.perada.net',
+  'https://portal.perdana.net',
+  'https://www.portal.perdana.net',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
@@ -29,14 +31,18 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || 'unknown';
 }
 
+function readRequestOrigin(req) {
+  const raw = req.headers?.origin || req.headers?.Origin;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw) && typeof raw[0] === 'string') return raw[0];
+  return '';
+}
+
 function resolveCorsOrigin(req) {
-  const origin = req.headers?.origin;
-  if (typeof origin !== 'string' || !origin) {
-    return isProductionEnv() ? 'https://portal.perada.net' : '*';
-  }
+  const origin = readRequestOrigin(req);
   const allowed = getAllowedOrigins();
-  if (!isProductionEnv()) return origin;
-  return allowed.includes(origin) ? origin : 'https://portal.perada.net';
+  if (origin && allowed.includes(origin)) return origin;
+  return 'https://portal.perada.net';
 }
 
 function applyApiSecurityHeaders(res) {
@@ -51,10 +57,19 @@ function applySecureCors(req, res) {
   applyApiSecurityHeaders(res);
   res.setHeader('CDN-Cache-Control', 'no-store');
   res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+
+  const origin = readRequestOrigin(req);
+  const allowed = getAllowedOrigins();
+
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://portal.perada.net');
+  }
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', resolveCorsOrigin(req));
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,DELETE');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'Content-Type, Authorization, X-Api-Admin-Key, X-Requested-With'

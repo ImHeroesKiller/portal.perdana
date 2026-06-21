@@ -5,6 +5,8 @@ import { enforceRateLimit, type RateLimitConfig } from './api-rate-limit';
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://portal.perada.net',
   'https://www.portal.perada.net',
+  'https://portal.perdana.net',
+  'https://www.portal.perdana.net',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
@@ -22,23 +24,42 @@ function getAllowedOrigins(): string[] {
   return [...DEFAULT_ALLOWED_ORIGINS, ...extra];
 }
 
+function readRequestOrigin(req: {
+  headers?: Record<string, string | string[] | undefined>;
+}): string {
+  const raw = req.headers?.origin ?? req.headers?.Origin;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw) && typeof raw[0] === 'string') return raw[0];
+  return '';
+}
+
 export function resolveCorsOrigin(req: { headers?: Record<string, string | string[] | undefined> }): string {
-  const origin = req.headers?.origin;
-  if (typeof origin !== 'string' || !origin) {
-    return isProductionEnv() ? 'https://portal.perada.net' : '*';
-  }
+  const origin = readRequestOrigin(req);
   const allowed = getAllowedOrigins();
-  if (!isProductionEnv()) return origin;
-  return allowed.includes(origin) ? origin : 'https://portal.perada.net';
+
+  if (origin && allowed.includes(origin)) {
+    return origin;
+  }
+
+  return 'https://portal.perada.net';
 }
 
 export function applyCors(req: any, res: any): void {
   applyNoStoreHeaders(res);
   applyApiSecurityHeaders(res);
+
+  const origin = readRequestOrigin(req);
+  const allowed = getAllowedOrigins();
+
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://portal.perada.net');
+  }
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', resolveCorsOrigin(req));
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,DELETE');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'Content-Type, Authorization, X-Api-Admin-Key, X-Requested-With'
