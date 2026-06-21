@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -97,8 +97,25 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   const [uploadProgress, setUploadProgress] = useState(false);
 
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [syncOpen, setSyncOpen] = useState(false);
   const [finalId, setFinalId] = useState('');
   const [finalName, setFinalName] = useState('');
+
+  const syncPct = useMemo(() => {
+    const checks = [
+      Boolean(extractedData.positionApplied),
+      Boolean(extractedData.fullName),
+      Boolean(extractedData.nik),
+      Boolean(extractedData.kkNumber),
+      Boolean(extractedData.email),
+      Boolean(extractedData.whatsappNumber),
+      Boolean(extractedData.provinsi || extractedData.desa || extractedData.addressLine),
+      Boolean(extractedData.lastEducation),
+      Boolean(extractedData.bankName && extractedData.accountNumber),
+    ];
+    const done = checks.filter(Boolean).length;
+    return Math.round((done / checks.length) * 100);
+  }, [extractedData]);
 
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -384,11 +401,25 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   const maritalOptions = ['Belum Menikah', 'Menikah', 'Cerai Hidup', 'Cerai Mati'];
   const relocateOptions = ['Ya', 'Tidak'];
 
+  const handleCloseChat = () => {
+    if (onSwitchToManual) onSwitchToManual();
+    else navigate(-1);
+  };
+
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-8">
-      
-      {/* Visual Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between mb-8 pb-4 border-b border-gray-200">
+    <div
+      className={
+        formStage === 'chat'
+          ? 'fixed inset-0 z-50 flex flex-col bg-slate-100 md:static md:z-auto md:mx-auto md:h-auto md:max-w-7xl md:px-4 md:py-6'
+          : 'mx-auto w-full max-w-7xl px-4 py-8'
+      }
+    >
+      {/* Visual Header — desktop chat keeps compact bar; hidden on mobile immersive chat */}
+      <div
+        className={`mb-4 flex-col items-center justify-between border-b border-gray-200 pb-4 md:mb-6 md:flex md:flex-row ${
+          formStage === 'chat' ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         <div className="mb-4 md:mb-0">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
             <Sparkles className="h-8 w-8 text-blue-600 animate-pulse" />
@@ -475,27 +506,50 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
           </motion.div>
         )}
 
-        {/* CHAT CHANNELS PANEL */}
+        {/* CHAT — full-height immersive layout */}
         {formStage === 'chat' && (
-          <motion.div 
+          <motion.div
             key="chat-room"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col gap-3"
+            className="flex min-h-0 flex-1 flex-col md:grid md:h-[calc(100dvh-10rem)] md:grid-cols-[minmax(0,1fr)_240px] md:gap-4 lg:grid-cols-[minmax(0,1fr)_260px]"
             id="section_chatroom"
           >
-            <SaraLiveDataSync data={extractedData} onEdit={handleForcePreview} />
+            <div className="flex min-h-0 flex-1 flex-col">
+              <SaraChatPanel
+                className="min-h-0 flex-1"
+                messages={messages}
+                loadingChat={loadingChat}
+                errorText={errorText}
+                inputText={inputText}
+                onInputChange={setInputText}
+                onSubmit={handleSendMessage}
+                positionHint={initialPosition || extractedData.positionApplied}
+                onClose={handleCloseChat}
+                onToggleSync={() => setSyncOpen((v) => !v)}
+                syncOpen={syncOpen}
+                syncPct={syncPct}
+                syncDrawer={
+                  <SaraLiveDataSync
+                    variant="drawer"
+                    data={extractedData}
+                    onEdit={handleForcePreview}
+                  />
+                }
+              />
+            </div>
 
-            <SaraChatPanel
-              messages={messages}
-              loadingChat={loadingChat}
-              errorText={errorText}
-              inputText={inputText}
-              onInputChange={setInputText}
-              onSubmit={handleSendMessage}
-              positionHint={initialPosition || extractedData.positionApplied}
-            />
+            <aside className="hidden min-h-0 md:block">
+              <div className="sticky top-0">
+                <SaraLiveDataSync
+                  variant="sidebar"
+                  data={extractedData}
+                  onEdit={handleForcePreview}
+                  defaultExpanded
+                />
+              </div>
+            </aside>
           </motion.div>
         )}
 

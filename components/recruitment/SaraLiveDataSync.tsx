@@ -52,12 +52,21 @@ const SYNC_STEPS: SyncStep[] = [
 export interface SaraLiveDataSyncProps {
   data: Partial<NewEmployee>;
   onEdit?: () => void;
+  variant?: 'default' | 'sidebar' | 'drawer';
+  className?: string;
+  defaultExpanded?: boolean;
 }
 
-export function SaraLiveDataSync({ data, onEdit }: SaraLiveDataSyncProps) {
-  const [expanded, setExpanded] = useState(false);
+export function SaraLiveDataSync({
+  data,
+  onEdit,
+  variant = 'default',
+  className = '',
+  defaultExpanded = false,
+}: SaraLiveDataSyncProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded || variant === 'sidebar');
 
-  const { steps, overallDone, overallTotal, overallPct } = useMemo(() => {
+  const { steps, overallPct } = useMemo(() => {
     const mapped = SYNC_STEPS.map((step) => {
       const done = step.fields.filter((f) => f.filled(data)).length;
       return { ...step, done, total: step.fields.length };
@@ -65,20 +74,29 @@ export function SaraLiveDataSync({ data, onEdit }: SaraLiveDataSyncProps) {
     const overallDone = mapped.reduce((n, s) => n + s.done, 0);
     const overallTotal = mapped.reduce((n, s) => n + s.total, 0);
     const overallPct = overallTotal ? Math.round((overallDone / overallTotal) * 100) : 0;
-    return { steps: mapped, overallDone, overallTotal, overallPct };
+    return { steps: mapped, overallPct };
   }, [data]);
 
   const stepSummary = steps.map((s) => `${s.short} ${s.done}/${s.total}`).join(' · ');
 
+  const shellClass =
+    variant === 'sidebar'
+      ? 'rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm'
+      : variant === 'drawer'
+        ? 'border-0 bg-transparent px-1 py-1 shadow-none'
+        : 'rounded-lg border border-slate-100/90 bg-white/95 px-2.5 py-2 sm:px-3';
+
   return (
-    <div className="rounded-lg border border-slate-100/90 bg-white/95 px-2.5 py-2 sm:px-3">
+    <div className={`${shellClass} ${className}`}>
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-bold text-slate-800">Progress data</span>
+            <span className={`font-bold text-slate-800 ${variant === 'sidebar' ? 'text-xs' : 'text-[11px]'}`}>
+              Progress data
+            </span>
             <span className="text-[10px] font-semibold tabular-nums text-[#003087]">{overallPct}%</span>
           </div>
-          <div className="mt-1 flex h-1 overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-slate-100">
             {steps.map((step) => {
               const pct = step.total ? (step.done / step.total) * 100 : 0;
               return (
@@ -99,21 +117,23 @@ export function SaraLiveDataSync({ data, onEdit }: SaraLiveDataSyncProps) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          aria-label={expanded ? 'Sembunyikan detail' : 'Lihat detail'}
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#003087]/15 text-[#003087] transition hover:bg-blue-50/80"
-        >
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        </button>
+        {variant !== 'drawer' && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Sembunyikan detail' : 'Lihat detail'}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#003087]/15 text-[#003087] transition hover:bg-blue-50/80"
+          >
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+        )}
 
         {onEdit && (
           <button
             type="button"
             onClick={onEdit}
-            aria-label="Edit data"
+            aria-label="Tinjau data"
             className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-95"
             style={{ backgroundColor: NAVY }}
           >
@@ -122,34 +142,28 @@ export function SaraLiveDataSync({ data, onEdit }: SaraLiveDataSyncProps) {
         )}
       </div>
 
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden"
-          >
-            <ul className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 border-t border-slate-100 pt-2 sm:grid-cols-3">
-              {steps.flatMap((step) =>
-                step.fields.map((field) => {
-                  const ok = field.filled(data);
-                  return (
-                    <li key={String(field.key)} className="flex min-w-0 items-center gap-1 text-[10px]">
-                      <span className={`h-1 w-1 shrink-0 rounded-full ${ok ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                      <span className="shrink-0 text-slate-500">{field.short}</span>
-                      <span className={`truncate font-medium ${ok ? 'text-slate-800' : 'text-slate-400'}`}>
-                        {ok ? field.display(data) : '—'}
-                      </span>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {(expanded || variant === 'drawer') && (
+        <ul
+          className={`grid gap-x-2 gap-y-1.5 ${
+            variant === 'drawer' ? 'mt-1 grid-cols-2' : 'mt-2 border-t border-slate-100 pt-2'
+          } ${variant === 'sidebar' ? 'grid-cols-1' : variant === 'drawer' ? '' : 'grid-cols-2 sm:grid-cols-3'}`}
+        >
+          {steps.flatMap((step) =>
+            step.fields.map((field) => {
+              const ok = field.filled(data);
+              return (
+                <li key={String(field.key)} className="flex min-w-0 items-center gap-1.5 text-[10px]">
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${ok ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  <span className="shrink-0 text-slate-500">{field.label}</span>
+                  <span className={`truncate font-medium ${ok ? 'text-slate-800' : 'text-slate-400'}`}>
+                    {ok ? field.display(data) : '—'}
+                  </span>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      )}
     </div>
   );
 }
