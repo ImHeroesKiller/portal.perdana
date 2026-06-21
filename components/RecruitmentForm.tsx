@@ -29,7 +29,7 @@ import { StepContact } from './recruitment/StepContact';
 import { StepProfessional } from './recruitment/StepProfessional';
 import { StepDocuments } from './recruitment/StepDocuments';
 import { AIChatroomForm } from './AIChatroomForm';
-import { FormModeSwitcher, type ApplyFormMode } from './recruitment/FormModeSwitcher';
+import type { ApplyFormMode } from './recruitment/FormModeSwitcher';
 import { WizardStepper } from './recruitment/WizardStepper';
 import {
   ApplySuccessView,
@@ -37,7 +37,6 @@ import {
   NAVY_BTN,
   NAVY_BTN_OUTLINE,
   RecruitmentBackButton,
-  SaraPromoBanner,
   WizardCard,
   WizardHero,
 } from './recruitment/recruitmentUi';
@@ -272,12 +271,6 @@ export const RecruitmentForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-10 font-sans antialiased">
       <MarketingPageShell className="gap-5 px-6 pb-10 pt-6 sm:gap-6 sm:px-6 sm:py-8">
-        <FormModeSwitcher
-          mode={formMode}
-          onChange={setFormMode}
-          showGoogleForm={Boolean(googleFormUrl)}
-        />
-
         {formMode === 'ai' ? (
           <AIChatroomForm
             initialPosition={initialPosition}
@@ -318,7 +311,6 @@ export const RecruitmentForm: React.FC = () => {
               <WizardStepper steps={STEPS} currentStep={currentStep} />
 
               <form onSubmit={handleSubmit} className="p-7 sm:p-8">
-                <SaraPromoBanner onStart={() => setFormMode('ai')} />
                 {error && <FormErrorBanner message={error} />}
 
                 <div className="min-h-[320px]">
