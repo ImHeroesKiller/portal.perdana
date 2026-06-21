@@ -2,7 +2,17 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <!-- GA4 loaded once via lib/google-analytics.ts (HashRouter manual page_view) -->
+    <!-- Google Analytics (GA4) — send_page_view: false, SPA tracking via useGoogleAnalytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LB6K5S1D5T" data-ga4="G-LB6K5S1D5T"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-LB6K5S1D5T', {
+        send_page_view: false,
+        debug_mode: false,
+      });
+    </script>
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
