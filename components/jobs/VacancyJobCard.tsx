@@ -28,6 +28,8 @@ export interface VacancyJobCardProps {
   onOpenMap?: () => void;
   applyHref: string;
   detailHref?: string;
+  detailLabel?: string;
+  applyLabel?: string;
   maxRequirements?: number;
   /** Tampilan ringkas untuk daftar VacanciesPage */
   compact?: boolean;
@@ -70,6 +72,8 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   onOpenMap,
   applyHref,
   detailHref,
+  detailLabel,
+  applyLabel,
   maxRequirements,
   compact = false,
 }) => {
@@ -160,7 +164,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
       >
         {detailHref && (
           <Link to={detailHref} className={`${NAVY_BTN_OUTLINE} flex-1`}>
-            {t('job_card_detail')}
+            {detailLabel ?? t('job_card_detail')}
             <ChevronRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
@@ -179,7 +183,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
           className={`${NAVY_BTN} flex-1`}
           style={{ backgroundColor: BRAND_NAVY }}
         >
-          {t('home_btn_apply')}
+          {applyLabel ?? t('home_btn_apply')}
         </Link>
       </div>
     </WizardCard>
