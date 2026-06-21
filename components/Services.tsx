@@ -16,6 +16,7 @@ import {
   PageTopBar,
 } from './layout/MarketingPageLayout';
 import { HOME_H_SCROLL } from './home/homeContent';
+import type { LocalizedText } from './services/servicesContent';
 import {
   EnterpriseLifecycleTimeline,
   PartnerExperienceSection,
@@ -25,80 +26,84 @@ import {
 
 interface ServiceDetail {
   id: string;
-  title: { id: string; en: string };
-  desc: { id: string; en: string };
+  title: LocalizedText;
+  desc: LocalizedText;
   icon: React.ComponentType<{ className?: string }>;
-  items: { id: string; en: string }[];
+  items: LocalizedText[];
 }
 
 const SERVICES_DATA: ServiceDetail[] = [
   {
     id: 'business-support',
-    title: { id: 'Business Support', en: 'Business Support' },
+    title: { id: 'Business Support', en: 'Business Support', zh: '业务支持' },
     desc: {
       id: 'Sumber Daya Manusia merupakan salah satu aspek penting dalam hal operasional perusahaan. Kami menyediakan SDM terbaik dan berpengalaman di bidangnya, melalui proses rekrutmen dan seleksi yang cepat kami dapat memberikan dukungan profesional dan kompetensi tinggi untuk kebutuhan bisnis Anda.',
       en: 'Human Resources is one of the important aspects of company operations. We provide the best and most experienced HR in their fields; through a fast recruitment and selection process, we can provide professional support and high competence for your business needs.',
+      zh: '人力资源是企业运营的核心要素之一。我们提供各领域的资深专业人才，通过高效的招聘与甄选流程，为您的业务需求提供专业、可靠的人力支持。',
     },
     icon: BriefcaseIcon,
     items: [
-      { id: 'Komunikasi Pemasaran (Marketing Communication)', en: 'Marketing Communication' },
-      { id: 'Sales Force / Tim Penjualan', en: 'Sales Force / Sales Team' },
-      { id: 'Staff Perkantoran', en: 'Office Staff' },
-      { id: 'Staff Forwarding / Logistik', en: 'Forwarding / Logistics Staff' },
-      { id: 'Staff Administrasi', en: 'Administrative Staff' },
-      { id: 'Receptionist / Resepsionis', en: 'Receptionist' },
-      { id: 'Professional Driver / Pengemudi', en: 'Professional Driver' },
-      { id: 'Dan posisi pendukung operasional lainnya', en: 'And other operational support positions' },
+      { id: 'Komunikasi Pemasaran (Marketing Communication)', en: 'Marketing Communication', zh: '市场营销与品牌传播' },
+      { id: 'Sales Force / Tim Penjualan', en: 'Sales Force / Sales Team', zh: '销售团队' },
+      { id: 'Staff Perkantoran', en: 'Office Staff', zh: '办公室职员' },
+      { id: 'Staff Forwarding / Logistik', en: 'Forwarding / Logistics Staff', zh: '货代与物流人员' },
+      { id: 'Staff Administrasi', en: 'Administrative Staff', zh: '行政人员' },
+      { id: 'Receptionist / Resepsionis', en: 'Receptionist', zh: '前台接待' },
+      { id: 'Professional Driver / Pengemudi', en: 'Professional Driver', zh: '专业驾驶员' },
+      { id: 'Dan posisi pendukung operasional lainnya', en: 'And other operational support positions', zh: '及其他运营支持岗位' },
     ],
   },
   {
     id: 'recruitment',
-    title: { id: 'Recruitment', en: 'Recruitment' },
+    title: { id: 'Recruitment', en: 'Recruitment', zh: '招聘服务' },
     desc: {
       id: 'Kami fokus kepada pencarian karyawan untuk posisi-posisi non-management untuk membantu perusahaan Anda menjalankan aturan dan prosedur yang ada secara andal dan tepat sasaran.',
       en: 'We focus on searching for employees for non-management positions to help your company run the existing rules and procedures reliably and right on target.',
+      zh: '我们专注于非管理岗位的人才搜寻，帮助企业高效落实各项规章制度与业务流程，确保人岗匹配、执行到位。',
     },
     icon: UserGroupIcon,
     items: [
-      { id: 'Pencarian Tenaga Kerja Non-Manajemen', en: 'Non-Management Talent Sourcing' },
-      { id: 'Sistem Seleksi Terstandarisasi', en: 'Standardized Selection System' },
-      { id: 'Pemeriksaan Referensi Lengkap', en: 'Comprehensive Reference Checks' },
-      { id: 'Penilaian Kompetensi & Karakter', en: 'Competency & Character Evaluation' },
-      { id: 'Pemenuhan Kebutuhan Skala Besar', en: 'High-Volume Staffing Solutions' },
+      { id: 'Pencarian Tenaga Kerja Non-Manajemen', en: 'Non-Management Talent Sourcing', zh: '非管理岗位人才搜寻' },
+      { id: 'Sistem Seleksi Terstandarisasi', en: 'Standardized Selection System', zh: '标准化甄选体系' },
+      { id: 'Pemeriksaan Referensi Lengkap', en: 'Comprehensive Reference Checks', zh: '全面背景调查' },
+      { id: 'Penilaian Kompetensi & Karakter', en: 'Competency & Character Evaluation', zh: '能力与品格评估' },
+      { id: 'Pemenuhan Kebutuhan Skala Besar', en: 'High-Volume Staffing Solutions', zh: '大批量用工解决方案' },
     ],
   },
   {
     id: 'training',
-    title: { id: 'Training & Development', en: 'Training & Development' },
+    title: { id: 'Training & Development', en: 'Training & Development', zh: '培训与发展' },
     desc: {
       id: 'Kami menyediakan berbagai program pelatihan untuk membangun dan mengembangkan bakat tim Anda. Setiap program dipimpin oleh pelatih (trainer) yang kompeten yang dapat menciptakan pembelajaran yang nyaman untuk mendapatkan hasil yang maksimal bagi kemajuan perusahaan.',
       en: "We provide various training programs to build and develop your team's talent. Each program is led by a competent trainer who can create a comfortable learning environment to obtain maximum results for the company's progress.",
+      zh: '我们提供多样化培训项目，助力团队能力提升。每门课程均由资深讲师授课，营造高效、舒适的学习环境，为企业发展创造最大价值。',
     },
     icon: AcademicCapIcon,
     items: [
-      { id: 'Inhouse / Exhouse Training', en: 'In-house / Ex-house Training' },
-      { id: 'Training Skill & Motivation (Keahlian & Motivasi)', en: 'Skill & Motivation Training' },
-      { id: 'Supervisory Management (Manajemen Penyelia)', en: 'Supervisory Management' },
-      { id: 'Outdoor Training: Outbond Training', en: 'Outdoor Training: Outbound Activities' },
-      { id: 'Employee & Family Gathering', en: 'Employee & Family Gathering' },
+      { id: 'Inhouse / Exhouse Training', en: 'In-house / Ex-house Training', zh: '内训 / 外训' },
+      { id: 'Training Skill & Motivation (Keahlian & Motivasi)', en: 'Skill & Motivation Training', zh: '技能与激励培训' },
+      { id: 'Supervisory Management (Manajemen Penyelia)', en: 'Supervisory Management', zh: '督导管理培训' },
+      { id: 'Outdoor Training: Outbond Training', en: 'Outdoor Training: Outbound Activities', zh: '户外拓展培训' },
+      { id: 'Employee & Family Gathering', en: 'Employee & Family Gathering', zh: '员工及家庭联谊活动' },
     ],
   },
   {
     id: 'event-management',
-    title: { id: 'Event Management', en: 'Event Management' },
+    title: { id: 'Event Management', en: 'Event Management', zh: '活动管理' },
     desc: {
       id: 'Kami merancang dan melaksanakan setiap Event Anda dengan keahlian dan penuh dedikasi, menciptakan pengalaman yang luar biasa bagi semua peserta untuk mendukung citra publik yang positif.',
       en: 'We design and execute each of your events with expertise and full dedication, creating outstanding experiences for all attendees to support a positive public image.',
+      zh: '我们以专业团队和全程贴心服务，策划并执行各类活动，为参与者打造卓越体验，助力企业树立良好品牌形象。',
     },
     icon: SparklesIcon,
     items: [
-      { id: 'MICE (Meetings, Incentives, Conferences, Exhibitions)', en: 'MICE (Meetings, Incentives, Conferences, Exhibitions)' },
-      { id: 'Brand Activation (Aktivasi Merek)', en: 'Brand Activation' },
-      { id: 'Product Launching (Peluncuran Produk)', en: 'Product Launching' },
-      { id: 'Corporation Gathering / Pertemuan Perusahaan', en: 'Corporate Gathering' },
-      { id: 'FOB (Field / Festival of Business)', en: 'FOB (Field / Festival of Business)' },
-      { id: 'Sales Promotion Girl/Boy (SPG/SPB) Sourcing', en: 'Sales Promotion Girl/Boy (SPG/SPB) Management' },
-      { id: 'Penyelenggaraan Event Corporate & Public', en: 'Corporate & Public Event Organizing' },
+      { id: 'MICE (Meetings, Incentives, Conferences, Exhibitions)', en: 'MICE (Meetings, Incentives, Conferences, Exhibitions)', zh: 'MICE（会议、奖励、会议、展览）' },
+      { id: 'Brand Activation (Aktivasi Merek)', en: 'Brand Activation', zh: '品牌激活' },
+      { id: 'Product Launching (Peluncuran Produk)', en: 'Product Launching', zh: '产品发布会' },
+      { id: 'Corporation Gathering / Pertemuan Perusahaan', en: 'Corporate Gathering', zh: '企业年会与团建' },
+      { id: 'FOB (Field / Festival of Business)', en: 'FOB (Field / Festival of Business)', zh: 'FOB 商业活动' },
+      { id: 'Sales Promotion Girl/Boy (SPG/SPB) Sourcing', en: 'Sales Promotion Girl/Boy (SPG/SPB) Management', zh: '促销人员（SPG/SPB）管理' },
+      { id: 'Penyelenggaraan Event Corporate & Public', en: 'Corporate & Public Event Organizing', zh: '企业与公共活动承办' },
     ],
   },
 ];
@@ -120,7 +125,7 @@ export const Services: React.FC = () => {
           title={t('services_hero_title')}
           subtitle={t('services_hero_sub')}
           imageSrc="/assets/hero/site_scaffolding.jpg"
-          imageAlt="Layanan konstruksi"
+          imageAlt={t('services_hero_image_alt')}
         />
 
         <ContentCard>
