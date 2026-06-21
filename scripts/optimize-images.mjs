@@ -74,16 +74,10 @@ async function optimizeWithSharp(sharp) {
     renameSync(tmp, jpgDest);
 
     const webpBuffer = await sharp(jpgDest).webp({ quality: 72, effort: 4 }).toBuffer();
-    const jpgSize = statSync(jpgDest).size;
-    if (webpBuffer.length < jpgSize) {
-      writeFileSync(webpDest, webpBuffer);
-      console.log(
-        `  ✓ ${name} + ${name.replace(/\.jpe?g$/i, '.webp')} (${Math.round(webpBuffer.length / 1024)}KB webp)`
-      );
-    } else {
-      if (existsSync(webpDest)) unlinkSync(webpDest);
-      console.log(`  ✓ ${name} (webp skipped — jpeg smaller)`);
-    }
+    writeFileSync(webpDest, webpBuffer);
+    console.log(
+      `  ✓ ${name} + ${name.replace(/\.jpe?g$/i, '.webp')} (${Math.round(webpBuffer.length / 1024)}KB webp)`
+    );
   }
 
   const logoCandidates = [

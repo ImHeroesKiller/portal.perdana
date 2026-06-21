@@ -60,9 +60,9 @@ export const PageHero: React.FC<PageHeroProps> = ({
         <OptimizedImage
           src={imageSrc}
           alt=""
-          className="h-full w-full object-cover opacity-25"
+          className="h-full w-full object-cover opacity-30"
           referrerPolicy="no-referrer"
-          loading="lazy"
+          priority
         />
       </div>
     )}
@@ -90,7 +90,7 @@ export const PageHero: React.FC<PageHeroProps> = ({
             alt={imageAlt || ''}
             className="h-full w-full object-cover"
             referrerPolicy="no-referrer"
-            loading="lazy"
+            priority
           />
         </div>
       )}
