@@ -1,7 +1,7 @@
 /** Sara recruitment assistant — Qwen via Hugging Face, Gemini 2.5 Flash fallback. */
 
 import { GoogleGenAI } from '@google/genai';
-import { extractFieldsFromChat, formatKnownFieldsContext } from './sara-chat-extract';
+import { buildSaraChatContext } from './sara-chat-extract';
 
 export const SARA_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 export const SARA_GEMINI_MODEL = 'gemini-2.5-flash';
@@ -32,25 +32,28 @@ Kamu Sara, asisten rekrutmen PT Perdana Adi Yuda. Gaya: aku/kamu, santai, empati
 
 Bahasa: oke, sip, ya?, boleh?, noted, gapapa, tenang aja. Hindari: "Silakan", "Mohon", "Harap", "Untuk melanjutkan", kalimat panjang.
 
-Empati:
-- User tanya → jawab dulu (jujur, ramah), baru 1 pertanyaan data
-- User bilang gk tahu/lupa/ragu/belum ingat → sabar, bantu ("gapapa, cek dulu ya?"), jangan skip, jangan nebak isian
-- Lokasi/relokasi: jelaskan kalau ditanya; willingToRelocate HANYA setelah jawaban eksplisit Ya/Tidak — jangan asumsikan mau/tidak mau pindah
-- Nama hanya dari KONTEKS CHAT; tanpa nama pakai "kamu". Dilarang nama dummy
-- Arahkan pelan ke data berikutnya, tanpa memaksa
+Memori & alur:
+- Baca blok SUDAH TERISI — itu jawaban user, HARUS diingat. Jangan tanya ulang field yang sudah ✓
+- Ikuti LANJUTKAN: tanya HANYA 1 field berikutnya yang belum terisi
+- User koreksi ("salah", "maksudnya", "bukan") → "oke sip, noted" + terima data baru, jangan mengulang pertanyaan lain
+- User tanya → jawab dulu, baru 1 pertanyaan data
+- User gk tahu/lupa/ragu → sabar ("gapapa, cek dulu ya?"), jangan skip, jangan nebak
+- Relokasi: willingToRelocate HANYA setelah Ya/Tidak eksplisit
+- Nama dari KONTEKS saja; tanpa nama pakai "kamu". Dilarang nama dummy
 
 ${SARA_COMPANY_FACTS}
 
 CHAT (belum lengkap): no JSON
-Validasi: NIK/KK 16 digit | WA +62 | lahir YYYY-MM-DD
+Validasi ketat:
+- NIK & KK: TEPAT 16 digit angka (0–9). Bukan 15, bukan 17, bukan huruf. Kalau salah → bilang ramah "harus 16 digit ya, cek lagi?" dan minta ulang — jangan terima & jangan lanjut
+- WA format +62 | lahir YYYY-MM-DD
 Urutan: 1 Identitas (positionApplied,fullName,nik,kkNumber,npwp,placeOfBirth,dateOfBirth,gender,maritalStatus,religion,willingToRelocate,certifications) → 2 Kontak (email,whatsappNumber,addressLine,provinsi,kabupaten,kecamatan,desa,rt,rw,latitude,longitude) → 3 Profesional (lastEducation,institutionName,major,graduationYear,skills,workExperience,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone)
 
 JSON (lengkap+valid): output HANYA satu object {…}, no teks/markdown. graduationYear=number. Nilai ASLI dari KONTEKS CHAT. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + semua key urutan di atas
 `.trim();
 
 function buildSaraSystemInstruction(messages: SaraChatMessage[]): string {
-  const known = extractFieldsFromChat(messages);
-  return `${SARA_SYSTEM_INSTRUCTION}\n\n${formatKnownFieldsContext(known)}`;
+  return `${SARA_SYSTEM_INSTRUCTION}\n\n${buildSaraChatContext(messages)}`;
 }
 
 function getIhkToken(): string {

@@ -557,6 +557,173 @@ async function trySaveCandidateFromReply(replyText) {
 var import_genai = require("@google/genai");
 
 // lib/sara-chat-extract.ts
+function parseSixteenDigitId(raw) {
+  const digits = raw.replace(/\D/g, "");
+  return /^\d{16}$/.test(digits) ? digits : null;
+}
+function isNikValid(value) {
+  if (value == null) return false;
+  return parseSixteenDigitId(String(value)) !== null;
+}
+var COLLECTION_ORDER = [
+  {
+    key: "positionApplied",
+    label: "Posisi dilamar",
+    filled: (d) => Boolean(d.positionApplied?.trim()),
+    display: (d) => d.positionApplied || ""
+  },
+  {
+    key: "fullName",
+    label: "Nama lengkap",
+    filled: (d) => Boolean(d.fullName?.trim()),
+    display: (d) => d.fullName || ""
+  },
+  {
+    key: "nik",
+    label: "NIK",
+    filled: (d) => isNikValid(d.nik),
+    display: (d) => String(d.nik || "")
+  },
+  {
+    key: "kkNumber",
+    label: "Nomor KK",
+    filled: (d) => isNikValid(d.kkNumber),
+    display: (d) => String(d.kkNumber || "")
+  },
+  {
+    key: "npwp",
+    label: "NPWP",
+    filled: (d) => Boolean(d.npwp?.trim()),
+    display: (d) => d.npwp || ""
+  },
+  {
+    key: "placeOfBirth",
+    label: "Tempat lahir",
+    filled: (d) => Boolean(d.placeOfBirth?.trim()),
+    display: (d) => d.placeOfBirth || ""
+  },
+  {
+    key: "dateOfBirth",
+    label: "Tanggal lahir",
+    filled: (d) => Boolean(d.dateOfBirth?.trim()),
+    display: (d) => d.dateOfBirth || ""
+  },
+  {
+    key: "gender",
+    label: "Jenis kelamin",
+    filled: (d) => Boolean(d.gender?.trim()),
+    display: (d) => d.gender || ""
+  },
+  {
+    key: "maritalStatus",
+    label: "Status pernikahan",
+    filled: (d) => Boolean(d.maritalStatus?.trim()),
+    display: (d) => d.maritalStatus || ""
+  },
+  {
+    key: "religion",
+    label: "Agama",
+    filled: (d) => Boolean(d.religion?.trim()),
+    display: (d) => d.religion || ""
+  },
+  {
+    key: "willingToRelocate",
+    label: "Relokasi",
+    filled: (d) => d.willingToRelocate === "Ya" || d.willingToRelocate === "Tidak",
+    display: (d) => String(d.willingToRelocate || "")
+  },
+  {
+    key: "email",
+    label: "Email",
+    filled: (d) => Boolean(d.email?.trim()),
+    display: (d) => d.email || ""
+  },
+  {
+    key: "whatsappNumber",
+    label: "WhatsApp",
+    filled: (d) => Boolean(d.whatsappNumber?.trim()),
+    display: (d) => d.whatsappNumber || ""
+  },
+  {
+    key: "address",
+    label: "Alamat (prov/kab/kec/desa)",
+    filled: (d) => Boolean(
+      d.provinsi?.trim() && d.kabupaten?.trim() && d.kecamatan?.trim() && d.desa?.trim()
+    ),
+    display: (d) => [d.provinsi, d.kabupaten, d.kecamatan, d.desa, d.rt && `RT ${d.rt}`, d.rw && `RW ${d.rw}`].filter(Boolean).join(", ") || d.addressLine || ""
+  },
+  {
+    key: "lastEducation",
+    label: "Pendidikan terakhir",
+    filled: (d) => Boolean(d.lastEducation?.trim()),
+    display: (d) => d.lastEducation || ""
+  },
+  {
+    key: "institutionName",
+    label: "Nama institusi",
+    filled: (d) => Boolean(d.institutionName?.trim()),
+    display: (d) => d.institutionName || ""
+  },
+  {
+    key: "major",
+    label: "Jurusan",
+    filled: (d) => Boolean(d.major?.trim()),
+    display: (d) => d.major || ""
+  },
+  {
+    key: "graduationYear",
+    label: "Tahun lulus",
+    filled: (d) => d.graduationYear != null && String(d.graduationYear).trim() !== "",
+    display: (d) => d.graduationYear != null ? String(d.graduationYear) : ""
+  },
+  {
+    key: "skills",
+    label: "Keahlian",
+    filled: (d) => Boolean(String(d.skills || "").trim()),
+    display: (d) => String(d.skills || "")
+  },
+  {
+    key: "workExperience",
+    label: "Pengalaman kerja",
+    filled: (d) => Boolean(d.workExperience?.trim()),
+    display: (d) => d.workExperience || ""
+  },
+  {
+    key: "bankName",
+    label: "Nama bank",
+    filled: (d) => Boolean(d.bankName?.trim()),
+    display: (d) => d.bankName || ""
+  },
+  {
+    key: "accountNumber",
+    label: "Nomor rekening",
+    filled: (d) => Boolean(d.accountNumber?.trim()),
+    display: (d) => d.accountNumber || ""
+  },
+  {
+    key: "emergencyName",
+    label: "Kontak darurat",
+    filled: (d) => Boolean(d.emergencyName?.trim()),
+    display: (d) => d.emergencyName || ""
+  },
+  {
+    key: "emergencyRelation",
+    label: "Hubungan darurat",
+    filled: (d) => Boolean(d.emergencyRelation?.trim()),
+    display: (d) => d.emergencyRelation || ""
+  },
+  {
+    key: "emergencyPhone",
+    label: "Telepon darurat",
+    filled: (d) => Boolean(d.emergencyPhone?.trim()),
+    display: (d) => d.emergencyPhone || ""
+  }
+];
+function isCorrectionMessage(content) {
+  return /salah|bukan itu|maksudnya|koreksi|typo|harusnya|bukan,|keliru|ganti|maaf.*salah|salah ketik|bukan yang/i.test(
+    content
+  );
+}
 function inferExpectedField(assistantText) {
   const t = assistantText.toLowerCase();
   const asksName = /nama lengkap|nama sesuai|nama kamu|siapa nama|kenalan|sekalian nama|nama.*ktp/i.test(
@@ -582,6 +749,7 @@ function inferExpectedField(assistantText) {
   if (/\bkabupaten\b|\bkota\b/i.test(t)) return "kabupaten";
   if (/\bkecamatan\b|\bkec\.?\b/i.test(t)) return "kecamatan";
   if (/\bdesa\b|\bkelurahan\b/i.test(t)) return "desa";
+  if (/\brt\b|\brw\b/i.test(t)) return "rt";
   if (/\balamat\b/i.test(t)) return "addressLine";
   if (/pendidikan terakhir|pendidikan/i.test(t)) return "lastEducation";
   if (/nama (sekolah|institusi|kampus)/i.test(t)) return "institutionName";
@@ -622,17 +790,22 @@ function parseDate(raw) {
   }
   return null;
 }
-function normalizeFieldValue(field, content, assistantContext) {
+function describeIdValidation(raw, label) {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (/^\d{16}$/.test(digits)) return null;
+  if (digits.length < 16) return `${label} cuma ${digits.length} digit \u2014 harus tepat 16 angka ya`;
+  return `${label} kepanjangan (${digits.length} digit) \u2014 harus tepat 16 angka ya`;
+}
+function normalizeFieldValue(field, content) {
   const trimmed = content.trim();
   if (!field || !trimmed) return null;
   switch (field) {
     case "fullName":
       return parseName(trimmed);
     case "nik":
-    case "kkNumber": {
-      const digits = trimmed.replace(/\D/g, "");
-      return digits.length === 16 ? digits : null;
-    }
+    case "kkNumber":
+      return parseSixteenDigitId(trimmed);
     case "email": {
       const match = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       return match ? match[0] : null;
@@ -647,9 +820,7 @@ function normalizeFieldValue(field, content, assistantContext) {
       return year ? Number(year[0]) : null;
     }
     case "positionApplied": {
-      const fromMsg = trimmed.match(
-        /(?:lamar|melamar|posisi|jadi|untuk)\s+(.+?)(?:\.|,|$)/i
-      );
+      const fromMsg = trimmed.match(/(?:lamar|melamar|posisi|jadi|untuk)\s+(.+?)(?:\.|,|$)/i);
       if (fromMsg) return fromMsg[1].trim();
       if (!/^(nama|saya|aku)\b/i.test(trimmed) && trimmed.length < 80) return trimmed;
       return null;
@@ -669,7 +840,7 @@ function normalizeFieldValue(field, content, assistantContext) {
       return trimmed.length > 0 && trimmed.length < 200 ? trimmed : null;
   }
 }
-function opportunisticExtract(content, out) {
+function opportunisticExtract(content, out, expectedField) {
   if (!out.email) {
     const email = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     if (email) out.email = email[0];
@@ -678,10 +849,18 @@ function opportunisticExtract(content, out) {
     const phone = parsePhone(content);
     if (phone) out.whatsappNumber = phone;
   }
-  if (!out.nik) {
-    const digits = content.replace(/\D/g, "");
-    if (digits.length === 16 && /nik/i.test(content)) out.nik = digits;
-    else if (/^\d{16}$/.test(content.replace(/\s/g, ""))) out.nik = content.replace(/\s/g, "");
+  const sixteen = parseSixteenDigitId(content);
+  if (sixteen) {
+    const lower = content.toLowerCase();
+    if (expectedField === "nik" || !out.nik && /nik/i.test(lower) && expectedField !== "kkNumber") {
+      out.nik = sixteen;
+    } else if (expectedField === "kkNumber" || !out.kkNumber && /(kk|kartu keluarga)/i.test(lower) && expectedField !== "nik") {
+      out.kkNumber = sixteen;
+    } else if (expectedField === "nik") {
+      out.nik = sixteen;
+    } else if (expectedField === "kkNumber") {
+      out.kkNumber = sixteen;
+    }
   }
   if (!out.fullName) {
     const intro = content.match(
@@ -693,10 +872,26 @@ function opportunisticExtract(content, out) {
     }
   }
   if (!out.positionApplied) {
-    const pos = content.match(
-      /(?:mau |ingin )?(?:lamar|jadi|melamar)\s+(?:posisi\s+)?(.+?)(?:\.|,|$)/i
-    );
+    const pos = content.match(/(?:mau |ingin )?(?:lamar|jadi|melamar)\s+(?:posisi\s+)?(.+?)(?:\.|,|$)/i);
     if (pos) out.positionApplied = pos[1].trim();
+  }
+}
+function applyCorrections(content, out) {
+  if (!isCorrectionMessage(content)) return;
+  const nik = parseSixteenDigitId(content);
+  if (nik && /nik/i.test(content)) out.nik = nik;
+  const kk = parseSixteenDigitId(content);
+  if (kk && /(kk|kartu keluarga)/i.test(content)) out.kkNumber = kk;
+  const email = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (email) out.email = email[0];
+  const phone = parsePhone(content);
+  if (phone) out.whatsappNumber = phone;
+  const name = content.match(
+    /nama (?:saya |aku |lengkap )?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.-]{2,60})/i
+  );
+  if (name) {
+    const parsed = parseName(name[1]);
+    if (parsed) out.fullName = parsed;
   }
 }
 function extractFieldsFromChat(messages) {
@@ -706,7 +901,10 @@ function extractFieldsFromChat(messages) {
     const json = findJsonInText(messages[i].content);
     if (!json) continue;
     try {
-      Object.assign(out, JSON.parse(json));
+      const parsed = JSON.parse(json);
+      if (parsed.nik && !isNikValid(parsed.nik)) delete parsed.nik;
+      if (parsed.kkNumber && !isNikValid(parsed.kkNumber)) delete parsed.kkNumber;
+      Object.assign(out, parsed);
       break;
     } catch {
     }
@@ -724,36 +922,59 @@ function extractFieldsFromChat(messages) {
       }
     }
     const field = inferExpectedField(prevAssistant);
-    const value = normalizeFieldValue(field, content, prevAssistant);
+    const value = normalizeFieldValue(field, content);
     if (field && value != null && value !== "") {
       out[field] = value;
     }
-    opportunisticExtract(content, out);
+    applyCorrections(content, out);
+    opportunisticExtract(content, out, field);
   }
+  if (out.nik && !isNikValid(out.nik)) delete out.nik;
+  if (out.kkNumber && !isNikValid(out.kkNumber)) delete out.kkNumber;
   return out;
 }
-var CONTEXT_LABELS = {
-  positionApplied: "posisi",
-  fullName: "nama",
-  nik: "NIK",
-  kkNumber: "no KK",
-  email: "email",
-  whatsappNumber: "WhatsApp",
-  provinsi: "provinsi",
-  desa: "desa",
-  lastEducation: "pendidikan",
-  bankName: "bank"
-};
 function formatKnownFieldsContext(data) {
-  const lines = Object.keys(CONTEXT_LABELS).filter((key) => {
-    const v = data[key];
-    return typeof v === "string" ? v.trim().length > 0 : v != null && v !== "";
-  }).map((key) => `- ${CONTEXT_LABELS[key]}: ${data[key]}`);
-  if (lines.length === 0) {
-    return 'KONTEKS: belum ada data \u2014 panggil "kamu", jangan nama dummy.';
+  const filled = COLLECTION_ORDER.filter((f) => f.filled(data));
+  const missing = COLLECTION_ORDER.filter((f) => !f.filled(data));
+  const next = missing[0];
+  const filledLines = filled.map((f) => `\u2713 ${f.label}: ${f.display(data)}`);
+  const lines = [];
+  if (filledLines.length > 0) {
+    lines.push("SUDAH TERISI (ingat & jangan tanya ulang):");
+    lines.push(...filledLines);
+  } else {
+    lines.push('SUDAH TERISI: belum ada \u2014 panggil "kamu", jangan nama dummy.');
   }
-  return `KONTEKS (pakai nilai ini, jangan nebak):
-${lines.join("\n")}`;
+  if (missing.length > 0) {
+    lines.push("");
+    lines.push(`BELUM (${missing.length}): ${missing.map((f) => f.label).join(", ")}`);
+    if (next) {
+      lines.push(`LANJUTKAN: tanya HANYA "${next.label}" \u2014 jangan ulang field di atas.`);
+    }
+  } else {
+    lines.push("");
+    lines.push("SEMUA LENGKAP \u2014 siap output JSON.");
+  }
+  return lines.join("\n");
+}
+function formatLastTurnValidationHint(messages) {
+  if (messages.length < 2) return "";
+  const last = messages[messages.length - 1];
+  const prev = messages[messages.length - 2];
+  if (last.role !== "user" || prev.role !== "assistant") return "";
+  const field = inferExpectedField(prev.content);
+  if (field !== "nik" && field !== "kkNumber") return "";
+  const label = field === "nik" ? "NIK" : "KK";
+  const hint = describeIdValidation(last.content, label);
+  if (!hint) return "";
+  return `VALIDASI: jawaban ${label} user belum valid \u2014 ${hint}. Minta ulang dengan ramah, jangan anggap sudah benar.`;
+}
+function buildSaraChatContext(messages) {
+  const data = extractFieldsFromChat(messages);
+  const parts = [formatKnownFieldsContext(data)];
+  const validation = formatLastTurnValidationHint(messages);
+  if (validation) parts.push(validation);
+  return parts.join("\n\n");
 }
 
 // lib/sara-komodo-chat.ts
@@ -776,26 +997,29 @@ Kamu Sara, asisten rekrutmen PT Perdana Adi Yuda. Gaya: aku/kamu, santai, empati
 
 Bahasa: oke, sip, ya?, boleh?, noted, gapapa, tenang aja. Hindari: "Silakan", "Mohon", "Harap", "Untuk melanjutkan", kalimat panjang.
 
-Empati:
-- User tanya \u2192 jawab dulu (jujur, ramah), baru 1 pertanyaan data
-- User bilang gk tahu/lupa/ragu/belum ingat \u2192 sabar, bantu ("gapapa, cek dulu ya?"), jangan skip, jangan nebak isian
-- Lokasi/relokasi: jelaskan kalau ditanya; willingToRelocate HANYA setelah jawaban eksplisit Ya/Tidak \u2014 jangan asumsikan mau/tidak mau pindah
-- Nama hanya dari KONTEKS CHAT; tanpa nama pakai "kamu". Dilarang nama dummy
-- Arahkan pelan ke data berikutnya, tanpa memaksa
+Memori & alur:
+- Baca blok SUDAH TERISI \u2014 itu jawaban user, HARUS diingat. Jangan tanya ulang field yang sudah \u2713
+- Ikuti LANJUTKAN: tanya HANYA 1 field berikutnya yang belum terisi
+- User koreksi ("salah", "maksudnya", "bukan") \u2192 "oke sip, noted" + terima data baru, jangan mengulang pertanyaan lain
+- User tanya \u2192 jawab dulu, baru 1 pertanyaan data
+- User gk tahu/lupa/ragu \u2192 sabar ("gapapa, cek dulu ya?"), jangan skip, jangan nebak
+- Relokasi: willingToRelocate HANYA setelah Ya/Tidak eksplisit
+- Nama dari KONTEKS saja; tanpa nama pakai "kamu". Dilarang nama dummy
 
 ${SARA_COMPANY_FACTS}
 
 CHAT (belum lengkap): no JSON
-Validasi: NIK/KK 16 digit | WA +62 | lahir YYYY-MM-DD
+Validasi ketat:
+- NIK & KK: TEPAT 16 digit angka (0\u20139). Bukan 15, bukan 17, bukan huruf. Kalau salah \u2192 bilang ramah "harus 16 digit ya, cek lagi?" dan minta ulang \u2014 jangan terima & jangan lanjut
+- WA format +62 | lahir YYYY-MM-DD
 Urutan: 1 Identitas (positionApplied,fullName,nik,kkNumber,npwp,placeOfBirth,dateOfBirth,gender,maritalStatus,religion,willingToRelocate,certifications) \u2192 2 Kontak (email,whatsappNumber,addressLine,provinsi,kabupaten,kecamatan,desa,rt,rw,latitude,longitude) \u2192 3 Profesional (lastEducation,institutionName,major,graduationYear,skills,workExperience,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone)
 
 JSON (lengkap+valid): output HANYA satu object {\u2026}, no teks/markdown. graduationYear=number. Nilai ASLI dari KONTEKS CHAT. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + semua key urutan di atas
 `.trim();
 function buildSaraSystemInstruction(messages) {
-  const known = extractFieldsFromChat(messages);
   return `${SARA_SYSTEM_INSTRUCTION}
 
-${formatKnownFieldsContext(known)}`;
+${buildSaraChatContext(messages)}`;
 }
 function getIhkToken() {
   let token = process.env.IHK_TOKEN?.trim() ?? "";
