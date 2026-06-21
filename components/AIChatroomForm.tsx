@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   MapPin,
   ArrowRight,
-  ShieldCheck,
   Trash2,
   Inbox,
   Sparkles
@@ -21,6 +20,7 @@ import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
+import { SaraLiveDataSync } from './recruitment/SaraLiveDataSync';
 
 interface Message {
   id: string;
@@ -516,100 +516,12 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
               />
             </div>
 
-            {/* Real-time Dynamic Checklist */}
-            <div className="order-2 flex flex-col gap-6 lg:order-1 lg:col-span-1">
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-md p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
-                
-                <h3 className="font-extrabold text-gray-900 text-lg flex items-center gap-2 mb-4">
-                  <ShieldCheck className="h-5 w-5 text-blue-600" />
-                  Live Data Sync
-                </h3>
-                <p className="text-gray-500 text-xs leading-relaxed mb-6">
-                  Sambil Anda mengobrol dengan Sara, kecerdasan buatan kami akan mengisi data formulir rekrutmen Anda di bawah ini secara langsung:
-                </p>
-
-                {/* Progress Indicators */}
-                <div className="space-y-4">
-                  
-                  {/* Tahap 1 Card */}
-                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-gray-400">TAHAP 1: IDENTITAS</span>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">
-                        {extractedData.fullName && extractedData.nik && extractedData.positionApplied ? 'Selesai' : 'Mencari...'}
-                      </span>
-                    </div>
-                    <ul className="text-xs space-y-2 text-gray-600 font-medium font-sans">
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.positionApplied ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Posisi: <span className="text-gray-900 font-bold truncate max-w-[120px]">{extractedData.positionApplied || '-'}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.fullName ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Nama: <span className="text-gray-900 font-bold truncate max-w-[120px]">{extractedData.fullName || '-'}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.nik ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        NIK: <span className="text-gray-900 font-bold">{extractedData.nik || '-'}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.kkNumber ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Nomor KK: <span className="text-gray-900 font-bold">{extractedData.kkNumber || '-'}</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Tahap 2 Card */}
-                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-gray-400">TAHAP 2: KONTAK & ALAMAT</span>
-                      <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
-                        {extractedData.whatsappNumber && extractedData.email ? 'Oke' : 'Menunggu...'}
-                      </span>
-                    </div>
-                    <ul className="text-xs space-y-2 text-gray-600 font-medium font-sans">
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.email ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Email: <span className="text-gray-900 font-bold truncate max-w-[120px]">{extractedData.email || '-'}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.whatsappNumber ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        No WA: <span className="text-gray-900 font-bold">{extractedData.whatsappNumber || '-'}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${(extractedData.provinsi || extractedData.desa) ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Domisili: <span className="text-gray-900 font-bold truncate max-w-[120px]">
-                          {extractedData.desa ? `Desa ${extractedData.desa}` : '-'}
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Tahap 3 Card */}
-                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-gray-400">TAHAP 3: PROFESIONAL</span>
-                      <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded-full">
-                        {extractedData.lastEducation && extractedData.bankName ? 'Lengkap' : 'Menunggu...'}
-                      </span>
-                    </div>
-                    <ul className="text-xs space-y-2 text-gray-600 font-medium font-sans">
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.lastEducation ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Pendidikan: <span className="text-gray-900 font-bold">{extractedData.lastEducation || '-'}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${extractedData.bankName ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                        Rekening: <span className="text-gray-900 font-bold truncate max-w-[120px]">
-                          {extractedData.bankName ? `${extractedData.bankName} - ${extractedData.accountNumber}` : '-'}
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                </div>
-              </div>
+            {/* Live Data Sync — compact, below chat on mobile */}
+            <div className="order-2 lg:order-1 lg:col-span-1">
+              <SaraLiveDataSync
+                data={extractedData}
+                onEdit={handleForcePreview}
+              />
             </div>
           </motion.div>
         )}
