@@ -413,23 +413,25 @@ function prepareCandidateForFirestore(data, options) {
   return record;
 }
 
-// lib/candidate.ts
-var REQUIRED_FIELDS = [
-  "fullName",
-  "nik",
-  "kkNumber",
-  "email",
-  "whatsappNumber",
-  "positionApplied",
-  "lastEducation",
-  "bankName"
-];
+// lib/candidate-payload.ts
 function isCompleteCandidateData(data) {
-  return REQUIRED_FIELDS.every((field) => {
+  const required = [
+    "fullName",
+    "nik",
+    "kkNumber",
+    "email",
+    "whatsappNumber",
+    "positionApplied",
+    "lastEducation",
+    "bankName"
+  ];
+  return required.every((field) => {
     const value = data[field];
     return typeof value === "string" ? value.trim().length > 0 : value != null;
   });
 }
+
+// lib/candidate.ts
 function cleanDoc(obj) {
   if (obj === null || typeof obj !== "object") return obj;
   if (obj instanceof Date) return obj.toISOString();
