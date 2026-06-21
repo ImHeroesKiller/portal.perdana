@@ -4,6 +4,7 @@
  */
 
 export const SERVER_ONLY_ENV_KEYS = [
+  'IHK_TOKEN',
   'GROK_API_KEY',
   'GEMINI_API_KEY',
   'TELEGRAM_BOT_TOKEN',
@@ -50,7 +51,8 @@ export function getEnvAuditChecklist(): EnvAuditResult {
     clientSafe: [...CLIENT_SAFE_VITE_KEYS],
     forbiddenInClient: [...FORBIDDEN_CLIENT_KEYS],
     vercelChecklist: [
-      'Set GROK_API_KEY (Production + Preview) — Server only, jangan VITE_',
+      'Set IHK_TOKEN (Hugging Face) — Sara recruitment chat, server only',
+      'Set GROK_API_KEY (opsional/legacy) — Server only, jangan VITE_',
       'Set GEMINI_API_KEY — Server only',
       'Set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID — Server only',
       'Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY — Server only',

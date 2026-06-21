@@ -551,9 +551,24 @@ async function trySaveCandidateFromReply(replyText) {
   }
 }
 
-// api/recruitment-chat.ts
+// lib/sara-komodo-chat.ts
+var KOMODO_HF_MODEL = "komodo-ai/Komodo-7B-Instruct";
+var HF_ROUTER_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
+var HF_SERVERLESS_CHAT_URL = `https://api-inference.huggingface.co/models/${KOMODO_HF_MODEL}/v1/chat/completions`;
+var SaraKomodoError = class extends Error {
+  constructor(message, status, code) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.name = "SaraKomodoError";
+  }
+  status;
+  code;
+};
 var SARA_SYSTEM_INSTRUCTION = `
 Anda adalah Sara, AI Virtual Assistant rekrutmen PT Perdana Adi Yuda. Anda memandu pelamar mengisi formulir melalui percakapan bertahap.
+
+Gaya bicara: ramah, semi-formal, natural dalam Bahasa Indonesia \u2014 seperti HR yang membantu, bukan robot kaku.
 
 \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 MODE 1 \u2014 DATA BELUM LENGKAP (CHAT BIASA)
@@ -610,20 +625,6 @@ ATURAN KETAT OUTPUT FINAL \u2014 TIDAK BISA DINEGO:
 7. Field graduationYear bertipe number (bukan string)
 8. Server akan gagal memproses jika ada satu karakter teks di luar JSON
 
-CONTOH SALAH (DILARANG \u2014 JANGAN PERNAH LAKUKAN INI):
----
-Terima kasih, data Anda sudah lengkap! Berikut ringkasannya:
-\`\`\`json
-{"fullName":"Budi Santoso",...}
-\`\`\`
-Silakan lanjut unggah dokumen di portal.
----
-
-CONTOH SALAH (DILARANG):
----
-Baik, semua data sudah saya catat. {"fullName":"Budi Santoso","nik":"1234567890123456",...}
----
-
 CONTOH BENAR (WAJIB \u2014 IKUTI FORMAT INI PERSIS):
 ---
 {"positionApplied":"Operator Produksi","fullName":"Budi Santoso","nik":"1234567890123456","kkNumber":"1234567890123457","npwp":"12.345.678.9-012.000","placeOfBirth":"Palu","dateOfBirth":"1995-03-15","gender":"Laki-laki","maritalStatus":"Belum Menikah","religion":"Islam","willingToRelocate":"Ya","certifications":"Sertifikat K3","email":"budi.santoso@email.com","whatsappNumber":"+6281234567890","addressLine":"Jl. Merdeka No. 10","provinsi":"Sulawesi Tengah","kabupaten":"Kota Palu","kecamatan":"Palu Barat","desa":"Besusu Barat","rt":"001","rw":"002","latitude":"-0.9489","longitude":"119.8707","lastEducation":"SMA/SMK","institutionName":"SMK Negeri 1 Palu","major":"Teknik Mesin","graduationYear":2013,"skills":"Las, forklift, safety","workExperience":"2 tahun operator pabrik","bankName":"BCA","accountNumber":"1234567890","emergencyName":"Siti Aminah","emergencyRelation":"Istri","emergencyPhone":"+6289876543210"}
@@ -668,58 +669,138 @@ Skema JSON (isi semua field, gunakan string kosong "" jika tidak ada):
 }
 
 INGAT: Jika checklist lengkap \u2192 respons Anda = HANYA satu baris JSON mulai dari { sampai }. Tanpa apa pun di luar itu.
-`;
+`.trim();
+function getIhkToken() {
+  const token = process.env.IHK_TOKEN?.trim();
+  if (!token) {
+    throw new SaraKomodoError(
+      "IHK_TOKEN belum dikonfigurasi di Vercel Environment Variables.",
+      503,
+      "TOKEN_MISSING"
+    );
+  }
+  return token;
+}
+function mapHfError(status, body) {
+  const detail = typeof body === "object" && body !== null ? JSON.stringify(body) : String(body ?? "");
+  if (status === 401 || status === 403) {
+    return new SaraKomodoError(
+      "Token Hugging Face tidak valid atau tidak memiliki akses ke model Komodo.",
+      401,
+      "AUTH_FAILED"
+    );
+  }
+  if (status === 402 || status === 429) {
+    return new SaraKomodoError(
+      "Maaf, kuota Hugging Face Inference sedang habis. Silakan coba lagi dalam beberapa saat.",
+      429,
+      "QUOTA_EXCEEDED"
+    );
+  }
+  if (status === 503) {
+    const estimated = typeof body === "object" && body !== null && "estimated_time" in body && typeof body.estimated_time === "number" ? Math.ceil(body.estimated_time) : 20;
+    const err = new SaraKomodoError(
+      `Model Komodo sedang dimuat di Hugging Face. Coba lagi sekitar ${estimated} detik.`,
+      503,
+      "MODEL_LOADING"
+    );
+    err.retryAfter = estimated;
+    return err;
+  }
+  return new SaraKomodoError(
+    `Gangguan Hugging Face Inference (${status}). ${detail.slice(0, 200)}`,
+    502,
+    "API_ERROR"
+  );
+}
+function extractReplyText(data) {
+  if (!data || typeof data !== "object") return "";
+  const record = data;
+  const chatContent = record.choices?.[0]?.message?.content;
+  if (typeof chatContent === "string") return chatContent.trim();
+  if (Array.isArray(record)) {
+    const first = record[0];
+    if (typeof first?.generated_text === "string") return first.generated_text.trim();
+  }
+  if (typeof record.generated_text === "string") return record.generated_text.trim();
+  return "";
+}
+async function postKomodoChat(url, token, messages) {
+  const hfMessages = [
+    { role: "system", content: SARA_SYSTEM_INSTRUCTION },
+    ...messages.map((m) => ({
+      role: m.role,
+      content: m.content
+    }))
+  ];
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: KOMODO_HF_MODEL,
+      messages: hfMessages,
+      temperature: 0.35,
+      max_tokens: 2e3
+    })
+  });
+  const raw = await response.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    data = { error: raw };
+  }
+  if (!response.ok) {
+    throw mapHfError(response.status, data);
+  }
+  const reply = extractReplyText(data);
+  if (!reply) {
+    throw new SaraKomodoError(
+      "Model Komodo mengembalikan respons kosong. Silakan coba lagi.",
+      502,
+      "EMPTY_REPLY"
+    );
+  }
+  return reply;
+}
+async function callKomodoSaraChat(messages) {
+  const token = getIhkToken();
+  try {
+    return await postKomodoChat(HF_ROUTER_CHAT_URL, token, messages);
+  } catch (routerError) {
+    if (routerError instanceof SaraKomodoError && routerError.code !== "API_ERROR" && routerError.code !== "EMPTY_REPLY") {
+      throw routerError;
+    }
+    console.warn("HF router chat failed, trying serverless endpoint:", routerError);
+    return postKomodoChat(HF_SERVERLESS_CHAT_URL, token, messages);
+  }
+}
+function saraKomodoErrorResponse(err) {
+  const body = { error: err.message, code: err.code };
+  const retryAfter = err.retryAfter;
+  if (retryAfter) body.retryAfter = retryAfter;
+  return { status: err.status, body };
+}
+
+// api/recruitment-chat.ts
 async function handler(req, res) {
   if (!guardApi(req, res, { rateLimit: RATE_LIMITS.chat, requireOrigin: true })) return;
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
   const { messages } = req.body;
-  if (!process.env.GROK_API_KEY) {
-    return res.status(500).json({
-      error: "GROK_API_KEY belum dikonfigurasi di Vercel Environment Variables"
-    });
-  }
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "Field 'messages' harus berupa array" });
   }
   try {
-    const trimmedMessages = messages.slice(-12);
-    const grokMessages = [
-      { role: "system", content: SARA_SYSTEM_INSTRUCTION },
-      ...trimmedMessages.map((m) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content
-      }))
-    ];
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "grok-4.3",
-        messages: grokMessages,
-        temperature: 0.3,
-        max_tokens: 2e3
-      })
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Grok API Error:", errorData);
-      if (response.status === 429) {
-        return res.status(429).json({
-          error: "Maaf, kuota Grok sedang penuh. Silakan coba lagi dalam beberapa saat.",
-          retryAfter: 30
-        });
-      }
-      return res.status(500).json({
-        error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti."
-      });
-    }
-    const data = await response.json();
-    let replyText = (data.choices?.[0]?.message?.content || "").trim();
+    const trimmedMessages = messages.slice(-12).map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: String(m.content ?? "")
+    }));
+    let replyText = await callKomodoSaraChat(trimmedMessages);
     const pureJson = extractPureJsonReply(replyText);
     if (pureJson) {
       replyText = pureJson;
@@ -745,12 +826,19 @@ async function handler(req, res) {
       candidateId: savedCandidate?.id ?? null,
       collection: savedCandidate ? "candidates" : null,
       isPureJson: Boolean(pureJson),
-      saveWarning
+      saveWarning,
+      model: "komodo-ai/Komodo-7B-Instruct"
     });
   } catch (error) {
-    console.error("Grok Error:", error);
+    if (error instanceof SaraKomodoError) {
+      const { status, body } = saraKomodoErrorResponse(error);
+      console.error("Komodo HF Error:", error.code, error.message);
+      return res.status(status).json(body);
+    }
+    console.error("Recruitment chat error:", error);
     return res.status(500).json({
-      error: "Maaf, terjadi gangguan pada layanan AI. Silakan coba lagi nanti."
+      error: "Maaf, terjadi gangguan pada layanan AI Sara. Silakan coba lagi nanti.",
+      code: "API_ERROR"
     });
   }
 }
