@@ -19,6 +19,8 @@ import { useJobs, createCandidate } from '../hooks/useDbQueries';
 import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
+import { extractFieldsFromChat, isReadyForPreview } from '../lib/sara-chat-extract';
+import { findJsonInText } from '../lib/candidate';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
 import { SaraLiveDataSync } from './recruitment/SaraLiveDataSync';
 
@@ -101,45 +103,26 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Continuously scan chat messages to live-populate our checklist card on the right!
-  // This extracts JSON snippets if they represent partial progress, or parses the full JSON
+  // Live-sync: parse JSON + incremental field extraction from chat turns
   useEffect(() => {
-    // Scan backwards from local chat to find the latest valid JSON representation
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg.role === 'assistant') {
-        const jsonMatch = findJsonInText(msg.content);
-        if (jsonMatch) {
-          try {
-            const parsed = JSON.parse(jsonMatch);
-            // Deduplicate/merge structure
-            setExtractedData(prev => ({
-              ...prev,
-              ...parsed
-            }));
-            
-            // If the model gave a complete structured JSON, let's trigger the PREVIEW state!
-            if (parsed.fullName && parsed.nik && parsed.whatsappNumber && parsed.email && parsed.lastEducation && parsed.bankName) {
-              // Wait a minimal amount so applicant can finish reading Sara's message or we automatically transition
-              setFormStage('preview');
-            }
-            break; 
-          } catch (e) {
-            // Ignored, maybe incomplete JSON
-          }
-        }
-      }
-    }
-  }, [messages]);
+    const fromChat = extractFieldsFromChat(
+      messages.map((m) => ({ role: m.role, content: m.content }))
+    );
 
-  const findJsonInText = (text: string): string | null => {
-    const startIdx = text.indexOf('{');
-    const endIdx = text.lastIndexOf('}');
-    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-      return text.substring(startIdx, endIdx + 1);
+    setExtractedData((prev) => ({
+      ...prev,
+      ...fromChat,
+      positionApplied:
+        fromChat.positionApplied ||
+        prev.positionApplied ||
+        initialPosition ||
+        undefined,
+    }));
+
+    if (isReadyForPreview(fromChat)) {
+      setFormStage('preview');
     }
-    return null;
-  };
+  }, [messages, initialPosition]);
 
   const cleanTextOfJson = (text: string): string => {
     const startIdx = text.indexOf('{');
@@ -500,29 +483,20 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8"
+            className="flex flex-col gap-3"
             id="section_chatroom"
           >
-            {/* Chat first on mobile, checklist sidebar on desktop */}
-            <div className="order-1 lg:order-2 lg:col-span-2">
-              <SaraChatPanel
-                messages={messages}
-                loadingChat={loadingChat}
-                errorText={errorText}
-                inputText={inputText}
-                onInputChange={setInputText}
-                onSubmit={handleSendMessage}
-                positionHint={initialPosition || extractedData.positionApplied}
-              />
-            </div>
+            <SaraLiveDataSync data={extractedData} onEdit={handleForcePreview} />
 
-            {/* Live Data Sync — compact, below chat on mobile */}
-            <div className="order-2 lg:order-1 lg:col-span-1">
-              <SaraLiveDataSync
-                data={extractedData}
-                onEdit={handleForcePreview}
-              />
-            </div>
+            <SaraChatPanel
+              messages={messages}
+              loadingChat={loadingChat}
+              errorText={errorText}
+              inputText={inputText}
+              onInputChange={setInputText}
+              onSubmit={handleSendMessage}
+              positionHint={initialPosition || extractedData.positionApplied}
+            />
           </motion.div>
         )}
 
