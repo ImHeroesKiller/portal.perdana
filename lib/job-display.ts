@@ -179,10 +179,24 @@ export function formatSalaryRange(value?: string): string {
   return value;
 }
 
+/** Lamar CTA → halaman pilih metode (manual / AI Sara). */
 export function buildJobApplyHref(job: JobVacancy, title?: string): string {
   const position = title || resolveJobTitle(job);
   const params = new URLSearchParams({ position });
   if (job.id) params.set('jobId', job.id);
+  return `/apply/start?${params.toString()}`;
+}
+
+/** Dari halaman start → formulir dengan mode terpilih. */
+export function buildApplyFormHref(options: {
+  position?: string;
+  jobId?: string;
+  mode: 'manual' | 'ai' | 'google_form';
+}): string {
+  const params = new URLSearchParams();
+  if (options.position) params.set('position', options.position);
+  if (options.jobId) params.set('jobId', options.jobId);
+  params.set('mode', options.mode);
   return `/apply?${params.toString()}`;
 }
 

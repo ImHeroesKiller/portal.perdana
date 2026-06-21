@@ -81,6 +81,13 @@ export const RecruitmentForm: React.FC = () => {
   const currentUser = getCurrentUser();
   const initialPosition = searchParams.get('position') || '';
   const initialJobId = searchParams.get('jobId') || '';
+  const modeParam = searchParams.get('mode');
+
+  useEffect(() => {
+    if (modeParam === 'ai' || modeParam === 'manual' || modeParam === 'google_form') {
+      setFormMode(modeParam);
+    }
+  }, [modeParam]);
 
   useEffect(() => {
     let userData = { ...INITIAL_FORM_STATE };

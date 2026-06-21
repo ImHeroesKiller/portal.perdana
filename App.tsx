@@ -25,6 +25,11 @@ const Login = lazy(() => import('./components/Login').then((m) => ({ default: m.
 const RecruitmentForm = lazy(() =>
   import('./components/RecruitmentForm').then((m) => ({ default: m.RecruitmentForm }))
 );
+const RecruitmentStartPage = lazy(() =>
+  import('./components/recruitment/RecruitmentStartPage').then((m) => ({
+    default: m.RecruitmentStartPage,
+  }))
+);
 const AdminDashboard = lazy(() =>
   import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
 );
@@ -77,6 +82,8 @@ function AppShell() {
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/apply/start" element={<RecruitmentStartPage />} />
+            <Route path="/recruitment/start" element={<RecruitmentStartPage />} />
             <Route path="/apply" element={<RecruitmentForm />} />
             <Route path="/portal" element={<EmployeePortal />} />
             <Route path="/admin" element={<AdminDashboard />} />

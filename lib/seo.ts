@@ -112,6 +112,38 @@ const PUBLIC_PAGES: Record<string, PageSeoEntry> = {
       ogType: 'website',
     },
   },
+  '/apply/start': {
+    id: {
+      title: 'Pilih Cara Melamar — PT Perdana Adi Yuda',
+      description:
+        'Pilih formulir manual wizard 4 langkah atau chat interaktif dengan asisten AI Sara untuk melamar kerja di PT Perdana Adi Yuda.',
+      keywords: 'cara melamar, formulir lamaran, AI Sara, perdana adi yuda',
+      ogType: 'website',
+    },
+    en: {
+      title: 'Choose How to Apply — PT Perdana Adi Yuda',
+      description:
+        'Choose the manual 4-step wizard or chat with AI assistant Sara to apply at PT Perdana Adi Yuda.',
+      keywords: 'how to apply, job application, AI Sara, perdana adi yuda',
+      ogType: 'website',
+    },
+  },
+  '/recruitment/start': {
+    id: {
+      title: 'Pilih Cara Melamar — PT Perdana Adi Yuda',
+      description:
+        'Pilih formulir manual wizard 4 langkah atau chat interaktif dengan asisten AI Sara untuk melamar kerja di PT Perdana Adi Yuda.',
+      keywords: 'cara melamar, formulir lamaran, AI Sara, perdana adi yuda',
+      ogType: 'website',
+    },
+    en: {
+      title: 'Choose How to Apply — PT Perdana Adi Yuda',
+      description:
+        'Choose the manual 4-step wizard or chat with AI assistant Sara to apply at PT Perdana Adi Yuda.',
+      keywords: 'how to apply, job application, AI Sara, perdana adi yuda',
+      ogType: 'website',
+    },
+  },
   '/apply': {
     id: {
       title: 'Formulir Lamaran Kerja — Lamar Online',
