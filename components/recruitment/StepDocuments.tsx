@@ -33,7 +33,7 @@ export const StepDocuments: React.FC<Props> = ({ files, onFileChange, fieldError
       subtitle="Format PDF, JPG, atau PNG. Maksimal 5 MB per file."
     />
 
-    <div className="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+    <div className="rounded-2xl border border-amber-100 bg-amber-50/60 px-4 py-3.5 text-sm text-amber-900">
       <strong>Wajib:</strong> Surat Lamaran, CV, KTP, dan Foto Diri. Dokumen lain sangat disarankan untuk mempercepat proses screening.
     </div>
 
@@ -73,7 +73,7 @@ function FileInput({
 
   return (
     <div
-      className={`rounded-xl border p-4 transition ${
+      className={`rounded-2xl border p-4 transition ${
         error
           ? 'border-red-300 bg-red-50/30'
           : hasFile
@@ -81,7 +81,7 @@ function FileInput({
             : 'border-slate-200 bg-white hover:border-[#003087]/20'
       }`}
     >
-      <label htmlFor={id} className="mb-2 flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800">
+      <label htmlFor={id} className="mb-2 flex cursor-pointer items-center gap-2 text-sm font-black text-slate-900">
         {hasFile ? (
           <CheckCircleIcon className="h-5 w-5 text-emerald-600" aria-hidden />
         ) : (
@@ -99,7 +99,7 @@ function FileInput({
         type="file"
         accept=".pdf,.jpg,.jpeg,.png,.webp"
         onChange={onChange}
-        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#003087] file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:opacity-90"
+        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#003087] file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-blue-900"
       />
       {error && (
         <p className="mt-2 text-xs font-medium text-red-500" role="alert">

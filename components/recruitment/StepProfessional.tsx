@@ -19,7 +19,7 @@ export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErr
     />
 
     <section>
-      <h4 className="mb-3 text-sm font-bold text-slate-800">Pendidikan Terakhir</h4>
+      <h4 className="mb-3 text-sm font-black text-slate-900">Pendidikan Terakhir</h4>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Select
           label="Jenjang"
@@ -61,7 +61,7 @@ export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErr
     </section>
 
     <section className="border-t border-slate-100 pt-4">
-      <h4 className="mb-3 text-sm font-bold text-slate-800">Data Perbankan</h4>
+      <h4 className="mb-3 text-sm font-black text-slate-900">Data Perbankan</h4>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Select
           label="Bank Utama"
@@ -89,7 +89,7 @@ export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErr
     </section>
 
     <section className="border-t border-slate-100 pt-4">
-      <h4 className="mb-3 text-sm font-bold text-slate-800">Kontak Darurat</h4>
+      <h4 className="mb-3 text-sm font-black text-slate-900">Kontak Darurat</h4>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Input
           label="Nama Kontak"

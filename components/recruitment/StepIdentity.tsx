@@ -63,7 +63,7 @@ export const StepIdentity: React.FC<Props> = ({ formData, onChange, setFormData,
         subtitle="Lengkapi data identitas sesuai KTP untuk proses validasi rekrutmen."
       />
 
-      <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+      <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-5">
         <Select
           label="Posisi yang Dilamar"
           name="positionApplied"

@@ -71,7 +71,7 @@ export const StepContact: React.FC<Props> = ({ formData, onChange, setFormData, 
       </div>
 
       <div className="space-y-4 border-t border-slate-100 pt-4">
-        <h4 className="text-sm font-bold text-slate-800">Alamat Domisili</h4>
+        <h4 className="text-sm font-black text-slate-900">Alamat Domisili</h4>
         <TextArea
           label="Alamat Lengkap"
           name="addressLine"

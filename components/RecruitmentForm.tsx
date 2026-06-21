@@ -8,7 +8,6 @@ import {
   PaperClipIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
-  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { uploadFileMock } from '../services/db';
 import { useJobs, createCandidate } from '../hooks/useDbQueries';
@@ -23,6 +22,7 @@ import {
   validateDocuments,
   type FieldErrors,
 } from '../lib/recruitment-validation';
+import { MarketingPageShell } from './layout/MarketingPageLayout';
 import { BRAND_NAVY } from './home/homeContent';
 import { StepIdentity } from './recruitment/StepIdentity';
 import { StepContact } from './recruitment/StepContact';
@@ -36,7 +36,10 @@ import {
   FormErrorBanner,
   NAVY_BTN,
   NAVY_BTN_OUTLINE,
+  RecruitmentBackButton,
   SaraPromoBanner,
+  WizardCard,
+  WizardHero,
 } from './recruitment/recruitmentUi';
 
 export type { FormDataState, FileState } from '../types/recruitment-form';
@@ -241,144 +244,157 @@ export const RecruitmentForm: React.FC = () => {
     }
   };
 
+  const applyStartHref = (() => {
+    const params = new URLSearchParams();
+    if (initialPosition) params.set('position', initialPosition);
+    if (initialJobId) params.set('jobId', initialJobId);
+    const qs = params.toString();
+    return qs ? `/apply/start?${qs}` : '/apply/start';
+  })();
+
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-10">
-        <ApplySuccessView
-          submittedName={submittedName}
-          credentials={createdCredentials}
-          onLogin={() =>
-            navigate(`/login?email=${encodeURIComponent(createdCredentials?.email || '')}`)
-          }
-          onNewApplication={() => window.location.reload()}
-        />
+      <div className="min-h-screen bg-slate-50 font-sans antialiased">
+        <MarketingPageShell className="px-6 pb-10 pt-6 sm:px-6 sm:py-8">
+          <ApplySuccessView
+            submittedName={submittedName}
+            credentials={createdCredentials}
+            onLogin={() =>
+              navigate(`/login?email=${encodeURIComponent(createdCredentials?.email || '')}`)
+            }
+            onNewApplication={() => window.location.reload()}
+          />
+        </MarketingPageShell>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-10 font-sans antialiased">
-      <FormModeSwitcher
-        mode={formMode}
-        onChange={setFormMode}
-        showGoogleForm={Boolean(googleFormUrl)}
-      />
-
-      {formMode === 'ai' ? (
-        <AIChatroomForm
-          initialPosition={initialPosition}
-          initialJobId={initialJobId}
-          onSwitchToManual={() => setFormMode('manual')}
+      <MarketingPageShell className="gap-5 px-6 pb-10 pt-6 sm:gap-6 sm:px-6 sm:py-8">
+        <FormModeSwitcher
+          mode={formMode}
+          onChange={setFormMode}
+          showGoogleForm={Boolean(googleFormUrl)}
         />
-      ) : formMode === 'google_form' ? (
-        <div className="relative mx-auto my-6 max-w-4xl overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-lg">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="absolute left-4 top-4 z-10 flex items-center gap-1 rounded-lg border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/25"
-          >
-            <ArrowLeftIcon className="h-4 w-4" /> Kembali
-          </button>
-          <div className="p-6 text-center text-white" style={{ backgroundColor: BRAND_NAVY }}>
-            <h1 className="text-xl font-black">Google Form Terintegrasi</h1>
-            <p className="mt-1 text-sm text-blue-100">PT Perdana Adi Yuda</p>
-          </div>
-          <div className="h-[min(700px,75vh)] w-full">
-            <iframe
-              src={googleFormUrl}
-              width="100%"
-              height="100%"
-              className="border-none"
-              title="Google Form Rekrutmen"
+
+        {formMode === 'ai' ? (
+          <AIChatroomForm
+            initialPosition={initialPosition}
+            initialJobId={initialJobId}
+            onSwitchToManual={() => setFormMode('manual')}
+          />
+        ) : formMode === 'google_form' ? (
+          <>
+            <RecruitmentBackButton onClick={() => navigate(applyStartHref)} />
+            <WizardHero
+              title="Google Form Terintegrasi"
+              subtitle="Formulir resmi PT Perdana Adi Yuda"
+              position={initialPosition || undefined}
             />
-          </div>
-        </div>
-      ) : (
-        <div className="relative mx-auto my-6 max-w-4xl overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-lg">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="absolute left-4 top-4 z-10 flex min-h-[40px] items-center gap-1 rounded-lg border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/25"
-          >
-            <ArrowLeftIcon className="h-4 w-4" /> Kembali
-          </button>
-
-          <div className="px-6 pb-6 pt-14 text-center text-white sm:pt-16" style={{ backgroundColor: BRAND_NAVY }}>
-            <h1 className="text-xl font-black sm:text-2xl">Formulir Lamaran Kerja</h1>
-            <p className="mt-1 text-sm text-blue-100">
-              {initialPosition ? `Posisi: ${initialPosition}` : 'Lengkapi data Anda langkah demi langkah'}
-            </p>
-          </div>
-
-          <WizardStepper steps={STEPS} currentStep={currentStep} />
-
-          <form onSubmit={handleSubmit} className="p-5 sm:p-8">
-            <SaraPromoBanner onStart={() => setFormMode('ai')} />
-            {error && <FormErrorBanner message={error} />}
-
-            <div className="min-h-[320px]">
-              {currentStep === 1 && (
-                <StepIdentity
-                  formData={formData}
-                  onChange={handleChange}
-                  setFormData={setFormData}
-                  jobs={availableJobs}
-                  fieldErrors={fieldErrors}
+            <WizardCard>
+              <div className="h-[min(700px,75vh)] w-full">
+                <iframe
+                  src={googleFormUrl}
+                  width="100%"
+                  height="100%"
+                  className="border-none"
+                  title="Google Form Rekrutmen"
                 />
-              )}
-              {currentStep === 2 && (
-                <StepContact
-                  formData={formData}
-                  onChange={handleChange}
-                  setFormData={setFormData}
-                  fieldErrors={fieldErrors}
-                />
-              )}
-              {currentStep === 3 && (
-                <StepProfessional
-                  formData={formData}
-                  onChange={handleChange}
-                  fieldErrors={fieldErrors}
-                />
-              )}
-              {currentStep === 4 && (
-                <StepDocuments
-                  files={files}
-                  onFileChange={handleFileChange}
-                  fieldErrors={fieldErrors}
-                />
-              )}
-            </div>
+              </div>
+            </WizardCard>
+          </>
+        ) : (
+          <>
+            <RecruitmentBackButton onClick={() => navigate(applyStartHref)} />
 
-            <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-between">
-              {currentStep > 1 ? (
-                <button type="button" onClick={() => setCurrentStep((p) => p - 1)} className={NAVY_BTN_OUTLINE}>
-                  <ChevronLeftIcon className="h-4 w-4" aria-hidden />
-                  Sebelumnya
-                </button>
-              ) : (
-                <div className="hidden sm:block" />
-              )}
+            <WizardHero
+              title="Formulir Lamaran Kerja"
+              subtitle="Lengkapi data Anda langkah demi langkah"
+              position={initialPosition || undefined}
+            />
 
-              {currentStep < 4 ? (
-                <button type="button" onClick={handleNext} className={NAVY_BTN} style={{ backgroundColor: BRAND_NAVY }}>
-                  Lanjut
-                  <ChevronRightIcon className="h-4 w-4" aria-hidden />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={NAVY_BTN}
-                  style={{ backgroundColor: BRAND_NAVY }}
-                >
-                  {loading ? 'Mengirim...' : 'Kirim Lamaran'}
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      )}
+            <WizardCard>
+              <WizardStepper steps={STEPS} currentStep={currentStep} />
+
+              <form onSubmit={handleSubmit} className="p-7 sm:p-8">
+                <SaraPromoBanner onStart={() => setFormMode('ai')} />
+                {error && <FormErrorBanner message={error} />}
+
+                <div className="min-h-[320px]">
+                  {currentStep === 1 && (
+                    <StepIdentity
+                      formData={formData}
+                      onChange={handleChange}
+                      setFormData={setFormData}
+                      jobs={availableJobs}
+                      fieldErrors={fieldErrors}
+                    />
+                  )}
+                  {currentStep === 2 && (
+                    <StepContact
+                      formData={formData}
+                      onChange={handleChange}
+                      setFormData={setFormData}
+                      fieldErrors={fieldErrors}
+                    />
+                  )}
+                  {currentStep === 3 && (
+                    <StepProfessional
+                      formData={formData}
+                      onChange={handleChange}
+                      fieldErrors={fieldErrors}
+                    />
+                  )}
+                  {currentStep === 4 && (
+                    <StepDocuments
+                      files={files}
+                      onFileChange={handleFileChange}
+                      fieldErrors={fieldErrors}
+                    />
+                  )}
+                </div>
+
+                <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100/90 pt-7 sm:flex-row sm:justify-between">
+                  {currentStep > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep((p) => p - 1)}
+                      className={NAVY_BTN_OUTLINE}
+                    >
+                      <ChevronLeftIcon className="h-4 w-4" aria-hidden />
+                      Sebelumnya
+                    </button>
+                  ) : (
+                    <div className="hidden sm:block" />
+                  )}
+
+                  {currentStep < 4 ? (
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className={NAVY_BTN}
+                      style={{ backgroundColor: BRAND_NAVY }}
+                    >
+                      Lanjut
+                      <ChevronRightIcon className="h-4 w-4" aria-hidden />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={NAVY_BTN}
+                      style={{ backgroundColor: BRAND_NAVY }}
+                    >
+                      {loading ? 'Mengirim...' : 'Kirim Lamaran'}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </WizardCard>
+          </>
+        )}
+      </MarketingPageShell>
     </div>
   );
 };

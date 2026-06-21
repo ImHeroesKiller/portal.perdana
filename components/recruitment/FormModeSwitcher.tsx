@@ -22,32 +22,37 @@ export function FormModeSwitcher({
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs font-medium text-slate-600">
-        Pilih cara melamar di <strong className="text-slate-800">PT Perdana Adi Yuda</strong>
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((tab) => {
-          const active = mode === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              className={`rounded-xl border px-3.5 py-2.5 text-left transition active:scale-[0.98] ${
-                active
-                  ? 'border-[#003087] text-white shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-[#003087]/25'
-              }`}
-              style={active ? { backgroundColor: BRAND_NAVY } : undefined}
-            >
-              <span className="block text-xs font-extrabold">{tab.label}</span>
-              <span className={`block text-[10px] ${active ? 'text-blue-100' : 'text-slate-400'}`}>
-                {tab.hint}
-              </span>
-            </button>
-          );
-        })}
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            Metode lamaran
+          </p>
+          <p className="mt-0.5 text-sm font-black text-slate-900">PT Perdana Adi Yuda</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => {
+            const active = mode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onChange(tab.id)}
+                className={`rounded-xl border px-3.5 py-2.5 text-left transition active:scale-[0.98] ${
+                  active
+                    ? 'border-[#003087] text-white shadow-md ring-1 ring-cyan-400/30'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-[#003087]/25 hover:bg-slate-50/80'
+                }`}
+                style={active ? { backgroundColor: BRAND_NAVY } : undefined}
+              >
+                <span className="block text-xs font-black">{tab.label}</span>
+                <span className={`block text-[10px] ${active ? 'text-cyan-100' : 'text-slate-400'}`}>
+                  {tab.hint}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
