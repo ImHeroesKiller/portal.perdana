@@ -6,7 +6,6 @@ import {
   resolveJobTitle,
   type JobDisplayFields,
 } from '../../lib/job-display';
-import { BRAND_NAVY } from '../home/homeContent';
 import { JobListPagination, VACANCIES_PAGE_SIZE } from './JobListPagination';
 
 export type { JobDisplayFields };
@@ -84,11 +83,8 @@ export const JobList: React.FC<JobListProps> = ({
   return (
     <div data-job-list={source} data-count={safeJobs.length}>
       {showCount && (
-        <div
-          className="mb-3 inline-flex items-center rounded-full border border-[#003087]/15 bg-blue-50 px-3 py-1.5"
-          style={{ color: BRAND_NAVY }}
-        >
-          <p className="text-xs font-bold">{countLabel(safeJobs.length)}</p>
+        <div className="mb-4 inline-flex items-center rounded-full border border-[#003087]/15 bg-gradient-to-r from-blue-50 to-cyan-50/60 px-3.5 py-1.5 ring-1 ring-cyan-400/20">
+          <p className="text-xs font-black text-[#003087]">{countLabel(safeJobs.length)}</p>
         </div>
       )}
 

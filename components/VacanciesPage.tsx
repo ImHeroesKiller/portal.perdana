@@ -3,11 +3,10 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useJobs, useClients } from '../hooks/useDbQueries';
 import { applyPublicJobFilter, applyVacancyFilters } from '../lib/job-filters';
 import type { JobDisplayFields } from '../lib/job-display';
-import { DataFetchState } from '../src/components/DataFetchState';
 import { JobList } from './jobs/JobList';
 import { VacancyFilterChips } from './jobs/VacancyFilterChips';
 import { VacancyJobCard, resolveVacancyCardFields } from './jobs/VacancyJobCard';
-import { buildJobApplyHref, buildJobDetailHref } from '../lib/job-display';
+import { buildJobApplyHref, buildJobDetailHref, getJobDetailFields } from '../lib/job-display';
 import { VACANCY_FILTER_OPTIONS, type VacancyFilter } from './home/homeContent';
 import { setSeoOverride } from '../hooks/usePageSeo';
 import {
@@ -17,12 +16,87 @@ import {
   resolvePageSeo,
 } from '../lib/seo';
 import { appLangToSeoLocale, useLanguage } from '../services/i18n';
+import { MarketingPageShell } from './layout/MarketingPageLayout';
 import {
-  ChevronLeft,
-  Search,
-  SlidersHorizontal,
-  FileText,
-} from 'lucide-react';
+  CardSectionHeader,
+  NAVY_BTN,
+  NAVY_BTN_OUTLINE,
+  RecruitmentBackButton,
+  WizardCard,
+  WizardHero,
+} from './recruitment/recruitmentUi';
+import { BRAND_NAVY } from './home/homeContent';
+import { Search, SlidersHorizontal, FileText, Briefcase, Loader2 } from 'lucide-react';
+import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+
+function VacanciesLoadingCard() {
+  return (
+    <WizardCard className="flex min-h-[14rem] flex-col items-center justify-center gap-4 p-8">
+      <ArrowPathIcon className="h-10 w-10 animate-spin text-[#003087]" aria-hidden />
+      <div className="text-center">
+        <p className="text-sm font-black text-slate-900">Memuat lowongan...</p>
+        <p className="mt-1 text-xs text-slate-500">Mohon tunggu sebentar</p>
+      </div>
+    </WizardCard>
+  );
+}
+
+function VacanciesEmptyCard({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <WizardCard className="p-7 text-center sm:p-8">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 ring-4 ring-cyan-400/20">
+        <Briefcase className="h-8 w-8 text-[#003087]" aria-hidden />
+      </div>
+      <h3 className="text-lg font-black text-slate-900">{title}</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">{description}</p>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className={`${NAVY_BTN_OUTLINE} mt-5`}
+        >
+          {actionLabel}
+        </button>
+      )}
+    </WizardCard>
+  );
+}
+
+function VacanciesErrorCard({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <WizardCard className="p-7 text-center sm:p-8">
+      <ExclamationTriangleIcon className="mx-auto h-10 w-10 text-red-500" aria-hidden />
+      <h3 className="mt-3 text-lg font-black text-slate-900">Gagal memuat data</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-red-600">{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className={`${NAVY_BTN} mt-5`}
+          style={{ backgroundColor: BRAND_NAVY }}
+        >
+          Coba Lagi
+        </button>
+      )}
+    </WizardCard>
+  );
+}
 
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -136,32 +210,6 @@ export const VacanciesPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    console.log('[VacanciesPage] jobs state', {
-      raw: rawJobs.length,
-      public: publicJobs.length,
-      uiFiltered: uiFilteredJobs.length,
-      rendered: jobsToRender.length,
-      showLoading,
-      hasNoJobsAtAll,
-      fetchInProgress,
-      filterRelaxed,
-      searchQuery,
-      selectedFilter,
-    });
-  }, [
-    rawJobs.length,
-    publicJobs.length,
-    uiFilteredJobs.length,
-    jobsToRender.length,
-    showLoading,
-    hasNoJobsAtAll,
-    fetchInProgress,
-    filterRelaxed,
-    searchQuery,
-    selectedFilter,
-  ]);
-
   const getClientName = (clientId?: string) => {
     return clients.find((c) => c.id === clientId)?.name || '';
   };
@@ -176,65 +224,60 @@ export const VacanciesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen select-none bg-slate-50 pb-24 font-sans antialiased text-slate-800">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#003087] px-4 pb-5 pt-6 text-white shadow-md">
-        <div className="mx-auto flex max-w-xl items-center">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="mr-2 flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-95"
-            id="btn-back-vacancies"
-            aria-label={t('vacancies_back_aria')}
-          >
-            <ChevronLeft className="h-6 w-6 stroke-[2.5]" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-black tracking-tight">{t('vacancies_title')}</h1>
-            <p className="mt-0.5 text-[10px] font-semibold tracking-wider text-blue-200">
-              {t('vacancies_subtitle')}
-            </p>
+      <MarketingPageShell className="gap-5 px-6 pb-8 pt-6 sm:gap-6 sm:px-6 sm:py-8">
+        <RecruitmentBackButton
+          onClick={() => navigate('/')}
+          label={t('vacancies_back_aria')}
+        />
+
+        <WizardHero
+          showLogo
+          title={t('vacancies_title')}
+          subtitle={t('vacancies_subtitle')}
+        />
+
+        <WizardCard className="p-5 sm:p-6">
+          <CardSectionHeader
+            label={t('vacancies_filter')}
+            title={t('vacancies_search_aria')}
+            subtitle={t('vacancies_search_placeholder')}
+          />
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex-1">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                aria-hidden
+              />
+              <input
+                type="search"
+                className="block w-full rounded-2xl border border-slate-100 bg-slate-50/80 py-3.5 pl-10 pr-4 text-sm font-semibold text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#003087]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#003087]/20"
+                placeholder={t('vacancies_search_placeholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label={t('vacancies_search_aria')}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowFilterModal(true)}
+              className={`${NAVY_BTN_OUTLINE} shrink-0 px-3.5`}
+              aria-label={t('vacancies_filter_aria')}
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              <span className="hidden xs:inline sm:inline">{t('vacancies_filter')}</span>
+            </button>
           </div>
-        </div>
-      </header>
+        </WizardCard>
 
-      <div className="mx-auto mt-5 max-w-xl px-4">
-        {/* Search & Filter */}
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex-1">
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              aria-hidden
-            />
-            <input
-              type="search"
-              className="block w-full rounded-2xl border border-slate-100 bg-white py-3.5 pl-10 pr-4 text-sm font-medium text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#003087]/30 focus:outline-none focus:ring-2 focus:ring-[#003087]/25"
-              placeholder={t('vacancies_search_placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label={t('vacancies_search_aria')}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowFilterModal(true)}
-            className="flex min-h-[48px] shrink-0 items-center gap-1.5 rounded-2xl border border-slate-100 bg-white px-3.5 text-xs font-bold text-[#003087] shadow-sm transition hover:bg-blue-50 active:scale-[0.98]"
-            aria-label={t('vacancies_filter_aria')}
-          >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden />
-            <span>{t('vacancies_filter')}</span>
-          </button>
-        </div>
-
-        {/* Filter chips */}
         <VacancyFilterChips
           value={selectedFilter}
           onChange={setSelectedFilter}
-          className="mt-4"
+          className="-mx-1"
         />
 
         {filterRelaxed && jobsToRender.length > 0 && (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] font-semibold text-amber-800">
+          <div className="rounded-2xl border border-amber-200/90 bg-amber-50/80 px-4 py-3 text-[11px] font-semibold text-amber-800">
             {tVars('vacancies_filter_relaxed', { count: jobsToRender.length })}
             <button type="button" onClick={resetFilters} className="ml-2 font-bold underline">
               {t('vacancies_reset_filter')}
@@ -242,92 +285,89 @@ export const VacanciesPage: React.FC = () => {
           </div>
         )}
 
-        {hasJobsButFilteredEmpty && (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-700">
-              {t('vacancies_no_match_title')}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              {t('vacancies_no_match_desc')}
-            </p>
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="mt-4 min-h-[48px] rounded-xl border border-[#003087]/20 bg-blue-50 px-5 text-xs font-bold text-[#003087] transition active:scale-[0.98]"
-            >
-              {t('vacancies_reset_all')}
-            </button>
+        {isFetching && rawJobs.length > 0 && (
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#003087]">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            Memperbarui data...
           </div>
         )}
 
-        <DataFetchState
-          isLoading={showLoading}
-          isFetching={isFetching && rawJobs.length > 0}
-          error={isError ? error : null}
-          isEmpty={hasNoJobsAtAll}
-          emptyMessage={t('vacancies_empty')}
-          onRetry={() => { void refetch(); }}
-          minHeight="14rem"
-        >
-          {jobsToRender.length > 0 && (
-            <div className="mt-4">
-            <JobList
-              source="VacanciesPage"
-              jobs={jobsToRender}
-              showCount
-              className="space-y-3"
-              pagination={{ page: currentPage, onPageChange: handlePageChange }}
-              renderItem={(job, display: JobDisplayFields) => {
-                const fields = resolveVacancyCardFields(job, display, t);
-                const clientName = getClientName(job.clientId);
+        {showLoading && <VacanciesLoadingCard />}
 
-                return (
-                  <VacancyJobCard
-                    compact
-                    title={fields.title}
-                    department={fields.department}
-                    location={fields.location}
-                    jobType={fields.jobType}
-                    clientName={clientName || undefined}
-                    description={fields.description}
-                    requirements={fields.requirements}
-                    isBookmarked={bookmarkedJobs.includes(job.id)}
-                    onToggleBookmark={() => toggleBookmark(job.id)}
-                    onOpenMap={() => handleOpenMap(job.latitude, job.longitude, fields.location)}
-                    detailHref={buildJobDetailHref(job)}
-                    applyHref={buildJobApplyHref(job, fields.title)}
-                    maxRequirements={2}
-                  />
-                );
-              }}
-            />
+        {isError && error && (
+          <VacanciesErrorCard message={error.message} onRetry={() => { void refetch(); }} />
+        )}
+
+        {hasJobsButFilteredEmpty && (
+          <VacanciesEmptyCard
+            title={t('vacancies_no_match_title')}
+            description={t('vacancies_no_match_desc')}
+            actionLabel={t('vacancies_reset_all')}
+            onAction={resetFilters}
+          />
+        )}
+
+        {hasNoJobsAtAll && !showLoading && !isError && (
+          <VacanciesEmptyCard
+            title={t('vacancies_empty')}
+            description="Silakan cek kembali nanti atau hubungi tim HR."
+          />
+        )}
+
+        {!showLoading && !isError && jobsToRender.length > 0 && (
+          <JobList
+            source="VacanciesPage"
+            jobs={jobsToRender}
+            showCount
+            className="space-y-4"
+            pagination={{ page: currentPage, onPageChange: handlePageChange }}
+            renderItem={(job, display: JobDisplayFields) => {
+              const fields = resolveVacancyCardFields(job, display, t);
+              const detailFields = getJobDetailFields(job);
+              const clientName = getClientName(job.clientId);
+
+              return (
+                <VacancyJobCard
+                  compact
+                  title={fields.title}
+                  department={fields.department}
+                  location={fields.location}
+                  jobType={fields.jobType}
+                  clientName={clientName || undefined}
+                  description={fields.description}
+                  requirements={fields.requirements}
+                  skills={detailFields.requiredSkills}
+                  isBookmarked={bookmarkedJobs.includes(job.id)}
+                  onToggleBookmark={() => toggleBookmark(job.id)}
+                  onOpenMap={() => handleOpenMap(job.latitude, job.longitude, fields.location)}
+                  detailHref={buildJobDetailHref(job)}
+                  applyHref={buildJobApplyHref(job, fields.title)}
+                  maxRequirements={3}
+                />
+              );
+            }}
+          />
+        )}
+
+        <WizardCard className="p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 shrink-0 rounded-2xl bg-gradient-to-br from-cyan-50 to-blue-50 p-2.5 text-[#003087] ring-1 ring-[#003087]/10">
+              <FileText className="h-5 w-5" aria-hidden />
             </div>
-          )}
-        </DataFetchState>
-
-        {/* CTA bantuan */}
-        <div className="mb-6 mt-8 flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="mt-0.5 shrink-0 rounded-xl bg-blue-50 p-2.5 text-[#003087]">
-            <FileText className="h-5 w-5" aria-hidden />
+            <div>
+              <p className="text-sm font-black text-slate-900">{t('vacancies_cta_title')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">{t('vacancies_cta_desc')}</p>
+              <Link
+                to="/contact"
+                className="mt-3 inline-flex min-h-[44px] items-center text-xs font-bold text-[#003087] underline-offset-2 transition hover:underline"
+              >
+                {t('vacancies_cta_link')}
+              </Link>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-bold leading-snug text-slate-800">
-              {t('vacancies_cta_title')}
-            </p>
-            <p className="mt-1 text-[10px] leading-snug text-slate-500">
-              {t('vacancies_cta_desc')}
-            </p>
-            <Link
-              to="/contact"
-              className="mt-2.5 inline-flex min-h-[36px] items-center text-[11px] font-extrabold text-[#003087] transition hover:underline"
-            >
-              {t('vacancies_cta_link')}
-            </Link>
-          </div>
-        </div>
-      </div>
+        </WizardCard>
+      </MarketingPageShell>
 
-      {/* Filter modal */}
       {showFilterModal && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
@@ -335,12 +375,16 @@ export const VacanciesPage: React.FC = () => {
           role="presentation"
         >
           <div
-            className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+            className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-labelledby="filter-modal-title"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-4">
+            <div
+              className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#003087] to-transparent opacity-50"
+              aria-hidden
+            />
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-4">
               <h3
                 id="filter-modal-title"
                 className="text-xs font-black uppercase tracking-wider text-slate-900"
@@ -350,7 +394,7 @@ export const VacanciesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowFilterModal(false)}
-                className="text-sm font-bold text-slate-400 transition hover:text-slate-700"
+                className="text-sm font-bold text-slate-400 transition hover:text-[#003087]"
               >
                 {t('vacancies_filter_close')}
               </button>
@@ -366,8 +410,8 @@ export const VacanciesPage: React.FC = () => {
                   }}
                   className={`w-full min-h-[48px] rounded-xl border px-4 text-left text-xs font-bold transition active:scale-[0.98] ${
                     selectedFilter === f
-                      ? 'border-[#003087] bg-blue-50 text-[#003087]'
-                      : 'border-slate-100 bg-white text-slate-700 hover:bg-slate-50'
+                      ? 'border-[#003087] bg-[#003087] text-white shadow-md ring-2 ring-cyan-400/25'
+                      : 'border-slate-100 bg-white text-slate-700 hover:border-[#003087]/20 hover:bg-blue-50/50'
                   }`}
                 >
                   {f === 'Semua' ? t('vacancies_filter_all') : tVars('vacancies_filter_sector', { name: f })}
@@ -378,7 +422,6 @@ export const VacanciesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Map modal */}
       {mapModalData && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -386,19 +429,23 @@ export const VacanciesPage: React.FC = () => {
           role="presentation"
         >
           <div
-            className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+            className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label={tVars('vacancies_map_title', { name: mapModalData.title })}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-              <h3 className="text-xs font-extrabold text-slate-950">
+            <div
+              className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#003087] to-transparent opacity-50"
+              aria-hidden
+            />
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+              <h3 className="text-xs font-black text-slate-950">
                 {tVars('vacancies_map_title', { name: mapModalData.title })}
               </h3>
               <button
                 type="button"
                 onClick={() => setMapModalData(null)}
-                className="text-base font-extrabold text-slate-400 hover:text-slate-700"
+                className="text-base font-extrabold text-slate-400 hover:text-[#003087]"
                 aria-label={t('vacancies_map_close')}
               >
                 ×

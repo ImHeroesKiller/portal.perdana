@@ -6,11 +6,13 @@ import {
   MapPin,
   Briefcase,
   Map,
-  Send,
+  ChevronRight,
   Building2,
 } from 'lucide-react';
 import type { JobDisplayFields } from '../../lib/job-display';
+import { BRAND_NAVY } from '../home/homeContent';
 import { useLanguage } from '../../services/i18n';
+import { NAVY_BTN, NAVY_BTN_OUTLINE, WizardCard } from '../recruitment/recruitmentUi';
 
 export interface VacancyJobCardProps {
   title: string;
@@ -20,6 +22,7 @@ export interface VacancyJobCardProps {
   clientName?: string;
   description?: string;
   requirements?: string[];
+  skills?: string[];
   isBookmarked?: boolean;
   onToggleBookmark?: () => void;
   onOpenMap?: () => void;
@@ -30,6 +33,29 @@ export interface VacancyJobCardProps {
   compact?: boolean;
 }
 
+function MetaChip({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#003087]/15 bg-gradient-to-r from-blue-50/90 to-cyan-50/50 px-3 py-1.5 text-[10px] font-bold text-[#003087] ring-1 ring-[#003087]/8 backdrop-blur-sm">
+      <Icon className="h-3 w-3 shrink-0 text-cyan-700" aria-hidden />
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
+
+function SkillChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex max-w-full rounded-full border border-cyan-200/80 bg-gradient-to-r from-cyan-50 to-blue-50 px-2.5 py-1 text-[10px] font-bold text-[#003087] ring-1 ring-[#003087]/10">
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
 export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   title,
   department,
@@ -38,6 +64,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   clientName,
   description,
   requirements = [],
+  skills = [],
   isBookmarked = false,
   onToggleBookmark,
   onOpenMap,
@@ -47,18 +74,20 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
   compact = false,
 }) => {
   const { t, tVars } = useLanguage();
-  const reqLimit = maxRequirements ?? (compact ? 2 : 3);
-  const shownRequirements = requirements.slice(0, reqLimit);
-  const hasMoreRequirements = requirements.length > reqLimit;
+  const chipLimit = maxRequirements ?? (compact ? 3 : 4);
+  const chipItems = [...skills, ...requirements].filter(Boolean).slice(0, chipLimit);
+  const totalChips = skills.length + requirements.length;
+  const hasMoreChips = totalChips > chipLimit;
+
+  const padding = compact ? 'p-5 sm:p-6' : 'p-5 sm:p-7';
 
   return (
-    <article
-      className={`relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md ${
-        compact ? 'p-3.5' : 'p-4 sm:p-5'
-      }`}
-    >
-      <div className={`flex items-start justify-between gap-2 ${compact ? 'mb-2' : 'mb-3'}`}>
-        <span className="job-card-dept inline-block rounded-lg px-2 py-0.5">
+    <WizardCard className={padding}>
+      <div className={`flex items-start justify-between gap-3 ${compact ? 'mb-3' : 'mb-4'}`}>
+        <span
+          className="inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white"
+          style={{ backgroundColor: BRAND_NAVY }}
+        >
           {department}
         </span>
         {onToggleBookmark && (
@@ -66,7 +95,7 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
             type="button"
             onClick={onToggleBookmark}
             aria-label={isBookmarked ? t('job_bookmark_remove') : t('job_bookmark_save')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-50 active:scale-95"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-400 shadow-sm transition hover:border-[#003087]/20 hover:text-[#003087] active:scale-95"
           >
             {isBookmarked ? (
               <BookmarkCheck className="h-4 w-4 fill-[#003087] text-[#003087]" />
@@ -80,111 +109,80 @@ export const VacancyJobCard: React.FC<VacancyJobCardProps> = ({
       {detailHref ? (
         <Link
           to={detailHref}
-          className={`job-card-title block leading-snug transition hover:text-[#003087] ${
-            compact ? 'text-sm' : 'text-base sm:text-lg'
+          className={`block font-black leading-snug text-slate-900 transition hover:text-[#003087] ${
+            compact ? 'text-base' : 'text-lg sm:text-xl'
           }`}
         >
           {title}
         </Link>
       ) : (
-        <h2
-          className={`job-card-title leading-snug ${compact ? 'text-sm' : 'text-base sm:text-lg'}`}
-        >
+        <h2 className={`font-black leading-snug text-slate-900 ${compact ? 'text-base' : 'text-lg sm:text-xl'}`}>
           {title}
         </h2>
       )}
 
-      {clientName && !compact && (
-        <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+      {clientName && (
+        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
           <Building2 className="h-3.5 w-3.5 shrink-0 text-[#003087]" aria-hidden />
           <span className="line-clamp-1">{clientName}</span>
         </p>
       )}
 
-      <div className={`flex flex-wrap gap-1.5 ${compact ? 'mt-2' : 'mt-2.5'}`}>
-        <span
-          className={`job-card-meta inline-flex items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 text-[10px] ${
-            compact ? 'px-2 py-1' : 'min-h-[32px] gap-1.5 rounded-xl px-2.5 py-1.5'
-          }`}
-        >
-          <MapPin className="h-3 w-3 shrink-0 text-[#003087]" aria-hidden />
-          <span className="line-clamp-1">{location}</span>
-        </span>
-        <span
-          className={`job-card-meta inline-flex items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 text-[10px] ${
-            compact ? 'px-2 py-1' : 'min-h-[32px] gap-1.5 rounded-xl px-2.5 py-1.5'
-          }`}
-        >
-          <Briefcase className="h-3 w-3 shrink-0 text-[#003087]" aria-hidden />
-          <span>{jobType}</span>
-        </span>
+      <div className={`flex flex-wrap gap-2 ${compact ? 'mt-3' : 'mt-3.5'}`}>
+        <MetaChip icon={MapPin}>{location}</MetaChip>
+        <MetaChip icon={Briefcase}>{jobType}</MetaChip>
       </div>
 
       {!compact && description && (
-        <p className="job-card-desc mt-2.5 line-clamp-2">{description}</p>
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">{description}</p>
       )}
 
-      {shownRequirements.length > 0 && (
-        <div className={`border-t border-slate-100 ${compact ? 'mt-2.5 pt-2.5' : 'mt-3 pt-3'}`}>
-          {!compact && (
-            <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-800">
-              {t('home_qualifications')}
-            </p>
-          )}
-          <ul className={`${compact ? 'space-y-0.5' : 'mt-1.5 space-y-1'} pl-0.5`}>
-            {shownRequirements.map((req, idx) => (
-              <li
-                key={idx}
-                className="flex items-start gap-1.5 text-[11px] leading-snug text-slate-600"
-              >
-                <span
-                  className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#003087]"
-                  aria-hidden
-                />
-                <span className="line-clamp-1">{req}</span>
-              </li>
+      {chipItems.length > 0 && (
+        <div className={`border-t border-slate-100/90 ${compact ? 'mt-4 pt-4' : 'mt-4 pt-4'}`}>
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+            {t('home_qualifications')}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {chipItems.map((item, idx) => (
+              <SkillChip key={`${item}-${idx}`} label={item} />
             ))}
-            {hasMoreRequirements && (
-              <li className="text-[10px] font-semibold text-[#003087]">
-                {tVars('job_card_more_requirements', {
-                  count: requirements.length - reqLimit,
-                })}
-              </li>
+            {hasMoreChips && (
+              <span className="inline-flex items-center px-2 py-1 text-[10px] font-bold text-[#003087]">
+                {tVars('job_card_more_requirements', { count: totalChips - chipLimit })}
+              </span>
             )}
-          </ul>
+          </div>
         </div>
       )}
 
       <div
-        className={`flex gap-2 border-t border-slate-50 ${compact ? 'mt-2.5 pt-2.5' : 'mt-3.5 pt-3.5'}`}
+        className={`flex flex-col gap-2.5 sm:flex-row ${compact ? 'mt-5' : 'mt-6'}`}
       >
         {detailHref && (
-          <Link
-            to={detailHref}
-            className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 transition hover:border-[#003087]/25 hover:bg-slate-50 active:scale-[0.98]"
-          >
+          <Link to={detailHref} className={`${NAVY_BTN_OUTLINE} flex-1`}>
             {t('job_card_detail')}
+            <ChevronRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
         {onOpenMap && !compact && (
           <button
             type="button"
             onClick={onOpenMap}
-            className="flex min-h-[48px] flex-1 items-center justify-center gap-1 rounded-xl border border-[#003087]/15 bg-blue-50 text-[11px] font-bold text-[#003087] transition hover:bg-blue-100 active:scale-[0.98]"
+            className={`${NAVY_BTN_OUTLINE} flex-1`}
           >
-            <Map className="h-3.5 w-3.5" aria-hidden />
+            <Map className="h-4 w-4" aria-hidden />
             {t('home_btn_map')}
           </button>
         )}
         <Link
           to={applyHref}
-          className="flex min-h-[48px] flex-[1.15] items-center justify-center gap-1 rounded-xl bg-[#003087] text-[11px] font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
+          className={`${NAVY_BTN} flex-1`}
+          style={{ backgroundColor: BRAND_NAVY }}
         >
-          <Send className="h-3.5 w-3.5" aria-hidden />
           {t('home_btn_apply')}
         </Link>
       </div>
-    </article>
+    </WizardCard>
   );
 };
 
