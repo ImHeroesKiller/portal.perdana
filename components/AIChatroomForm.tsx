@@ -22,7 +22,7 @@ import { NewEmployee, JobVacancy } from '../types';
 import { extractFieldsFromChat, isReadyForPreview } from '../lib/sara-chat-extract';
 import { findJsonInText } from '../lib/candidate-payload';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
-import { SaraLiveDataSync } from './recruitment/SaraLiveDataSync';
+import { SaraLiveDataSync, computeSyncProgress } from './recruitment/SaraLiveDataSync';
 
 interface Message {
   id: string;
@@ -101,21 +101,7 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
   const [finalId, setFinalId] = useState('');
   const [finalName, setFinalName] = useState('');
 
-  const syncPct = useMemo(() => {
-    const checks = [
-      Boolean(extractedData.positionApplied),
-      Boolean(extractedData.fullName),
-      Boolean(extractedData.nik),
-      Boolean(extractedData.kkNumber),
-      Boolean(extractedData.email),
-      Boolean(extractedData.whatsappNumber),
-      Boolean(extractedData.provinsi || extractedData.desa || extractedData.addressLine),
-      Boolean(extractedData.lastEducation),
-      Boolean(extractedData.bankName && extractedData.accountNumber),
-    ];
-    const done = checks.filter(Boolean).length;
-    return Math.round((done / checks.length) * 100);
-  }, [extractedData]);
+  const syncPct = useMemo(() => computeSyncProgress(extractedData).pct, [extractedData]);
 
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
