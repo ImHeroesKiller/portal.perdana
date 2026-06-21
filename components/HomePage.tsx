@@ -39,7 +39,7 @@ export const HomePage: React.FC = () => {
   const [mapModalData, setMapModalData] = useState<{lat: number, lng: number, title: string} | null>(null);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
-  const { t, language } = useLanguage();
+  const { t, tVars, tJobCountLabel, language } = useLanguage();
 
   const jobsForList = allJobs.length > 0 ? allJobs : jobs;
 
@@ -180,10 +180,8 @@ export const HomePage: React.FC = () => {
               showCount
               countLabel={(count) =>
                 filteredJobs.length > HOME_PREVIEW_JOB_LIMIT
-                  ? t('home_vac_preview_count', { shown: count, total: filteredJobs.length })
-                  : count === 1
-                    ? t('home_jobs_found_one')
-                    : t('home_jobs_found_many', { count })
+                  ? tVars('home_vac_preview_count', { shown: count, total: filteredJobs.length })
+                  : tJobCountLabel(count)
               }
               className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               renderItem={(job, display: JobDisplayFields) => {

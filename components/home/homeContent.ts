@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { tVars } from '../../services/i18n';
 import {
   Briefcase,
   Users,
@@ -244,7 +245,7 @@ export function resolveQuickAccessSubtitle(
     return t('home_quick_portal_user_sub');
   }
   if (item.dynamicSubtitleKey && jobCount > 0) {
-    return t(item.dynamicSubtitleKey, { count: jobCount });
+    return tVars(t, item.dynamicSubtitleKey, { count: jobCount });
   }
   return t(item.subtitleKey);
 }

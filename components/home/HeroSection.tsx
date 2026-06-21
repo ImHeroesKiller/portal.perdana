@@ -76,6 +76,7 @@ function HeroContent({
   jobCount,
   compact,
   t,
+  tVars,
 }: {
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -83,6 +84,7 @@ function HeroContent({
   jobCount: number;
   compact: boolean;
   t: (key: string) => string;
+  tVars: (key: string, vars?: Record<string, string | number | undefined>) => string;
 }) {
   const navigate = useNavigate();
 
@@ -117,7 +119,7 @@ function HeroContent({
             {jobCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 px-2.5 py-1 text-[10px] font-bold text-amber-100 sm:text-xs">
                 <BriefcaseIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                {t('home_hero_jobs_count', { count: jobCount })}
+                {tVars('home_hero_jobs_count', { count: jobCount })}
               </span>
             )}
           </div>
@@ -292,12 +294,14 @@ function SlideDots({
 
 function HeroSlideshow({
   compact,
-  ...contentProps
+  t,
+  tVars,
+  ...rest
 }: Omit<HeroSectionProps, 'compact'> & {
   compact: boolean;
   t: (key: string) => string;
+  tVars: (key: string, vars?: Record<string, string | number | undefined>) => string;
 }) {
-  const { t, ...rest } = contentProps;
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
   useEffect(() => {
@@ -317,6 +321,7 @@ function HeroSlideshow({
           compact={compact}
           jobCount={rest.jobCount ?? 0}
           t={t}
+          tVars={tVars}
         />
         <SlideDots
           count={HERO_IMAGES.length}
@@ -329,8 +334,8 @@ function HeroSlideshow({
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = (props) => {
-  const { t } = useLanguage();
+  const { t, tVars } = useLanguage();
   const { compact = false, ...rest } = props;
 
-  return <HeroSlideshow {...rest} compact={compact} t={t} />;
+  return <HeroSlideshow {...rest} compact={compact} t={t} tVars={tVars} />;
 };

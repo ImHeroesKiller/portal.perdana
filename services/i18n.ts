@@ -57,6 +57,36 @@ export function pickLocalized<T extends { id: string; en: string; zh?: string }>
   return text.id;
 }
 
+export type I18nVars = Record<string, string | number | undefined>;
+
+type TFn = (key: string, options?: Record<string, unknown>) => string;
+
+/** Replace leftover {{var}} / {{{var}}} when a locale string was saved with broken braces. */
+function applyVarFallback(text: string, vars: I18nVars): string {
+  let out = text;
+  for (const [name, value] of Object.entries(vars)) {
+    if (value === undefined) continue;
+    const str = String(value);
+    out = out.replaceAll(`{{{${name}}}}`, str).replaceAll(`{{${name}}}`, str);
+  }
+  return out;
+}
+
+/** Translate with interpolation vars and manual fallback for malformed locale templates. */
+export function tVars(t: TFn, key: string, vars: I18nVars = {}): string {
+  const options = Object.fromEntries(
+    Object.entries(vars).filter(([, value]) => value !== undefined)
+  );
+  const result = t(key, options);
+  return /\{\{/.test(result) ? applyVarFallback(result, vars) : result;
+}
+
+/** Singular/plural job count label (ID/EN/ZH). */
+export function tJobCountLabel(t: TFn, count: number): string {
+  if (count === 1) return t('home_jobs_found_one');
+  return tVars(t, 'home_jobs_found_many', { count });
+}
+
 function syncDocumentLang(lang: AppLanguage) {
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
 }
@@ -120,7 +150,21 @@ export function useLanguage() {
     setLanguage(order[(idx + 1) % order.length]);
   }, [language, setLanguage]);
 
-  return { language, setLanguage, toggleLanguage, t };
+  const translateVars = useCallback(
+    (key: string, vars: I18nVars = {}) => tVars(t, key, vars),
+    [t]
+  );
+
+  const jobCountLabel = useCallback((count: number) => tJobCountLabel(t, count), [t]);
+
+  return {
+    language,
+    setLanguage,
+    toggleLanguage,
+    t,
+    tVars: translateVars,
+    tJobCountLabel: jobCountLabel,
+  };
 }
 
 /** @deprecated Use LanguageUrlSync inside router; kept for App.tsx wrapper. */

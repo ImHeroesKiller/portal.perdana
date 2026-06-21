@@ -398,7 +398,12 @@ const ZH_FROM_EN = {
 function fixInterpolation(obj) {
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
-    out[k] = String(v).replace(/\{(\w+)\}/g, '{{$1}}');
+    let s = String(v);
+    // i18next uses {{var}} — normalize accidental triple braces from double-pass conversion
+    s = s.replace(/\{\{\{(\w+)\}\}\}/g, '{{$1}}');
+    // Convert lone {var} to {{var}} without touching already-valid {{var}}
+    s = s.replace(/(?<!\{)\{(\w+)\}(?!\})/g, '{{$1}}');
+    out[k] = s;
   }
   return out;
 }

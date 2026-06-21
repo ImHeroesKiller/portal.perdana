@@ -84,7 +84,7 @@ function ApplyButton({
 export const JobDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { t, tVars, language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -247,7 +247,7 @@ export const JobDetailPage: React.FC = () => {
               <ContentCard className="text-center">
                 <p className="text-sm font-bold text-slate-700">{t('job_not_found')}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  {t('job_not_found_desc', { id: jobId || '—' })}
+                  {tVars('job_not_found_desc', { id: jobId || '—' })}
                 </p>
                 <button
                   type="button"

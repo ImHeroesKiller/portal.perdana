@@ -11,6 +11,7 @@ import { DataFetchState } from '../src/components/DataFetchState';
 import { resolveJobTitle } from '../lib/job-display';
 import type { JobDisplayFields } from './jobs/JobList';
 import { ArrowRight, Megaphone, Calendar, MapPin, Briefcase } from 'lucide-react';
+import { useLanguage } from '../services/i18n';
 
 interface MobileHomePageProps {
   jobs: any[];
@@ -50,6 +51,7 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
   t,
   language,
 }) => {
+  const { tVars, tJobCountLabel } = useLanguage();
   const navigate = useNavigate();
 
   const handleStatClick = (key: keyof typeof stats) => {
@@ -132,10 +134,8 @@ export const MobileHomePage: React.FC<MobileHomePageProps> = ({
               showCount
               countLabel={(count) =>
                 totalFilteredJobs > count
-                  ? t('home_vac_preview_count', { shown: count, total: totalFilteredJobs })
-                  : count === 1
-                    ? t('home_jobs_found_one')
-                    : t('home_jobs_found_many', { count })
+                  ? tVars('home_vac_preview_count', { shown: count, total: totalFilteredJobs })
+                  : tJobCountLabel(count)
               }
               className="space-y-3"
               renderItem={(job, display: JobDisplayFields) => {

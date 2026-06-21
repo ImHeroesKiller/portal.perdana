@@ -27,7 +27,7 @@ import {
 export const VacanciesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, language } = useLanguage();
+  const { t, tVars, language } = useLanguage();
   const {
     data: jobs = [],
     allJobs,
@@ -235,7 +235,7 @@ export const VacanciesPage: React.FC = () => {
 
         {filterRelaxed && jobsToRender.length > 0 && (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] font-semibold text-amber-800">
-            {t('vacancies_filter_relaxed', { count: jobsToRender.length })}
+            {tVars('vacancies_filter_relaxed', { count: jobsToRender.length })}
             <button type="button" onClick={resetFilters} className="ml-2 font-bold underline">
               {t('vacancies_reset_filter')}
             </button>
@@ -370,7 +370,7 @@ export const VacanciesPage: React.FC = () => {
                       : 'border-slate-100 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {f === 'Semua' ? t('vacancies_filter_all') : t('vacancies_filter_sector', { name: f })}
+                  {f === 'Semua' ? t('vacancies_filter_all') : tVars('vacancies_filter_sector', { name: f })}
                 </button>
               ))}
             </div>
@@ -389,11 +389,11 @@ export const VacanciesPage: React.FC = () => {
             className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
-            aria-label={t('vacancies_map_title', { name: mapModalData.title })}
+            aria-label={tVars('vacancies_map_title', { name: mapModalData.title })}
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
               <h3 className="text-xs font-extrabold text-slate-950">
-                {t('vacancies_map_title', { name: mapModalData.title })}
+                {tVars('vacancies_map_title', { name: mapModalData.title })}
               </h3>
               <button
                 type="button"
