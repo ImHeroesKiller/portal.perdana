@@ -51,11 +51,17 @@ export async function getCandidates(options?: GetCandidatesOptions): Promise<Emp
   return normalized;
 }
 
+export type CreateCandidateOptions = {
+  /** Gunakan ID tetap (mis. user id saat registrasi) agar tidak duplikat di Firestore */
+  id?: string;
+};
+
 export async function createCandidate(
   data: NewEmployee,
-  source: 'manual' | 'ai-sara' | 'api-submit' | string = 'manual'
+  source: 'manual' | 'ai-sara' | 'api-submit' | 'register' | string = 'manual',
+  options?: CreateCandidateOptions
 ): Promise<Employee> {
-  const id = Math.random().toString(36).substring(2, 11);
+  const id = options?.id || Math.random().toString(36).substring(2, 11);
   const standardized = standardizeCandidate({ ...data, status: 'APPLIED' }) as Partial<Employee>;
 
   if (standardized.whatsappNumber) {
@@ -148,6 +154,92 @@ export async function updateCandidate(id: string, updates: Partial<Employee>): P
   }
 
   return normalizeCandidateFromFirestore({ ...payload, id });
+}
+
+function buildRegistrationStub(
+  userId: string,
+  email: string,
+  phone: string,
+  fullName?: string
+): NewEmployee {
+  const displayName =
+    fullName?.trim() ||
+    email
+      .split('@')[0]
+      .replace(/[._-]+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return {
+    fullName: displayName,
+    email: email.toLowerCase().trim(),
+    whatsappNumber: ensurePlus62(phone),
+    positionApplied: 'Belum Dipilih',
+    nik: '',
+    kkNumber: '',
+    placeOfBirth: '-',
+    dateOfBirth: new Date().toISOString().split('T')[0],
+    gender: '-',
+    religion: '-',
+    maritalStatus: '-',
+    domicileAddress: '-',
+    telegramId: '',
+    lastEducation: '-',
+    institutionName: '-',
+    major: '-',
+    graduationYear: new Date().getFullYear(),
+    skills: '',
+    workExperience: '-',
+    bankName: '-',
+    accountNumber: '-',
+    emergencyName: '-',
+    emergencyRelation: '-',
+    emergencyPhone: '-',
+    applicationLetterPath: '',
+    cvPath: '',
+    ktpPath: '',
+    diplomaPath: '',
+    photoPath: '',
+    kkPath: '',
+    certificatePath: '',
+  };
+}
+
+/** Simpan kandidat lengkap ke Firebase Firestore (collection: candidates). */
+export async function saveCandidateToFirebase(
+  data: NewEmployee,
+  source: 'manual' | 'ai-sara' | 'api-submit' | 'register' | string = 'manual',
+  options?: CreateCandidateOptions
+): Promise<Employee> {
+  return createCandidate(data, source, options);
+}
+
+/**
+ * Simpan profil awal pelamar ke Firestore saat registrasi akun portal.
+ * Non-blocking: kegagalan Firebase tidak membatalkan registrasi.
+ */
+export async function saveRegistrationCandidate(
+  userId: string,
+  email: string,
+  phone: string,
+  options?: { fullName?: string }
+): Promise<Employee | null> {
+  const stub = buildRegistrationStub(userId, email, phone, options?.fullName);
+
+  try {
+    return await createCandidate(stub, 'register', { id: userId });
+  } catch (error) {
+    console.warn('[candidateService] saveRegistrationCandidate failed:', error);
+    try {
+      return await updateCandidate(userId, {
+        email: stub.email,
+        whatsappNumber: stub.whatsappNumber,
+        fullName: stub.fullName,
+      });
+    } catch (updateError) {
+      console.warn('[candidateService] saveRegistrationCandidate update fallback failed:', updateError);
+      return null;
+    }
+  }
 }
 
 export async function deleteCandidate(id: string): Promise<void> {
