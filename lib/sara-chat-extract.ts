@@ -1,4 +1,11 @@
 import { findJsonInText, type CandidatePayload } from './candidate-payload';
+import {
+  getQuickReplyOptions,
+  isQuickReplyField,
+  normalizeChoiceField,
+  normalizeRecruitmentChoices,
+  type QuickReplyField,
+} from './recruitment-field-options';
 
 export type SaraChatTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -66,26 +73,29 @@ const COLLECTION_ORDER: FieldSpec[] = [
   {
     key: 'gender',
     label: 'Jenis kelamin',
-    filled: (d) => Boolean(d.gender?.trim()),
-    display: (d) => d.gender || '',
+    filled: (d) => Boolean(normalizeChoiceField('gender', d.gender)),
+    display: (d) => normalizeChoiceField('gender', d.gender) || d.gender || '',
   },
   {
     key: 'maritalStatus',
     label: 'Status pernikahan',
-    filled: (d) => Boolean(d.maritalStatus?.trim()),
-    display: (d) => d.maritalStatus || '',
+    filled: (d) => Boolean(normalizeChoiceField('maritalStatus', d.maritalStatus)),
+    display: (d) => normalizeChoiceField('maritalStatus', d.maritalStatus) || d.maritalStatus || '',
   },
   {
     key: 'religion',
     label: 'Agama',
-    filled: (d) => Boolean(d.religion?.trim()),
-    display: (d) => d.religion || '',
+    filled: (d) => Boolean(normalizeChoiceField('religion', d.religion)),
+    display: (d) => normalizeChoiceField('religion', d.religion) || d.religion || '',
   },
   {
     key: 'willingToRelocate',
     label: 'Relokasi',
-    filled: (d) => d.willingToRelocate === 'Ya' || d.willingToRelocate === 'Tidak',
-    display: (d) => String(d.willingToRelocate || ''),
+    filled: (d) => {
+      const v = normalizeChoiceField('willingToRelocate', d.willingToRelocate);
+      return v === 'Ya' || v === 'Tidak';
+    },
+    display: (d) => normalizeChoiceField('willingToRelocate', d.willingToRelocate) || '',
   },
   {
     key: 'email',
@@ -114,8 +124,8 @@ const COLLECTION_ORDER: FieldSpec[] = [
   {
     key: 'lastEducation',
     label: 'Pendidikan terakhir',
-    filled: (d) => Boolean(d.lastEducation?.trim()),
-    display: (d) => d.lastEducation || '',
+    filled: (d) => Boolean(normalizeChoiceField('lastEducation', d.lastEducation)),
+    display: (d) => normalizeChoiceField('lastEducation', d.lastEducation) || d.lastEducation || '',
   },
   {
     key: 'institutionName',
@@ -150,8 +160,8 @@ const COLLECTION_ORDER: FieldSpec[] = [
   {
     key: 'bankName',
     label: 'Nama bank',
-    filled: (d) => Boolean(d.bankName?.trim()),
-    display: (d) => d.bankName || '',
+    filled: (d) => Boolean(normalizeChoiceField('bankName', d.bankName)),
+    display: (d) => normalizeChoiceField('bankName', d.bankName) || d.bankName || '',
   },
   {
     key: 'accountNumber',
@@ -168,8 +178,9 @@ const COLLECTION_ORDER: FieldSpec[] = [
   {
     key: 'emergencyRelation',
     label: 'Hubungan darurat',
-    filled: (d) => Boolean(d.emergencyRelation?.trim()),
-    display: (d) => d.emergencyRelation || '',
+    filled: (d) => Boolean(normalizeChoiceField('emergencyRelation', d.emergencyRelation)),
+    display: (d) =>
+      normalizeChoiceField('emergencyRelation', d.emergencyRelation) || d.emergencyRelation || '',
   },
   {
     key: 'emergencyPhone',
@@ -185,7 +196,7 @@ function isCorrectionMessage(content: string): boolean {
   );
 }
 
-function inferExpectedField(assistantText: string): keyof CandidatePayload | null {
+export function inferExpectedField(assistantText: string): keyof CandidatePayload | null {
   const t = assistantText.toLowerCase();
   const asksName = /nama lengkap|nama sesuai|nama kamu|siapa nama|kenalan|sekalian nama|nama.*ktp/i.test(
     t
@@ -300,17 +311,37 @@ function normalizeFieldValue(
       if (!/^(nama|saya|aku)\b/i.test(trimmed) && trimmed.length < 80) return trimmed;
       return null;
     }
+    case 'gender': {
+      const v = normalizeChoiceField('gender', trimmed);
+      return v || null;
+    }
+    case 'religion': {
+      const v = normalizeChoiceField('religion', trimmed);
+      return v || null;
+    }
+    case 'maritalStatus': {
+      const v = normalizeChoiceField('maritalStatus', trimmed);
+      return v || null;
+    }
     case 'willingToRelocate': {
-      const t = trimmed.toLowerCase();
-      if (/^(ya|yes|siap|boleh|ok|oke|open)$/i.test(t)) return 'Ya';
-      if (/^(tidak|nggak|gk|ga|no|belum)$/i.test(t)) return 'Tidak';
-      if (/belum tahu|gk tahu|ga tahu|lupa|ragu/i.test(t)) return null;
+      const v = normalizeChoiceField('willingToRelocate', trimmed);
+      if (v) return v;
+      if (/belum tahu|gk tahu|ga tahu|lupa|ragu/i.test(trimmed)) return null;
       return null;
     }
+    case 'lastEducation': {
+      const v = normalizeChoiceField('lastEducation', trimmed);
+      return v || null;
+    }
+    case 'bankName': {
+      const v = normalizeChoiceField('bankName', trimmed);
+      return v || null;
+    }
+    case 'emergencyRelation': {
+      const v = normalizeChoiceField('emergencyRelation', trimmed);
+      return v || null;
+    }
     default:
-      if (/^(ya|tidak|laki|perempuan|islam|kristen|katolik|hindu|buddha)$/i.test(trimmed)) {
-        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
-      }
       if (/^(gk tahu|ga tahu|belum tahu|lupa|ragu)/i.test(trimmed)) return null;
       return trimmed.length > 0 && trimmed.length < 200 ? trimmed : null;
   }
@@ -445,7 +476,36 @@ export function extractFieldsFromChat(messages: SaraChatTurn[]): Partial<Candida
   if (out.nik && !isNikValid(out.nik)) delete out.nik;
   if (out.kkNumber && !isNikValid(out.kkNumber)) delete out.kkNumber;
 
-  return out;
+  return normalizeRecruitmentChoices(out);
+}
+
+/** Quick-reply buttons for the field Sara is currently asking about. */
+export function getQuickRepliesForChat(
+  messages: SaraChatTurn[],
+  knownData?: Partial<CandidatePayload>
+): {
+  field: QuickReplyField;
+  options: string[];
+} | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role !== 'assistant') continue;
+    const field = inferExpectedField(messages[i].content);
+    if (isQuickReplyField(field)) {
+      const options = getQuickReplyOptions(field);
+      if (options?.length) return { field, options };
+    }
+    break;
+  }
+
+  if (knownData) {
+    const next = getNextMissingField(knownData);
+    if (next && isQuickReplyField(next.key)) {
+      const options = getQuickReplyOptions(next.key);
+      if (options?.length) return { field: next.key, options };
+    }
+  }
+
+  return null;
 }
 
 export function isReadyForPreview(data: Partial<CandidatePayload>): boolean {

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Check, ChevronDown, Circle, Pencil } from 'lucide-react';
 import type { NewEmployee } from '../../types';
+import { formatFieldForDisplay } from '../../lib/recruitment-field-options';
 
 const NAVY = '#003087';
 
@@ -91,27 +92,36 @@ export const RECRUITMENT_CHECKLIST: ChecklistItem[] = [
   },
   {
     id: 'gender',
-    label: 'Gender',
-    filled: (d) => Boolean(d.gender?.trim()),
-    display: (d) => d.gender || '',
+    label: 'Jenis Kelamin',
+    filled: (d) => Boolean(formatFieldForDisplay('gender', d.gender) !== '—'),
+    display: (d) => formatFieldForDisplay('gender', d.gender),
   },
   {
     id: 'religion',
     label: 'Agama',
-    filled: (d) => Boolean(d.religion?.trim()),
-    display: (d) => d.religion || '',
+    filled: (d) => Boolean(formatFieldForDisplay('religion', d.religion) !== '—'),
+    display: (d) => formatFieldForDisplay('religion', d.religion),
   },
   {
     id: 'maritalStatus',
     label: 'Status Pernikahan',
-    filled: (d) => Boolean(d.maritalStatus?.trim()),
-    display: (d) => d.maritalStatus || '',
+    filled: (d) => Boolean(formatFieldForDisplay('maritalStatus', d.maritalStatus) !== '—'),
+    display: (d) => formatFieldForDisplay('maritalStatus', d.maritalStatus),
+  },
+  {
+    id: 'willingToRelocate',
+    label: 'Relokasi',
+    filled: (d) => {
+      const v = formatFieldForDisplay('willingToRelocate', d.willingToRelocate);
+      return v === 'Ya' || v === 'Tidak';
+    },
+    display: (d) => formatFieldForDisplay('willingToRelocate', d.willingToRelocate),
   },
   {
     id: 'lastEducation',
     label: 'Pendidikan Terakhir',
-    filled: (d) => Boolean(d.lastEducation?.trim()),
-    display: (d) => d.lastEducation || '',
+    filled: (d) => Boolean(formatFieldForDisplay('lastEducation', d.lastEducation) !== '—'),
+    display: (d) => formatFieldForDisplay('lastEducation', d.lastEducation),
   },
   {
     id: 'major',
@@ -130,7 +140,9 @@ export const RECRUITMENT_CHECKLIST: ChecklistItem[] = [
     label: 'Bank & Rekening',
     filled: (d) => Boolean(d.bankName?.trim() && d.accountNumber?.trim()),
     display: (d) =>
-      d.bankName && d.accountNumber ? `${d.bankName} · ${d.accountNumber}` : d.bankName || '',
+      d.bankName && d.accountNumber
+        ? `${formatFieldForDisplay('bankName', d.bankName)} · ${d.accountNumber}`
+        : formatFieldForDisplay('bankName', d.bankName),
   },
   {
     id: 'emergency',
@@ -143,7 +155,7 @@ export const RECRUITMENT_CHECKLIST: ChecklistItem[] = [
       ),
     display: (d) =>
       d.emergencyName
-        ? `${d.emergencyName} (${d.emergencyRelation || '—'}) · ${d.emergencyPhone || '—'}`
+        ? `${d.emergencyName} (${formatFieldForDisplay('emergencyRelation', d.emergencyRelation)}) · ${d.emergencyPhone || '—'}`
         : '',
   },
   {

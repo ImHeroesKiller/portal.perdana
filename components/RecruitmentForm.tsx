@@ -22,6 +22,7 @@ import {
   validateDocuments,
   type FieldErrors,
 } from '../lib/recruitment-validation';
+import { normalizeRecruitmentChoices } from '../lib/recruitment-field-options';
 import { MarketingPageShell } from './layout/MarketingPageLayout';
 import { BRAND_NAVY } from './home/homeContent';
 import { StepIdentity } from './recruitment/StepIdentity';
@@ -197,14 +198,18 @@ export const RecruitmentForm: React.FC = () => {
 
       const domicileAddress = `${formData.addressLine}, Desa ${formData.desa}, Kec. ${formData.kecamatan}, ${formData.kabupaten}, ${formData.provinsi}, RT ${formData.rt} RW ${formData.rw}`;
 
+      const normalizedForm = normalizeRecruitmentChoices(
+        formData as unknown as Record<string, unknown>
+      ) as FormDataState;
+
       const payload: NewEmployee = {
-        ...formData,
+        ...normalizedForm,
         domicileAddress,
         whatsappNumber: finalWA,
         emergencyPhone: finalEP,
-        graduationYear: parseInt(formData.graduationYear, 10) || 0,
-        latitude: parseFloat(formData.latitude) || 0,
-        longitude: parseFloat(formData.longitude) || 0,
+        graduationYear: parseInt(normalizedForm.graduationYear, 10) || 0,
+        latitude: parseFloat(normalizedForm.latitude) || 0,
+        longitude: parseFloat(normalizedForm.longitude) || 0,
         jobId: initialJobId || undefined,
         applicationLetterPath: filePaths.applicationLetterPath,
         cvPath: filePaths.cvPath,
@@ -236,11 +241,16 @@ export const RecruitmentForm: React.FC = () => {
       }
 
       setSuccessData({
-        fullName: formData.fullName,
-        position: formData.positionApplied,
-        nik: formData.nik,
-        email: formData.email,
+        fullName: normalizedForm.fullName,
+        position: normalizedForm.positionApplied,
+        nik: normalizedForm.nik,
+        email: normalizedForm.email,
         whatsapp: finalWA,
+        gender: normalizedForm.gender,
+        religion: normalizedForm.religion,
+        maritalStatus: normalizedForm.maritalStatus,
+        lastEducation: normalizedForm.lastEducation,
+        bankName: normalizedForm.bankName,
         referenceId: result.id,
         credentials,
       });

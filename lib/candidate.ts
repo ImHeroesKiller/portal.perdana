@@ -10,6 +10,7 @@ import {
   findJsonInText,
   isCompleteCandidateData,
 } from './candidate-payload';
+import { normalizeRecruitmentChoices } from './recruitment-field-options';
 
 export { CANDIDATES_COLLECTION } from './candidate-record';
 export type { CandidatePayload } from './candidate-payload';
@@ -37,47 +38,48 @@ function parseWillingToRelocate(value: CandidatePayload['willingToRelocate']): b
 
 export function mapCandidateDocument(data: CandidatePayload, id?: string) {
   const candidateId = id || Math.random().toString(36).substring(2, 11);
-  const addressLine = data.addressLine || '';
+  const normalized = normalizeRecruitmentChoices(data as Record<string, unknown>) as CandidatePayload;
+  const addressLine = normalized.addressLine || '';
 
   return prepareCandidateForFirestore(
     {
       id: candidateId,
-      positionApplied: data.positionApplied || 'Staff Operasional',
-      fullName: data.fullName || '',
-      nik: data.nik || '',
-      kkNumber: data.kkNumber || '',
-      npwp: data.npwp || '',
-      placeOfBirth: data.placeOfBirth || '-',
-      dateOfBirth: data.dateOfBirth || new Date().toISOString().split('T')[0],
-      gender: data.gender || 'Laki-laki',
-      maritalStatus: data.maritalStatus || 'Belum Menikah',
-      religion: data.religion || 'Islam',
-      willingToRelocate: parseWillingToRelocate(data.willingToRelocate),
-      certifications: data.certifications || '',
-      email: (data.email || '').toLowerCase(),
-      whatsappNumber: ensurePlus62(data.whatsappNumber),
+      positionApplied: normalized.positionApplied || 'Staff Operasional',
+      fullName: normalized.fullName || '',
+      nik: normalized.nik || '',
+      kkNumber: normalized.kkNumber || '',
+      npwp: normalized.npwp || '',
+      placeOfBirth: normalized.placeOfBirth || '-',
+      dateOfBirth: normalized.dateOfBirth || new Date().toISOString().split('T')[0],
+      gender: normalized.gender || 'Laki-laki',
+      maritalStatus: normalized.maritalStatus || 'Belum Menikah',
+      religion: normalized.religion || 'Islam',
+      willingToRelocate: parseWillingToRelocate(normalized.willingToRelocate),
+      certifications: normalized.certifications || '',
+      email: (normalized.email || '').toLowerCase(),
+      whatsappNumber: ensurePlus62(normalized.whatsappNumber),
       addressLine,
       domicileAddress: addressLine,
-      provinsi: data.provinsi || '',
-      kabupaten: data.kabupaten || '',
-      kecamatan: data.kecamatan || '',
-      desa: data.desa || '',
-      rt: data.rt || '',
-      rw: data.rw || '',
-      latitude: parseFloat(String(data.latitude)) || -0.9489,
-      longitude: parseFloat(String(data.longitude)) || 119.8707,
-      lastEducation: data.lastEducation || '-',
-      institutionName: data.institutionName || '-',
-      major: data.major || '-',
-      graduationYear: Number(data.graduationYear) || new Date().getFullYear(),
-      skills: data.skills || '',
-      workExperience: data.workExperience || '-',
-      bankName: data.bankName || '-',
-      accountNumber: data.accountNumber || '-',
-      emergencyName: data.emergencyName || '-',
-      emergencyRelation: data.emergencyRelation || '-',
-      emergencyPhone: ensurePlus62(data.emergencyPhone) || '-',
-      telegramId: data.telegramId || '',
+      provinsi: normalized.provinsi || '',
+      kabupaten: normalized.kabupaten || '',
+      kecamatan: normalized.kecamatan || '',
+      desa: normalized.desa || '',
+      rt: normalized.rt || '',
+      rw: normalized.rw || '',
+      latitude: parseFloat(String(normalized.latitude)) || -0.9489,
+      longitude: parseFloat(String(normalized.longitude)) || 119.8707,
+      lastEducation: normalized.lastEducation || '-',
+      institutionName: normalized.institutionName || '-',
+      major: normalized.major || '-',
+      graduationYear: Number(normalized.graduationYear) || new Date().getFullYear(),
+      skills: normalized.skills || '',
+      workExperience: normalized.workExperience || '-',
+      bankName: normalized.bankName || '-',
+      accountNumber: normalized.accountNumber || '-',
+      emergencyName: normalized.emergencyName || '-',
+      emergencyRelation: normalized.emergencyRelation || '-',
+      emergencyPhone: ensurePlus62(normalized.emergencyPhone) || '-',
+      telegramId: normalized.telegramId || '',
       applicationLetterPath: '',
       cvPath: '',
       ktpPath: '',
@@ -88,7 +90,7 @@ export function mapCandidateDocument(data: CandidatePayload, id?: string) {
       status: normalizeApplicationStatus('APPLIED'),
       createdAt: new Date().toISOString(),
     } as any,
-    { id: candidateId, source: data.source || 'ai-sara' }
+    { id: candidateId, source: normalized.source || data.source || 'ai-sara' }
   );
 }
 

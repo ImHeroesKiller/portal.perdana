@@ -10,6 +10,8 @@ import {
 import {
   getCandidates,
   createCandidate,
+  saveCandidateToFirebase,
+  saveRegistrationCandidate,
   updateCandidate,
   deleteCandidate,
 } from '../src/services/candidateService';
@@ -238,6 +240,8 @@ export function useRefreshDb() {
 
 export {
   createCandidate,
+  saveCandidateToFirebase,
+  saveRegistrationCandidate,
   updateCandidate,
   deleteCandidate,
   createJob,

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   BriefcaseIcon,
   UserGroupIcon,
@@ -108,9 +109,19 @@ const SERVICES_DATA: ServiceDetail[] = [
   },
 ];
 
+const SERVICE_TAB_IDS = new Set(SERVICES_DATA.map((s) => s.id));
+
 export const Services: React.FC = () => {
   const { t, language } = useLanguage();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('business-support');
+
+  useEffect(() => {
+    const hash = location.hash.replace(/^#/, '');
+    if (SERVICE_TAB_IDS.has(hash)) {
+      setActiveTab(hash);
+    }
+  }, [location.hash]);
 
   const activeService = SERVICES_DATA.find((s) => s.id === activeTab) ?? SERVICES_DATA[0];
   const ActiveIcon = activeService.icon;

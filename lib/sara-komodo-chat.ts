@@ -2,6 +2,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { buildSaraChatContext } from './sara-chat-extract';
+import { formatSaraChoiceFieldGuide } from './recruitment-field-options';
 import { buildSaraSessionContext, type SaraSession } from './sara-memory';
 
 export const SARA_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
@@ -67,7 +68,9 @@ ${SARA_COMPANY_FACTS}
 
 CHAT (belum lengkap): no JSON
 Validasi: NIK/KK/NPWP tepat 16 digit angka · WA +62 · lahir YYYY-MM-DD
-JSON (lengkap+valid): output HANYA satu object {…}, no teks/markdown. graduationYear=number. Nilai ASLI dari memory/candidateData. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
+Field pilihan (gender, agama, status nikah, relokasi, pendidikan, bank, hubungan darurat): tanya singkat + sebut opsi. UI menampilkan tombol quick-reply — terima jawaban tombol atau sinonim (lelaki→Laki-laki, pria→Laki-laki, dll).
+${formatSaraChoiceFieldGuide()}
+JSON (lengkap+valid): output HANYA satu object {…}, no teks/markdown. graduationYear=number. Nilai field pilihan HARUS canonical di atas. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
 `.trim();
 
 function buildSaraSystemInstruction(

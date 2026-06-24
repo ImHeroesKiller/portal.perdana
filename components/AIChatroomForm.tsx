@@ -18,7 +18,22 @@ import { useJobs, createCandidate } from '../hooks/useDbQueries';
 import { getCurrentUser, updateUserProfile } from '../services/auth';
 import { sendTelegramMessage } from '../services/telegram';
 import { NewEmployee, JobVacancy } from '../types';
-import { extractFieldsFromChat, isReadyForPreview } from '../lib/sara-chat-extract';
+import {
+  extractFieldsFromChat,
+  getQuickRepliesForChat,
+  isReadyForPreview,
+} from '../lib/sara-chat-extract';
+import {
+  BANK_OPTIONS,
+  EDUCATION_OPTIONS,
+  EMERGENCY_RELATION_OPTIONS,
+  GENDER_OPTIONS,
+  MARITAL_OPTIONS,
+  RELIGION_OPTIONS,
+  RELOCATE_OPTIONS,
+  normalizeChoiceField,
+  normalizeRecruitmentChoices,
+} from '../lib/recruitment-field-options';
 import { findJsonInText } from '../lib/candidate-payload';
 import { MarketingPageShell } from './layout/MarketingPageLayout';
 import { SaraChatPanel } from './recruitment/SaraChatPanel';
@@ -104,6 +119,17 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
   const syncPct = useMemo(() => computeSyncProgress(extractedData).pct, [extractedData]);
 
+  const quickReply = useMemo(
+    () =>
+      loadingChat || formStage !== 'chat'
+        ? null
+        : getQuickRepliesForChat(
+            messages.map((m) => ({ role: m.role, content: m.content })),
+            extractedData
+          ),
+    [messages, loadingChat, formStage, extractedData]
+  );
+
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Live-sync: parse JSON + incremental field extraction from chat turns
@@ -138,14 +164,10 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
     return text;
   };
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!inputText.trim() || loadingChat) return;
+  const sendUserMessage = async (userMessageContent: string) => {
+    if (!userMessageContent.trim() || loadingChat) return;
 
     setErrorText(null);
-    const userMessageContent = inputText.trim();
-    setInputText('');
-
     const newMsg: Message = {
       id: Math.random().toString(),
       role: 'user',
@@ -242,16 +264,35 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
     }
   };
 
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!inputText.trim() || loadingChat) return;
+    const content = inputText.trim();
+    setInputText('');
+    await sendUserMessage(content);
+  };
+
+  const handleQuickReply = async (value: string) => {
+    if (loadingChat) return;
+    const normalized =
+      quickReply?.field != null
+        ? normalizeChoiceField(quickReply.field, value) || value
+        : value;
+    setInputText('');
+    await sendUserMessage(normalized);
+  };
+
   // Skip chat direct to form preview (Only if they want manual override or previewing)
   const handleForcePreview = () => {
     setFormStage('preview');
   };
 
   // Handle edit fields manually in preview check panel
-  const handleExtractedFieldChange = (key: keyof NewEmployee, value: any) => {
-    setExtractedData(prev => ({
+  const handleExtractedFieldChange = (key: keyof NewEmployee, value: unknown) => {
+    const normalized = normalizeChoiceField(String(key), value);
+    setExtractedData((prev) => ({
       ...prev,
-      [key]: value
+      [key]: normalized || value,
     }));
   };
 
@@ -332,48 +373,53 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
         }
       }
 
-      const formattedDomicile = extractedData.domicileAddress || 
-        `${extractedData.addressLine || 'Alamat Domisili'}, Desa ${extractedData.desa || '-'}, Kec. ${extractedData.kecamatan || '-'}, ${extractedData.kabupaten || '-'}, ${extractedData.provinsi || '-'}, RT ${extractedData.rt || '0'} RW ${extractedData.rw || '0'}`;
+      const normalizedExtracted = normalizeRecruitmentChoices(
+        extractedData as Record<string, unknown>
+      ) as Partial<NewEmployee>;
+
+      const formattedDomicile =
+        normalizedExtracted.domicileAddress ||
+        `${normalizedExtracted.addressLine || 'Alamat Domisili'}, Desa ${normalizedExtracted.desa || '-'}, Kec. ${normalizedExtracted.kecamatan || '-'}, ${normalizedExtracted.kabupaten || '-'}, ${normalizedExtracted.provinsi || '-'}, RT ${normalizedExtracted.rt || '0'} RW ${normalizedExtracted.rw || '0'}`;
 
       const finalPayload: NewEmployee = {
         // Fallback default identities
-        positionApplied: extractedData.positionApplied || 'Staff Operasional',
-        fullName: extractedData.fullName || 'Pelamar AI',
-        nik: extractedData.nik || '',
-        kkNumber: extractedData.kkNumber || '',
-        npwp: extractedData.npwp || '',
-        placeOfBirth: extractedData.placeOfBirth || '-',
-        dateOfBirth: extractedData.dateOfBirth || new Date().toISOString().split('T')[0],
-        gender: extractedData.gender || 'Laki-laki',
-        religion: extractedData.religion || 'Islam',
-        maritalStatus: extractedData.maritalStatus || 'Belum Menikah',
-        willingToRelocate: extractedData.willingToRelocate || '',
+        positionApplied: normalizedExtracted.positionApplied || 'Staff Operasional',
+        fullName: normalizedExtracted.fullName || 'Pelamar AI',
+        nik: normalizedExtracted.nik || '',
+        kkNumber: normalizedExtracted.kkNumber || '',
+        npwp: normalizedExtracted.npwp || '',
+        placeOfBirth: normalizedExtracted.placeOfBirth || '-',
+        dateOfBirth: normalizedExtracted.dateOfBirth || new Date().toISOString().split('T')[0],
+        gender: normalizedExtracted.gender || 'Laki-laki',
+        religion: normalizedExtracted.religion || 'Islam',
+        maritalStatus: normalizedExtracted.maritalStatus || 'Belum Menikah',
+        willingToRelocate: normalizedExtracted.willingToRelocate || '',
         certifications: extractedData.certifications || '',
         
-        email: extractedData.email || '',
+        email: normalizedExtracted.email || '',
         whatsappNumber: cleanWA,
         domicileAddress: formattedDomicile,
-        latitude: parseFloat(extractedData.latitude as any) || -0.9489, 
-        longitude: parseFloat(extractedData.longitude as any) || 119.8707, // Default Map Coordinates (Palu/Central)
-        
-        telegramId: extractedData.telegramId || '',
-        facebook: extractedData.facebook || '',
-        instagram: extractedData.instagram || '',
-        twitter: extractedData.twitter || '',
-        linkedin: extractedData.linkedin || '',
+        latitude: parseFloat(normalizedExtracted.latitude as string) || -0.9489,
+        longitude: parseFloat(normalizedExtracted.longitude as string) || 119.8707,
 
-        lastEducation: extractedData.lastEducation || '-',
-        institutionName: extractedData.institutionName || '-',
-        major: extractedData.major || '-',
-        graduationYear: Number(extractedData.graduationYear) || new Date().getFullYear(),
-        skills: extractedData.skills || '',
-        workExperience: extractedData.workExperience || '-',
+        telegramId: normalizedExtracted.telegramId || '',
+        facebook: normalizedExtracted.facebook || '',
+        instagram: normalizedExtracted.instagram || '',
+        twitter: normalizedExtracted.twitter || '',
+        linkedin: normalizedExtracted.linkedin || '',
 
-        bankName: extractedData.bankName || '-',
-        accountNumber: extractedData.accountNumber || '-',
+        lastEducation: normalizedExtracted.lastEducation || '-',
+        institutionName: normalizedExtracted.institutionName || '-',
+        major: normalizedExtracted.major || '-',
+        graduationYear: Number(normalizedExtracted.graduationYear) || new Date().getFullYear(),
+        skills: normalizedExtracted.skills || '',
+        workExperience: normalizedExtracted.workExperience || '-',
 
-        emergencyName: extractedData.emergencyName || '-',
-        emergencyRelation: extractedData.emergencyRelation || '-',
+        bankName: normalizedExtracted.bankName || '-',
+        accountNumber: normalizedExtracted.accountNumber || '-',
+
+        emergencyName: normalizedExtracted.emergencyName || '-',
+        emergencyRelation: normalizedExtracted.emergencyRelation || '-',
         emergencyPhone: cleanEM || '-',
 
         // Asset uploaded paths
@@ -404,6 +450,11 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
         nik: finalPayload.nik,
         email: finalPayload.email,
         whatsapp: finalPayload.whatsappNumber,
+        gender: finalPayload.gender,
+        religion: finalPayload.religion,
+        maritalStatus: finalPayload.maritalStatus,
+        lastEducation: finalPayload.lastEducation,
+        bankName: finalPayload.bankName,
         referenceId: result.id,
       });
       setFormStage('success');
@@ -415,11 +466,13 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
     }
   };
 
-  // Helper lists for dynamic select rendering
-  const genderOptions = ['Laki-laki', 'Perempuan'];
-  const religionOptions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Khonghucu', 'Lainnya'];
-  const maritalOptions = ['Belum Menikah', 'Menikah', 'Cerai Hidup', 'Cerai Mati'];
-  const relocateOptions = ['Ya', 'Tidak'];
+  const genderOptions = [...GENDER_OPTIONS];
+  const religionOptions = [...RELIGION_OPTIONS];
+  const maritalOptions = [...MARITAL_OPTIONS];
+  const relocateOptions = [...RELOCATE_OPTIONS];
+  const educationOptions = [...EDUCATION_OPTIONS];
+  const bankOptions = [...BANK_OPTIONS];
+  const emergencyRelationOptions = [...EMERGENCY_RELATION_OPTIONS];
 
   const handleCloseChat = () => {
     if (onSwitchToManual) onSwitchToManual();
@@ -508,6 +561,8 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
                 inputText={inputText}
                 onInputChange={setInputText}
                 onSubmit={handleSendMessage}
+                quickReply={quickReply}
+                onQuickReply={handleQuickReply}
                 positionHint={initialPosition || extractedData.positionApplied}
                 onClose={handleCloseChat}
                 onToggleSync={() => setSyncOpen((v) => !v)}
@@ -847,13 +902,16 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
                   
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Pendidikan Terakhir *</label>
-                    <input 
-                      type="text"
-                      placeholder="Contoh: SMA/SMK, D3, S1 Teknik..."
+                    <select
                       value={extractedData.lastEducation || ''}
                       onChange={(e) => handleExtractedFieldChange('lastEducation', e.target.value)}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:bg-white"
-                    />
+                    >
+                      <option value="">Pilih jenjang...</option>
+                      {educationOptions.map((o) => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -888,13 +946,16 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Nama Bank Payroll *</label>
-                    <input 
-                      type="text"
-                      placeholder="Contoh: Mandiri, BRI, BCA..."
+                    <select
                       value={extractedData.bankName || ''}
                       onChange={(e) => handleExtractedFieldChange('bankName', e.target.value)}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:bg-white"
-                    />
+                    >
+                      <option value="">Pilih bank...</option>
+                      {bankOptions.map((o) => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -919,13 +980,16 @@ export const AIChatroomForm: React.FC<AIChatroomFormProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Hubungan Darurat *</label>
-                    <input 
-                      type="text"
-                      placeholder="Contoh: Orangtua, Suami/Istri, Saudara..."
+                    <select
                       value={extractedData.emergencyRelation || ''}
                       onChange={(e) => handleExtractedFieldChange('emergencyRelation', e.target.value)}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none"
-                    />
+                    >
+                      <option value="">Pilih hubungan...</option>
+                      {emergencyRelationOptions.map((o) => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { register, loginWithGoogleMock } from '../services/auth';
+import { saveRegistrationCandidate } from '../src/services/candidateService';
 import { Input } from './ui/Input';
 import { ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 
@@ -37,11 +38,12 @@ export const Register: React.FC = () => {
     }
 
     try {
-      await register({
+      const user = await register({
         email: formData.email,
         phone: formData.phone,
         password: formData.password
       });
+      await saveRegistrationCandidate(user.id, formData.email, formData.phone);
       navigate('/portal');
     } catch (err: any) {
       setError(err.message || 'Gagal mendaftar akun baru.');
@@ -53,7 +55,8 @@ export const Register: React.FC = () => {
   const handleGoogleSelector = async (email: string) => {
     setGoogleLoading(true);
     try {
-      await loginWithGoogleMock(email, formData.phone || '08123456789');
+      const user = await loginWithGoogleMock(email, formData.phone || '08123456789');
+      await saveRegistrationCandidate(user.id, email, formData.phone || '08123456789');
       setShowGoogleModal(false);
       navigate('/portal');
     } catch (err) {
@@ -81,7 +84,7 @@ export const Register: React.FC = () => {
           {/* PT PAP Brand Icon placeholder */}
           <div className="flex justify-center mb-3">
             <img 
-              src="/assets/logo.png" 
+              src="/assets/logo.png"
               alt="Perdana Logo" 
               className="h-10 w-auto object-contain" 
             />

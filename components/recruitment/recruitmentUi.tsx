@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ExclamationTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { COMPANY_LOGO_PNG } from '../../lib/brand-assets';
 import { BRAND_NAVY } from '../home/homeContent';
+import { buildReviewRows, type ReviewRow } from '../../lib/recruitment-field-options';
 import { OptimizedImage } from '../ui/OptimizedImage';
 
 export const NAVY_BTN =
@@ -253,6 +254,11 @@ export type ApplySuccessData = {
   nik?: string;
   email?: string;
   whatsapp?: string;
+  gender?: string;
+  religion?: string;
+  maritalStatus?: string;
+  lastEducation?: string;
+  bankName?: string;
   referenceId: string;
   credentials?: { email: string; password: string; isNew: boolean } | null;
 };
@@ -278,6 +284,48 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+const DEFAULT_SUCCESS_REVIEW_FIELDS = [
+  'fullName',
+  'positionApplied',
+  'nik',
+  'email',
+  'whatsappNumber',
+  'gender',
+  'religion',
+  'maritalStatus',
+  'lastEducation',
+  'bankName',
+] as const;
+
+export function CandidateReviewSummary({
+  data,
+  fieldIds = DEFAULT_SUCCESS_REVIEW_FIELDS,
+  title = 'Data yang Terkirim',
+  subtitle = 'Pastikan informasi berikut sudah sesuai',
+  className = '',
+}: {
+  data: Record<string, unknown>;
+  fieldIds?: readonly string[];
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}) {
+  const rows = buildReviewRows(data, [...fieldIds]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className={className}>
+      <CardSectionHeader label="Ringkasan" title={title} subtitle={subtitle} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {rows.map((row: ReviewRow) => (
+          <SummaryRow key={row.id} label={row.label} value={row.value} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ApplySuccessPage({
   data,
   onViewStatus,
@@ -289,13 +337,18 @@ export function ApplySuccessPage({
   onApplyOther: () => void;
   onGoHome: () => void;
 }) {
-  const summaryRows = [
-    { label: 'Nama Lengkap', value: data.fullName },
-    { label: 'Posisi Dilamar', value: data.position },
-    { label: 'NIK', value: data.nik },
-    { label: 'Email', value: data.email },
-    { label: 'WhatsApp', value: data.whatsapp },
-  ].filter((row): row is { label: string; value: string } => Boolean(row.value?.trim()));
+  const reviewData: Record<string, unknown> = {
+    fullName: data.fullName,
+    positionApplied: data.position,
+    nik: data.nik,
+    email: data.email,
+    whatsappNumber: data.whatsapp,
+    gender: data.gender,
+    religion: data.religion,
+    maritalStatus: data.maritalStatus,
+    lastEducation: data.lastEducation,
+    bankName: data.bankName,
+  };
 
   return (
     <div className="flex flex-col gap-5 sm:gap-6">
@@ -348,25 +401,12 @@ export function ApplySuccessPage({
           </p>
         </div>
 
-        {summaryRows.length > 0 && (
-          <div className="mt-7">
-            <CardSectionHeader
-              label="Ringkasan"
-              title="Data yang Terkirim"
-              subtitle="Pastikan informasi berikut sudah sesuai"
-            />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {summaryRows.map((row) => (
-                <SummaryRow key={row.label} label={row.label} value={row.value} />
-              ))}
-            </div>
-            <div className="mt-3 flex justify-start sm:justify-end">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200/80 bg-cyan-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
-                Status: Screening ATS
-              </span>
-            </div>
-          </div>
-        )}
+        <CandidateReviewSummary data={reviewData} className="mt-7" />
+        <div className="mt-3 flex justify-start sm:justify-end">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200/80 bg-cyan-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
+            Status: Screening ATS
+          </span>
+        </div>
 
         {data.credentials && (
           <div className="mt-7 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left sm:p-5">

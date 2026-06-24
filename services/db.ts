@@ -508,6 +508,8 @@ export const clearAllCaches = () => {
 import {
   getCandidates,
   createCandidate,
+  saveCandidateToFirebase,
+  saveRegistrationCandidate,
   updateCandidate,
   deleteCandidate,
   CANDIDATES_COLLECTION,
@@ -515,6 +517,8 @@ import {
 export {
   getCandidates,
   createCandidate,
+  saveCandidateToFirebase,
+  saveRegistrationCandidate,
   updateCandidate,
   deleteCandidate,
   CANDIDATES_COLLECTION,

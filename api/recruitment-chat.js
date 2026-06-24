@@ -437,6 +437,204 @@ function isCompleteCandidateData(data) {
   });
 }
 
+// lib/recruitment-field-options.ts
+var GENDER_OPTIONS = ["Laki-laki", "Perempuan"];
+var RELIGION_OPTIONS = [
+  "Islam",
+  "Kristen",
+  "Katolik",
+  "Hindu",
+  "Buddha",
+  "Khonghucu"
+];
+var MARITAL_OPTIONS = [
+  "Belum Menikah",
+  "Menikah",
+  "Cerai Hidup",
+  "Cerai Mati"
+];
+var EDUCATION_OPTIONS = ["SMP", "SMA/SMK", "D3", "S1", "S2", "S3"];
+var BANK_OPTIONS = ["Mandiri", "BCA", "Lainnya"];
+var EMERGENCY_RELATION_OPTIONS = [
+  "Orang Tua",
+  "Pasangan",
+  "Saudara",
+  "Teman"
+];
+var RELOCATE_OPTIONS = ["Ya", "Tidak"];
+var GENDER_ALIASES = {
+  laki: "Laki-laki",
+  "laki-laki": "Laki-laki",
+  lelaki: "Laki-laki",
+  pria: "Laki-laki",
+  cowok: "Laki-laki",
+  male: "Laki-laki",
+  perempuan: "Perempuan",
+  wanita: "Perempuan",
+  cewek: "Perempuan",
+  female: "Perempuan"
+};
+var RELIGION_ALIASES = {
+  islam: "Islam",
+  kristen: "Kristen",
+  "kristen protestan": "Kristen",
+  protestan: "Kristen",
+  katolik: "Katolik",
+  katholik: "Katolik",
+  hindu: "Hindu",
+  buddha: "Buddha",
+  budha: "Buddha",
+  khonghucu: "Khonghucu",
+  "khong hu cu": "Khonghucu",
+  konghucu: "Khonghucu"
+};
+var MARITAL_ALIASES = {
+  "belum menikah": "Belum Menikah",
+  lajang: "Belum Menikah",
+  single: "Belum Menikah",
+  "belum kawin": "Belum Menikah",
+  menikah: "Menikah",
+  kawin: "Menikah",
+  nikah: "Menikah",
+  married: "Menikah",
+  cerai: "Cerai Hidup",
+  "cerai hidup": "Cerai Hidup",
+  duda: "Cerai Hidup",
+  janda: "Cerai Hidup",
+  "cerai mati": "Cerai Mati",
+  widower: "Cerai Mati",
+  widow: "Cerai Mati"
+};
+var EDUCATION_ALIASES = {
+  smp: "SMP",
+  "sma/smk": "SMA/SMK",
+  sma: "SMA/SMK",
+  smk: "SMA/SMK",
+  "sma/smk/sederajat": "SMA/SMK",
+  diploma: "D3",
+  d3: "D3",
+  d4: "S1",
+  s1: "S1",
+  sarjana: "S1",
+  s2: "S2",
+  magister: "S2",
+  s3: "S3",
+  doktor: "S3"
+};
+var BANK_ALIASES = {
+  mandiri: "Mandiri",
+  bca: "BCA",
+  "bank mandiri": "Mandiri",
+  "bank bca": "BCA",
+  lainnya: "Lainnya",
+  other: "Lainnya"
+};
+var RELATION_ALIASES = {
+  "orang tua": "Orang Tua",
+  ortu: "Orang Tua",
+  ayah: "Orang Tua",
+  ibu: "Orang Tua",
+  pasangan: "Pasangan",
+  istri: "Pasangan",
+  suami: "Pasangan",
+  saudara: "Saudara",
+  kakak: "Saudara",
+  adik: "Saudara",
+  teman: "Teman"
+};
+var RELOCATE_ALIASES = {
+  ya: "Ya",
+  yes: "Ya",
+  siap: "Ya",
+  boleh: "Ya",
+  ok: "Ya",
+  oke: "Ya",
+  open: "Ya",
+  "ya, saya bersedia penuh": "Ya",
+  "hanya site yang saya pilih": "Ya",
+  tidak: "Tidak",
+  no: "Tidak",
+  nggak: "Tidak",
+  gk: "Tidak",
+  ga: "Tidak",
+  "tidak bersedia": "Tidak"
+};
+function normalizeKey(raw) {
+  return raw.trim().toLowerCase().replace(/\s+/g, " ");
+}
+function matchAlias(raw, options, aliases) {
+  const key = normalizeKey(raw);
+  if (!key) return null;
+  if (aliases[key]) return aliases[key];
+  const exact = options.find((o) => normalizeKey(o) === key);
+  return exact ?? null;
+}
+function normalizeGender(raw) {
+  if (raw == null) return "";
+  return matchAlias(String(raw), GENDER_OPTIONS, GENDER_ALIASES) ?? "";
+}
+function normalizeReligion(raw) {
+  if (raw == null) return "";
+  return matchAlias(String(raw), RELIGION_OPTIONS, RELIGION_ALIASES) ?? "";
+}
+function normalizeMaritalStatus(raw) {
+  if (raw == null) return "";
+  return matchAlias(String(raw), MARITAL_OPTIONS, MARITAL_ALIASES) ?? "";
+}
+function normalizeLastEducation(raw) {
+  if (raw == null) return "";
+  return matchAlias(String(raw), EDUCATION_OPTIONS, EDUCATION_ALIASES) ?? "";
+}
+function normalizeBankName(raw) {
+  if (raw == null) return "";
+  return matchAlias(String(raw), BANK_OPTIONS, BANK_ALIASES) ?? "";
+}
+function normalizeEmergencyRelation(raw) {
+  if (raw == null) return "";
+  return matchAlias(String(raw), EMERGENCY_RELATION_OPTIONS, RELATION_ALIASES) ?? String(raw).trim();
+}
+function normalizeWillingToRelocate(raw) {
+  if (raw == null) return "";
+  if (typeof raw === "boolean") return raw ? "Ya" : "Tidak";
+  return matchAlias(String(raw), RELOCATE_OPTIONS, RELOCATE_ALIASES) ?? "";
+}
+var FIELD_NORMALIZERS = {
+  gender: normalizeGender,
+  religion: normalizeReligion,
+  maritalStatus: normalizeMaritalStatus,
+  lastEducation: normalizeLastEducation,
+  bankName: normalizeBankName,
+  emergencyRelation: normalizeEmergencyRelation,
+  willingToRelocate: normalizeWillingToRelocate
+};
+function normalizeChoiceField(field, value) {
+  const normalizer = FIELD_NORMALIZERS[field];
+  if (!normalizer) return value == null ? "" : String(value).trim();
+  return normalizer(value);
+}
+function normalizeRecruitmentChoices(data) {
+  const out = { ...data };
+  for (const field of Object.keys(FIELD_NORMALIZERS)) {
+    if (field in out && out[field] != null && out[field] !== "") {
+      out[field] = normalizeChoiceField(field, out[field]);
+    }
+  }
+  return out;
+}
+function formatSaraChoiceFieldGuide() {
+  return [
+    "Nilai standar field pilihan (WAJIB pakai persis ini di JSON & memory):",
+    `gender: ${GENDER_OPTIONS.join(" | ")}`,
+    `religion: ${RELIGION_OPTIONS.join(" | ")}`,
+    `maritalStatus: ${MARITAL_OPTIONS.join(" | ")}`,
+    `willingToRelocate: ${RELOCATE_OPTIONS.join(" | ")}`,
+    `lastEducation: ${EDUCATION_OPTIONS.join(" | ")}`,
+    `bankName: ${BANK_OPTIONS.join(" | ")}`,
+    `emergencyRelation: ${EMERGENCY_RELATION_OPTIONS.join(" | ")}`,
+    "Saat menanyakan field di atas, sebutkan pilihan singkat (UI akan tampilkan tombol)."
+  ].join("\n");
+}
+
 // lib/candidate.ts
 function cleanDoc(obj) {
   if (obj === null || typeof obj !== "object") return obj;
@@ -456,46 +654,47 @@ function parseWillingToRelocate(value) {
 }
 function mapCandidateDocument(data, id) {
   const candidateId = id || Math.random().toString(36).substring(2, 11);
-  const addressLine = data.addressLine || "";
+  const normalized = normalizeRecruitmentChoices(data);
+  const addressLine = normalized.addressLine || "";
   return prepareCandidateForFirestore(
     {
       id: candidateId,
-      positionApplied: data.positionApplied || "Staff Operasional",
-      fullName: data.fullName || "",
-      nik: data.nik || "",
-      kkNumber: data.kkNumber || "",
-      npwp: data.npwp || "",
-      placeOfBirth: data.placeOfBirth || "-",
-      dateOfBirth: data.dateOfBirth || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-      gender: data.gender || "Laki-laki",
-      maritalStatus: data.maritalStatus || "Belum Menikah",
-      religion: data.religion || "Islam",
-      willingToRelocate: parseWillingToRelocate(data.willingToRelocate),
-      certifications: data.certifications || "",
-      email: (data.email || "").toLowerCase(),
-      whatsappNumber: ensurePlus62(data.whatsappNumber),
+      positionApplied: normalized.positionApplied || "Staff Operasional",
+      fullName: normalized.fullName || "",
+      nik: normalized.nik || "",
+      kkNumber: normalized.kkNumber || "",
+      npwp: normalized.npwp || "",
+      placeOfBirth: normalized.placeOfBirth || "-",
+      dateOfBirth: normalized.dateOfBirth || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+      gender: normalized.gender || "Laki-laki",
+      maritalStatus: normalized.maritalStatus || "Belum Menikah",
+      religion: normalized.religion || "Islam",
+      willingToRelocate: parseWillingToRelocate(normalized.willingToRelocate),
+      certifications: normalized.certifications || "",
+      email: (normalized.email || "").toLowerCase(),
+      whatsappNumber: ensurePlus62(normalized.whatsappNumber),
       addressLine,
       domicileAddress: addressLine,
-      provinsi: data.provinsi || "",
-      kabupaten: data.kabupaten || "",
-      kecamatan: data.kecamatan || "",
-      desa: data.desa || "",
-      rt: data.rt || "",
-      rw: data.rw || "",
-      latitude: parseFloat(String(data.latitude)) || -0.9489,
-      longitude: parseFloat(String(data.longitude)) || 119.8707,
-      lastEducation: data.lastEducation || "-",
-      institutionName: data.institutionName || "-",
-      major: data.major || "-",
-      graduationYear: Number(data.graduationYear) || (/* @__PURE__ */ new Date()).getFullYear(),
-      skills: data.skills || "",
-      workExperience: data.workExperience || "-",
-      bankName: data.bankName || "-",
-      accountNumber: data.accountNumber || "-",
-      emergencyName: data.emergencyName || "-",
-      emergencyRelation: data.emergencyRelation || "-",
-      emergencyPhone: ensurePlus62(data.emergencyPhone) || "-",
-      telegramId: data.telegramId || "",
+      provinsi: normalized.provinsi || "",
+      kabupaten: normalized.kabupaten || "",
+      kecamatan: normalized.kecamatan || "",
+      desa: normalized.desa || "",
+      rt: normalized.rt || "",
+      rw: normalized.rw || "",
+      latitude: parseFloat(String(normalized.latitude)) || -0.9489,
+      longitude: parseFloat(String(normalized.longitude)) || 119.8707,
+      lastEducation: normalized.lastEducation || "-",
+      institutionName: normalized.institutionName || "-",
+      major: normalized.major || "-",
+      graduationYear: Number(normalized.graduationYear) || (/* @__PURE__ */ new Date()).getFullYear(),
+      skills: normalized.skills || "",
+      workExperience: normalized.workExperience || "-",
+      bankName: normalized.bankName || "-",
+      accountNumber: normalized.accountNumber || "-",
+      emergencyName: normalized.emergencyName || "-",
+      emergencyRelation: normalized.emergencyRelation || "-",
+      emergencyPhone: ensurePlus62(normalized.emergencyPhone) || "-",
+      telegramId: normalized.telegramId || "",
       applicationLetterPath: "",
       cvPath: "",
       ktpPath: "",
@@ -506,7 +705,7 @@ function mapCandidateDocument(data, id) {
       status: normalizeApplicationStatus("APPLIED"),
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
     },
-    { id: candidateId, source: data.source || "ai-sara" }
+    { id: candidateId, source: normalized.source || data.source || "ai-sara" }
   );
 }
 async function saveCandidateToFirestore(data, options) {
@@ -617,26 +816,29 @@ var COLLECTION_ORDER = [
   {
     key: "gender",
     label: "Jenis kelamin",
-    filled: (d) => Boolean(d.gender?.trim()),
-    display: (d) => d.gender || ""
+    filled: (d) => Boolean(normalizeChoiceField("gender", d.gender)),
+    display: (d) => normalizeChoiceField("gender", d.gender) || d.gender || ""
   },
   {
     key: "maritalStatus",
     label: "Status pernikahan",
-    filled: (d) => Boolean(d.maritalStatus?.trim()),
-    display: (d) => d.maritalStatus || ""
+    filled: (d) => Boolean(normalizeChoiceField("maritalStatus", d.maritalStatus)),
+    display: (d) => normalizeChoiceField("maritalStatus", d.maritalStatus) || d.maritalStatus || ""
   },
   {
     key: "religion",
     label: "Agama",
-    filled: (d) => Boolean(d.religion?.trim()),
-    display: (d) => d.religion || ""
+    filled: (d) => Boolean(normalizeChoiceField("religion", d.religion)),
+    display: (d) => normalizeChoiceField("religion", d.religion) || d.religion || ""
   },
   {
     key: "willingToRelocate",
     label: "Relokasi",
-    filled: (d) => d.willingToRelocate === "Ya" || d.willingToRelocate === "Tidak",
-    display: (d) => String(d.willingToRelocate || "")
+    filled: (d) => {
+      const v = normalizeChoiceField("willingToRelocate", d.willingToRelocate);
+      return v === "Ya" || v === "Tidak";
+    },
+    display: (d) => normalizeChoiceField("willingToRelocate", d.willingToRelocate) || ""
   },
   {
     key: "email",
@@ -661,8 +863,8 @@ var COLLECTION_ORDER = [
   {
     key: "lastEducation",
     label: "Pendidikan terakhir",
-    filled: (d) => Boolean(d.lastEducation?.trim()),
-    display: (d) => d.lastEducation || ""
+    filled: (d) => Boolean(normalizeChoiceField("lastEducation", d.lastEducation)),
+    display: (d) => normalizeChoiceField("lastEducation", d.lastEducation) || d.lastEducation || ""
   },
   {
     key: "institutionName",
@@ -697,8 +899,8 @@ var COLLECTION_ORDER = [
   {
     key: "bankName",
     label: "Nama bank",
-    filled: (d) => Boolean(d.bankName?.trim()),
-    display: (d) => d.bankName || ""
+    filled: (d) => Boolean(normalizeChoiceField("bankName", d.bankName)),
+    display: (d) => normalizeChoiceField("bankName", d.bankName) || d.bankName || ""
   },
   {
     key: "accountNumber",
@@ -715,8 +917,8 @@ var COLLECTION_ORDER = [
   {
     key: "emergencyRelation",
     label: "Hubungan darurat",
-    filled: (d) => Boolean(d.emergencyRelation?.trim()),
-    display: (d) => d.emergencyRelation || ""
+    filled: (d) => Boolean(normalizeChoiceField("emergencyRelation", d.emergencyRelation)),
+    display: (d) => normalizeChoiceField("emergencyRelation", d.emergencyRelation) || d.emergencyRelation || ""
   },
   {
     key: "emergencyPhone",
@@ -832,17 +1034,37 @@ function normalizeFieldValue(field, content) {
       if (!/^(nama|saya|aku)\b/i.test(trimmed) && trimmed.length < 80) return trimmed;
       return null;
     }
+    case "gender": {
+      const v = normalizeChoiceField("gender", trimmed);
+      return v || null;
+    }
+    case "religion": {
+      const v = normalizeChoiceField("religion", trimmed);
+      return v || null;
+    }
+    case "maritalStatus": {
+      const v = normalizeChoiceField("maritalStatus", trimmed);
+      return v || null;
+    }
     case "willingToRelocate": {
-      const t = trimmed.toLowerCase();
-      if (/^(ya|yes|siap|boleh|ok|oke|open)$/i.test(t)) return "Ya";
-      if (/^(tidak|nggak|gk|ga|no|belum)$/i.test(t)) return "Tidak";
-      if (/belum tahu|gk tahu|ga tahu|lupa|ragu/i.test(t)) return null;
+      const v = normalizeChoiceField("willingToRelocate", trimmed);
+      if (v) return v;
+      if (/belum tahu|gk tahu|ga tahu|lupa|ragu/i.test(trimmed)) return null;
       return null;
     }
+    case "lastEducation": {
+      const v = normalizeChoiceField("lastEducation", trimmed);
+      return v || null;
+    }
+    case "bankName": {
+      const v = normalizeChoiceField("bankName", trimmed);
+      return v || null;
+    }
+    case "emergencyRelation": {
+      const v = normalizeChoiceField("emergencyRelation", trimmed);
+      return v || null;
+    }
     default:
-      if (/^(ya|tidak|laki|perempuan|islam|kristen|katolik|hindu|buddha)$/i.test(trimmed)) {
-        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
-      }
       if (/^(gk tahu|ga tahu|belum tahu|lupa|ragu)/i.test(trimmed)) return null;
       return trimmed.length > 0 && trimmed.length < 200 ? trimmed : null;
   }
@@ -941,7 +1163,7 @@ function extractFieldsFromChat(messages) {
   }
   if (out.nik && !isNikValid(out.nik)) delete out.nik;
   if (out.kkNumber && !isNikValid(out.kkNumber)) delete out.kkNumber;
-  return out;
+  return normalizeRecruitmentChoices(out);
 }
 function formatKnownFieldsContext(data) {
   const filled = COLLECTION_ORDER.filter((f) => f.filled(data));
@@ -1270,7 +1492,9 @@ ${SARA_COMPANY_FACTS}
 
 CHAT (belum lengkap): no JSON
 Validasi: NIK/KK/NPWP tepat 16 digit angka \xB7 WA +62 \xB7 lahir YYYY-MM-DD
-JSON (lengkap+valid): output HANYA satu object {\u2026}, no teks/markdown. graduationYear=number. Nilai ASLI dari memory/candidateData. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
+Field pilihan (gender, agama, status nikah, relokasi, pendidikan, bank, hubungan darurat): tanya singkat + sebut opsi. UI menampilkan tombol quick-reply \u2014 terima jawaban tombol atau sinonim (lelaki\u2192Laki-laki, pria\u2192Laki-laki, dll).
+${formatSaraChoiceFieldGuide()}
+JSON (lengkap+valid): output HANYA satu object {\u2026}, no teks/markdown. graduationYear=number. Nilai field pilihan HARUS canonical di atas. Key wajib: positionApplied,fullName,nik,kkNumber,email,whatsappNumber,addressLine atau provinsi/kabupaten/kecamatan/desa,lastEducation,bankName,accountNumber,emergencyName,emergencyRelation,emergencyPhone + field urutan di atas
 `.trim();
 function buildSaraSystemInstruction(messages, contextOverride) {
   const context = contextOverride ?? buildSaraChatContext(messages);

@@ -101,6 +101,11 @@ function ChatBubble({ message }: { message: SaraChatMessage }) {
   );
 }
 
+export type SaraQuickReply = {
+  field: string;
+  options: string[];
+};
+
 export interface SaraChatPanelProps {
   messages: SaraChatMessage[];
   loadingChat: boolean;
@@ -108,6 +113,8 @@ export interface SaraChatPanelProps {
   inputText: string;
   onInputChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  quickReply?: SaraQuickReply | null;
+  onQuickReply?: (value: string) => void;
   positionHint?: string;
   onClose?: () => void;
   onToggleSync?: () => void;
@@ -124,6 +131,8 @@ export function SaraChatPanel({
   inputText,
   onInputChange,
   onSubmit,
+  quickReply,
+  onQuickReply,
   positionHint,
   onClose,
   onToggleSync,
@@ -264,6 +273,31 @@ export function SaraChatPanel({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quick reply chips */}
+      {quickReply && onQuickReply && quickReply.options.length > 0 && !loadingChat && (
+        <div
+          className="shrink-0 border-t border-slate-100 bg-slate-50/90 px-3 py-2.5 sm:px-4"
+          role="group"
+          aria-label="Pilihan jawaban cepat"
+        >
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+            Pilih jawaban
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {quickReply.options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onQuickReply(option)}
+                className="rounded-full border border-[#003087]/20 bg-white px-3.5 py-2 text-xs font-semibold text-[#003087] shadow-sm transition hover:border-[#003087]/40 hover:bg-blue-50 active:scale-[0.98]"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Fixed footer input */}
       <footer

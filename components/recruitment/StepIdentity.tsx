@@ -5,6 +5,12 @@ import type { FieldErrors } from '../../lib/recruitment-validation';
 import { JobVacancy } from '../../types';
 import { LocationSearch } from '../admin/shared/LocationSearch';
 import { ChoicePill, StepHeader } from './recruitmentUi';
+import {
+  GENDER_OPTIONS,
+  MARITAL_OPTIONS,
+  RELIGION_OPTIONS,
+  RELOCATE_OPTIONS,
+} from '../../lib/recruitment-field-options';
 
 interface Props {
   formData: FormDataState;
@@ -146,7 +152,7 @@ export const StepIdentity: React.FC<Props> = ({ formData, onChange, setFormData,
         <div>
           <label className="mb-2 block text-sm font-semibold text-slate-700">Jenis Kelamin</label>
           <div className="flex flex-wrap gap-3">
-            {['Laki-laki', 'Perempuan'].map((g) => (
+            {GENDER_OPTIONS.map((g) => (
               <ChoicePill
                 key={g}
                 label={g}
@@ -161,7 +167,7 @@ export const StepIdentity: React.FC<Props> = ({ formData, onChange, setFormData,
         <div>
           <label className="mb-2 block text-sm font-semibold text-slate-700">Status Pernikahan</label>
           <div className="flex flex-wrap gap-3">
-            {['Belum Menikah', 'Menikah', 'Cerai'].map((s) => (
+            {MARITAL_OPTIONS.map((s) => (
               <ChoicePill
                 key={s}
                 label={s}
@@ -180,14 +186,7 @@ export const StepIdentity: React.FC<Props> = ({ formData, onChange, setFormData,
           onChange={onChange}
           required
           error={fieldErrors.religion}
-          options={[
-            { value: 'Islam', label: 'Islam' },
-            { value: 'Kristen Protestan', label: 'Kristen Protestan' },
-            { value: 'Katholik', label: 'Katholik' },
-            { value: 'Hindu', label: 'Hindu' },
-            { value: 'Buddha', label: 'Buddha' },
-            { value: 'Konghucu', label: 'Konghucu' },
-          ]}
+          options={RELIGION_OPTIONS.map((r) => ({ value: r, label: r }))}
         />
 
         <div>
@@ -195,7 +194,7 @@ export const StepIdentity: React.FC<Props> = ({ formData, onChange, setFormData,
             Bersedia diposisikan ke site proyek di Sulawesi Tengah?
           </label>
           <div className="flex flex-wrap gap-3">
-            {['Ya, saya bersedia penuh', 'Hanya site yang saya pilih', 'Tidak bersedia'].map((opt) => (
+            {RELOCATE_OPTIONS.map((opt) => (
               <ChoicePill
                 key={opt}
                 label={opt}

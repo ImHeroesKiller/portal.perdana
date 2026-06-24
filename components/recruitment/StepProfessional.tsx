@@ -3,6 +3,11 @@ import { Input, Select, TextArea } from '../ui/Input';
 import type { FormDataState } from '../../types/recruitment-form';
 import type { FieldErrors } from '../../lib/recruitment-validation';
 import { StepHeader } from './recruitmentUi';
+import {
+  BANK_OPTIONS,
+  EDUCATION_OPTIONS,
+  EMERGENCY_RELATION_OPTIONS,
+} from '../../lib/recruitment-field-options';
 
 interface Props {
   formData: FormDataState;
@@ -28,7 +33,7 @@ export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErr
           onChange={onChange}
           required
           error={fieldErrors.lastEducation}
-          options={['SMP', 'SMA/SMK', 'Diploma', 'D3', 'S1', 'S2', 'S3'].map((j) => ({ value: j, label: j }))}
+          options={EDUCATION_OPTIONS.map((j) => ({ value: j, label: j }))}
         />
         <Input
           label="Institusi"
@@ -70,11 +75,10 @@ export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErr
           onChange={onChange}
           required
           error={fieldErrors.bankName}
-          options={[
-            { value: 'Mandiri', label: 'Mandiri' },
-            { value: 'BCA', label: 'BCA' },
-            { value: 'Lainnya', label: 'Lainnya (Ada Biaya Transfer)' },
-          ]}
+          options={BANK_OPTIONS.map((b) => ({
+            value: b,
+            label: b === 'Lainnya' ? 'Lainnya (Ada Biaya Transfer)' : b,
+          }))}
         />
         <Input
           label="Nomor Rekening"
@@ -106,12 +110,7 @@ export const StepProfessional: React.FC<Props> = ({ formData, onChange, fieldErr
           onChange={onChange}
           required
           error={fieldErrors.emergencyRelation}
-          options={[
-            { value: 'Orang Tua', label: 'Orang Tua' },
-            { value: 'Pasangan', label: 'Pasangan' },
-            { value: 'Saudara', label: 'Saudara' },
-            { value: 'Teman', label: 'Teman' },
-          ]}
+          options={EMERGENCY_RELATION_OPTIONS.map((r) => ({ value: r, label: r }))}
         />
         <div className="md:col-span-2">
           <label className="mb-1 block text-sm font-medium text-gray-700">

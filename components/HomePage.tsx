@@ -22,6 +22,7 @@ import { HeroSection } from './home/HeroSection';
 import { StatsCards } from './home/StatsCards';
 import { QuickAccessGrid } from './home/QuickAccessGrid';
 import { JobSectorsGrid } from './home/JobSectorsGrid';
+import { Footer } from './layout/Footer';
 
 export const HomePage: React.FC = () => {
   const {
@@ -232,6 +233,8 @@ export const HomePage: React.FC = () => {
           </DataFetchState>
         </div>
       </div>
+
+      <Footer />
       
       {/* Map Modal */}
       {mapModalData && (
