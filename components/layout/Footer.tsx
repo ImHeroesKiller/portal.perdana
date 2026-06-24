@@ -5,10 +5,8 @@ import {
   Phone,
   Mail,
   MessageCircle,
-  Linkedin,
-  Instagram,
-  Facebook,
-  Youtube,
+  ExternalLink,
+  Share2,
 } from 'lucide-react';
 import { COMPANY_LOGO_PNG } from '../../lib/brand-assets';
 import { BRAND_NAVY } from '../home/homeContent';
@@ -34,10 +32,10 @@ const SERVICE_LINKS = [
 ] as const;
 
 const SOCIAL_LINKS = [
-  { label: 'LinkedIn', icon: Linkedin, href: 'https://www.linkedin.com/company/pt-perdana-adi-yuda' },
-  { label: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/peradaadiyuda' },
-  { label: 'Facebook', icon: Facebook, href: 'https://www.facebook.com/peradaadiyuda' },
-  { label: 'YouTube', icon: Youtube, href: 'https://www.youtube.com/@peradaadiyuda' },
+  { label: 'LinkedIn', icon: ExternalLink, href: 'https://www.linkedin.com/company/pt-perdana-adi-yuda' },
+  { label: 'Instagram', icon: Share2, href: 'https://www.instagram.com/peradaadiyuda' },
+  { label: 'Facebook', icon: Share2, href: 'https://www.facebook.com/peradaadiyuda' },
+  { label: 'YouTube', icon: Share2, href: 'https://www.youtube.com/@peradaadiyuda' },
 ] as const;
 
 const FOOTER_COPY = {
