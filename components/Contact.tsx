@@ -1,25 +1,52 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  MapPinIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  ChatBubbleLeftRightIcon,
-} from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Phone, Mail, MessageCircle } from 'lucide-react';
 import { Input, TextArea } from './ui/Input';
 import { useLanguage } from '../services/i18n';
 import { useCompanySettings } from '../hooks/useCompanySettings';
-import { SectionHeader } from './home/SectionHeader';
-import {
-  ContentCard,
-  MarketingPageShell,
-  PageHero,
-  PageTopBar,
-} from './layout/MarketingPageLayout';
+import { MarketingPageShell } from './layout/MarketingPageLayout';
+import { BRAND_NAVY } from './home/homeContent';
 import { loadLeaflet } from '../lib/loadLeaflet';
+import {
+  CardSectionHeader,
+  NAVY_BTN,
+  RecruitmentBackButton,
+  WizardCard,
+  WizardHero,
+} from './recruitment/recruitmentUi';
+
+const FIELD_CLASS =
+  'rounded-2xl border-slate-100 bg-slate-50/80 py-3 text-sm font-medium text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#003087]/30 focus:bg-white focus:ring-2 focus:ring-[#003087]/20';
+
+function ContactInfoRow({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3.5">
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
+        style={{ backgroundColor: BRAND_NAVY }}
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-black text-slate-900">{title}</h3>
+        <div className="mt-1.5 text-sm leading-relaxed text-slate-600">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export const Contact: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<{ remove: () => void } | null>(null);
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const settings = useCompanySettings();
 
@@ -61,6 +88,10 @@ export const Contact: React.FC = () => {
 
     return () => {
       cancelled = true;
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
     };
   }, [settings]);
 
@@ -72,106 +103,104 @@ export const Contact: React.FC = () => {
     }, 1000);
   };
 
-  const waLink = `https://wa.me/${settings.phone.replace(/[^0-9]/g, '')}`;
+  const waDigits = settings.phone.replace(/[^0-9]/g, '');
+  const waLink = `https://wa.me/${waDigits}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-800">
-      <PageTopBar badge={t('contact_badge')} />
+    <div className="min-h-screen bg-slate-50 pb-24 font-sans antialiased text-slate-800">
+      <MarketingPageShell className="gap-5 px-6 pb-8 pt-6 sm:gap-6 sm:px-6 sm:py-8">
+        <RecruitmentBackButton onClick={() => navigate('/')} label={t('nav_home')} />
 
-      <MarketingPageShell wide>
-        <PageHero
-          eyebrow={t('contact_eyebrow')}
-          title={t('contact_title')}
-          subtitle={t('contact_desc')}
-          compact
-        />
+        <WizardHero showLogo title={t('contact_title')} subtitle={t('contact_desc')} />
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <ContentCard>
-            <SectionHeader compact title={t('contact_office')} subtitle={t('contact_office_sub')} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
+          {/* Contact info + map */}
+          <WizardCard className="p-5 sm:p-7">
+            <CardSectionHeader
+              label={t('contact_badge')}
+              title={t('contact_office')}
+              subtitle={t('contact_office_sub')}
+            />
 
-            <div className="space-y-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#003087]">
-                  <MapPinIcon className="h-5 w-5" aria-hidden />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{t('contact_address')}</h3>
-                  <div className="mt-2 space-y-3 text-sm text-slate-600">
-                    <div>
-                      <h4 className="font-semibold text-slate-800">{t('contact_head_office')}</h4>
-                      <p className="whitespace-pre-wrap leading-relaxed">{settings.headOfficeAddress}</p>
-                    </div>
-                    {settings.branches.map((branch) => (
-                      <div key={branch.id}>
-                        <h4 className="font-semibold text-slate-800">{branch.name}</h4>
-                        <p className="whitespace-pre-wrap leading-relaxed">{branch.address}</p>
-                      </div>
-                    ))}
+            <div className="space-y-6">
+              <ContactInfoRow icon={MapPin} title={t('contact_address')}>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                      {t('contact_head_office')}
+                    </h4>
+                    <p className="mt-1 whitespace-pre-wrap">{settings.headOfficeAddress}</p>
                   </div>
+                  {settings.branches.map((branch) => (
+                    <div key={branch.id}>
+                      <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                        {branch.name}
+                      </h4>
+                      <p className="mt-1 whitespace-pre-wrap">{branch.address}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </ContactInfoRow>
 
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#003087]">
-                  <PhoneIcon className="h-5 w-5" aria-hidden />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{t('contact_phone')}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{settings.phone}</p>
-                  <a
-                    href={waLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-[#003087] transition hover:underline"
-                  >
-                    <ChatBubbleLeftRightIcon className="h-4 w-4" aria-hidden />
-                    {t('contact_whatsapp')}
-                  </a>
-                </div>
-              </div>
+              <ContactInfoRow icon={Phone} title={t('contact_phone')}>
+                <a
+                  href={`tel:${settings.phone.replace(/\s/g, '')}`}
+                  className="font-semibold text-[#003087] transition hover:underline"
+                >
+                  {settings.phone}
+                </a>
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/60 px-3.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden />
+                  {t('contact_whatsapp')}
+                </a>
+              </ContactInfoRow>
 
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#003087]">
-                  <EnvelopeIcon className="h-5 w-5" aria-hidden />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{t('contact_email')}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{settings.email}</p>
-                  {settings.website && (
-                    <p className="mt-1 text-xs text-slate-500">
-                      {t('contact_website')}:{' '}
-                      <a
-                        href={settings.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-[#003087] hover:underline"
-                      >
-                        {settings.website}
-                      </a>
-                    </p>
-                  )}
-                </div>
-              </div>
+              <ContactInfoRow icon={Mail} title={t('contact_email')}>
+                <a
+                  href={`mailto:${settings.email}`}
+                  className="break-all font-semibold text-[#003087] transition hover:underline"
+                >
+                  {settings.email}
+                </a>
+                {settings.website && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    {t('contact_website')}:{' '}
+                    <a
+                      href={settings.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-[#003087] hover:underline"
+                    >
+                      {settings.website}
+                    </a>
+                  </p>
+                )}
+              </ContactInfoRow>
             </div>
 
-            <div className="mt-6 h-56 overflow-hidden rounded-xl border border-slate-100 shadow-sm sm:h-64">
-              <div ref={mapRef} className="h-full w-full" />
+            <div className="mt-7 overflow-hidden rounded-2xl border border-slate-100 shadow-sm ring-1 ring-slate-100/80">
+              <div ref={mapRef} className="h-56 w-full sm:h-64" aria-label="Peta lokasi kantor" />
             </div>
-          </ContentCard>
+          </WizardCard>
 
-          <ContentCard>
-            <SectionHeader
-              compact
+          {/* Contact form */}
+          <WizardCard className="p-5 sm:p-7">
+            <CardSectionHeader
               title={t('contact_form_title')}
               subtitle={t('contact_form_desc')}
             />
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-1">
               <Input
                 label={t('contact_field_name')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className={FIELD_CLASS}
                 required
               />
               <Input
@@ -179,30 +208,34 @@ export const Contact: React.FC = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className={FIELD_CLASS}
                 required
               />
               <Input
                 label={t('contact_field_subject')}
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                className={FIELD_CLASS}
                 required
               />
               <TextArea
                 label={t('contact_field_msg')}
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                className={FIELD_CLASS}
                 required
                 rows={5}
               />
 
               <button
                 type="submit"
-                className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#003087] text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 active:scale-[0.98]"
+                className={`${NAVY_BTN} mt-2 w-full`}
+                style={{ backgroundColor: BRAND_NAVY }}
               >
                 {t('contact_btn_send')}
               </button>
             </form>
-          </ContentCard>
+          </WizardCard>
         </div>
       </MarketingPageShell>
     </div>
