@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   BriefcaseIcon,
   UserGroupIcon,
@@ -9,14 +9,8 @@ import {
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import { pickLocalized, useLanguage } from '../services/i18n';
-import { SectionHeader } from './home/SectionHeader';
-import {
-  ContentCard,
-  MarketingPageShell,
-  PageHero,
-  PageTopBar,
-} from './layout/MarketingPageLayout';
-import { HOME_H_SCROLL } from './home/homeContent';
+import { MarketingPageShell } from './layout/MarketingPageLayout';
+import { BRAND_NAVY } from './home/homeContent';
 import type { LocalizedText } from './services/servicesContent';
 import {
   EnterpriseLifecycleTimeline,
@@ -24,6 +18,13 @@ import {
   RecruitmentFlowTimeline,
   WorkScopeTimeline,
 } from './services/ServiceVisualSections';
+import {
+  CardSectionHeader,
+  NAVY_BTN,
+  RecruitmentBackButton,
+  WizardCard,
+  WizardHero,
+} from './recruitment/recruitmentUi';
 
 interface ServiceDetail {
   id: string;
@@ -111,152 +112,221 @@ const SERVICES_DATA: ServiceDetail[] = [
 
 const SERVICE_TAB_IDS = new Set(SERVICES_DATA.map((s) => s.id));
 
+const WHY_POINTS = [
+  { titleKey: 'services_why_legal', descKey: 'services_why_legal_desc' },
+  { titleKey: 'services_why_sla', descKey: 'services_why_sla_desc' },
+  { titleKey: 'services_why_guarantee', descKey: 'services_why_guarantee_desc' },
+] as const;
+
 export const Services: React.FC = () => {
   const { t, language } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('business-support');
 
   useEffect(() => {
     const hash = location.hash.replace(/^#/, '');
     if (SERVICE_TAB_IDS.has(hash)) {
       setActiveTab(hash);
+      requestAnimationFrame(() => {
+        document.getElementById('service-detail')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      });
     }
   }, [location.hash]);
+
+  const handleTabChange = (id: string) => {
+    setActiveTab(id);
+    navigate({ pathname: '/services', hash: id }, { replace: true });
+  };
 
   const activeService = SERVICES_DATA.find((s) => s.id === activeTab) ?? SERVICES_DATA[0];
   const ActiveIcon = activeService.icon;
 
   return (
-    <div id="services-page" className="min-h-screen bg-slate-50 font-sans antialiased text-slate-800">
-      <PageTopBar badge={t('services_badge')} />
+    <div
+      id="services-page"
+      className="min-h-screen bg-slate-50 pb-24 font-sans antialiased text-slate-800"
+    >
+      <MarketingPageShell className="gap-5 px-6 pb-8 pt-6 sm:gap-6 sm:px-6 sm:py-8">
+        <RecruitmentBackButton onClick={() => navigate('/')} label={t('nav_home')} />
 
-      <MarketingPageShell wide>
-        <PageHero
-          eyebrow="PT Perdana Adi Yuda"
-          title={t('services_hero_title')}
-          subtitle={t('services_hero_sub')}
-          imageSrc="/assets/hero/site_scaffolding.jpg"
-          imageAlt={t('services_hero_image_alt')}
-        />
+        <WizardHero showLogo title={t('services_hero_title')} subtitle={t('services_hero_sub')} />
 
-        <ContentCard>
-          <SectionHeader
-            compact
+        {/* Service tabs */}
+        <WizardCard className="p-5 sm:p-6">
+          <CardSectionHeader
+            label={t('services_badge')}
             title={t('services_section_title')}
             subtitle={t('services_section_sub')}
           />
 
-          <div className={`${HOME_H_SCROLL} -mx-2 mb-6 px-2 pb-1`}>
-            <div className="flex w-max min-w-full gap-2.5">
-              {SERVICES_DATA.map((service) => {
-                const Icon = service.icon;
-                const isActive = activeTab === service.id;
-                const label = pickLocalized(service.title, language);
+          <div
+            className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"
+            role="tablist"
+            aria-label={t('services_section_title')}
+          >
+            {SERVICES_DATA.map((service) => {
+              const Icon = service.icon;
+              const isActive = activeTab === service.id;
+              const label = pickLocalized(service.title, language);
 
-                return (
-                  <button
-                    key={service.id}
-                    type="button"
-                    onClick={() => setActiveTab(service.id)}
-                    className={`inline-flex min-h-[44px] shrink-0 snap-start items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-xs font-bold shadow-sm transition active:scale-[0.97] ${
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls="service-detail"
+                  onClick={() => handleTabChange(service.id)}
+                  className={`group relative flex min-h-[5.5rem] flex-col items-start gap-2.5 rounded-2xl border p-3.5 text-left transition duration-200 active:scale-[0.98] sm:min-h-[6rem] sm:p-4 ${
+                    isActive
+                      ? 'border-[#003087]/25 bg-gradient-to-br from-[#003087] via-[#00256a] to-blue-900 text-white shadow-lg shadow-[#003087]/25 ring-2 ring-[#003087]/15'
+                      : 'border-slate-100 bg-slate-50/60 hover:border-[#003087]/20 hover:bg-white hover:shadow-md'
+                  }`}
+                >
+                  {isActive && (
+                    <div
+                      className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-90"
+                      aria-hidden
+                    />
+                  )}
+
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl transition sm:h-10 sm:w-10 ${
                       isActive
-                        ? 'border-[#003087] bg-[#003087] text-white'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-[#003087]/30 hover:bg-blue-50/50'
+                        ? 'bg-white/15 text-white ring-1 ring-white/20'
+                        : 'bg-white text-[#003087] shadow-sm ring-1 ring-slate-100 group-hover:ring-[#003087]/15'
                     }`}
                   >
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl ${
-                        isActive ? 'bg-white/15' : 'bg-blue-50 text-[#003087]'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="whitespace-nowrap">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                  </span>
 
+                  <span
+                    className={`text-xs font-extrabold leading-snug sm:text-sm ${
+                      isActive ? 'text-white' : 'text-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </WizardCard>
+
+        {/* Active service detail */}
+        <div id="service-detail" role="tabpanel">
+        <WizardCard className="p-5 sm:p-7">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
             <div className="lg:col-span-7">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-[#003087]">
+              <div className="mb-5 flex items-start gap-3.5">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md shadow-[#003087]/20"
+                  style={{ backgroundColor: BRAND_NAVY }}
+                >
                   <ActiveIcon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl">
-                  {pickLocalized(activeService.title, language)}
-                </h3>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#003087]">
+                    {t('services_badge')}
+                  </p>
+                  <h2 className="mt-1 text-xl font-black leading-tight text-slate-900 sm:text-2xl">
+                    {pickLocalized(activeService.title, language)}
+                  </h2>
+                </div>
               </div>
 
               <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
                 {pickLocalized(activeService.desc, language)}
               </p>
 
-              <div className="mt-6 border-t border-slate-100 pt-6">
-                <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <CheckCircleIcon className="h-5 w-5 text-[#003087]" aria-hidden />
+              <div className="mt-8 border-t border-slate-100 pt-7">
+                <h3 className="mb-5 flex items-center gap-2 text-sm font-black text-slate-900 sm:text-base">
+                  <CheckCircleIcon className="h-5 w-5 shrink-0 text-[#003087]" aria-hidden />
                   {t('services_scope_title')}
-                </h4>
+                </h3>
                 <WorkScopeTimeline items={activeService.items} lang={language} />
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-100 bg-blue-50/40 p-5 lg:col-span-5">
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-[#003087]">
-                {t('services_why_title')}
-              </h4>
-              <div className="mt-4 space-y-4 text-sm">
-                {[
-                  { title: t('services_why_legal'), desc: t('services_why_legal_desc') },
-                  { title: t('services_why_sla'), desc: t('services_why_sla_desc') },
-                  { title: t('services_why_guarantee'), desc: t('services_why_guarantee_desc') },
-                ].map((point) => (
-                  <div key={point.title}>
-                    <h5 className="font-bold text-slate-900">{point.title}</h5>
-                    <p className="mt-1 text-xs text-slate-500">{point.desc}</p>
-                  </div>
-                ))}
+            <aside className="lg:col-span-5">
+              <div className="relative overflow-hidden rounded-2xl border border-[#003087]/10 bg-gradient-to-br from-blue-50/70 via-white to-cyan-50/25 p-5 shadow-sm sm:p-6">
+                <div
+                  className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#003087] to-cyan-400/80"
+                  aria-hidden
+                />
+                <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-[#003087]">
+                  {t('services_why_title')}
+                </h3>
+                <ul className="mt-5 space-y-4">
+                  {WHY_POINTS.map((point) => (
+                    <li key={point.titleKey} className="flex gap-3">
+                      <span
+                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: BRAND_NAVY }}
+                        aria-hidden
+                      />
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{t(point.titleKey)}</h4>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                          {t(point.descKey)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-7 border-t border-slate-200/70 pt-5">
+                  <Link
+                    to="/contact"
+                    className={`${NAVY_BTN} w-full`}
+                    style={{ backgroundColor: BRAND_NAVY }}
+                  >
+                    {t('services_contact_admin')}
+                    <ArrowRightIcon className="h-4 w-4 opacity-90" aria-hidden />
+                  </Link>
+                </div>
               </div>
-              <div className="mt-6 border-t border-slate-200/60 pt-5 text-center">
-                <a
-                  href="#/contact"
-                  className="inline-flex min-h-[48px] items-center gap-1.5 rounded-xl bg-[#003087] px-5 text-xs font-bold text-white transition hover:bg-blue-900 active:scale-[0.98]"
-                >
-                  {t('services_contact_admin')}
-                  <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
-                </a>
-              </div>
-            </div>
+            </aside>
           </div>
-        </ContentCard>
+        </WizardCard>
+        </div>
 
-        <ContentCard>
-          <SectionHeader
-            compact
+        <WizardCard className="p-5 sm:p-7">
+          <CardSectionHeader
             title={t('services_flow_title')}
             subtitle={t('services_flow_sub')}
           />
           <RecruitmentFlowTimeline lang={language} />
-        </ContentCard>
+        </WizardCard>
 
-        <ContentCard>
-          <SectionHeader
-            compact
+        <WizardCard className="p-5 sm:p-7">
+          <CardSectionHeader
             title={t('services_lifecycle_title')}
             subtitle={t('services_lifecycle_sub')}
           />
           <EnterpriseLifecycleTimeline lang={language} />
-        </ContentCard>
+        </WizardCard>
 
-        <ContentCard>
-          <SectionHeader
-            compact
+        <WizardCard className="p-5 sm:p-7">
+          <CardSectionHeader
             title={t('services_partners_title')}
             subtitle={t('services_partners_sub')}
           />
           <PartnerExperienceSection lang={language} />
-        </ContentCard>
+        </WizardCard>
+
+        <p className="px-1 text-center text-xs leading-relaxed text-slate-500">
+          {t('services_partners_footer')}{' '}
+          <Link
+            to="/contact"
+            className="font-bold text-[#003087] underline-offset-2 transition hover:underline"
+          >
+            {t('nav_contact')}
+          </Link>
+        </p>
       </MarketingPageShell>
     </div>
   );
